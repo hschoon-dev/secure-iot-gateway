@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <!-- Restrict IdentifierType -->
+    <xs:simpleType name="IdentifierTypeEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Numeric"/>
+            <xs:enumeration value="String"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Allow Identifier to be int or string -->
+    <xs:simpleType name="IdentifierUnion">
+        <xs:union memberTypes="xs:int xs:string"/>
+    </xs:simpleType>
+
+    <xs:element name="opcua-servers">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="server" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="server_app_uri" type="xs:string"/>
+                            <xs:element name="client_app_uri" type="xs:string"/>
+                            <xs:element name="alias" type="xs:string"/>
+                            <xs:element name="security">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="policy" type="xs:string"/>
+                                        <xs:element name="mode" type="xs:string"/>
+                                        <xs:element name="server_certificate" type="xs:string" minOccurs="0"/>
+                                        <xs:element name="client_certificate" type="xs:string" minOccurs="0"/>
+                                        <xs:element name="client_private_key" type="xs:string" minOccurs="0"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="nodes">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="node" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="DisplayName" type="xs:string"/>
+                                                    <xs:element name="NamespaceIndex" type="xs:int"/>
+                                                    <xs:element name="NamespaceAlias" type="xs:string"/>
+                                                    <xs:element name="IdentifierType" type="IdentifierTypeEnum"/>
+                                                    <xs:element name="Identifier" type="IdentifierUnion"/>
+                                                    <xs:element name="datatype" type="xs:string"/>
+                                                    <xs:element name="description" type="xs:string"/>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

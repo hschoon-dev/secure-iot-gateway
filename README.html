@@ -1,0 +1,166 @@
+<!DOCTYPE html><html><head>
+      <title>README</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\heiko\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.19\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      
+<h1><strong>Docker implementation of the Secure IoT Gateway</strong></h1>
+<hr>
+<p>A guide for developers is available in <a href="./DEV.md">DEV.md</a>, with setup steps and configuration advice for different labs and equipment. Please refer to it for integration and development instructions.</p>
+<hr>
+<p>A Docker-based IoT gateway setup for OPC UA and ModbusTCP communication.<br>
+<img src="./doc/Diagram_SIoT-Gateway.png" alt="alt text"></p>
+<hr>
+<div style="background-color: #CCCCCC; color: black; padding: 10px; border-radius: 8px; font-size: 1.5em;">
+  Brownfield services
+</div>
+<ul>
+<li><strong>brownfield-server</strong>: A simple OPC UA server container. Used for emulating a brownfield environment. This example is based on the example <a href="http://server-with-encryption.py">server-with-encryption.py</a> provided by the FreeOpcUa Python library <a href="https://github.com/FreeOpcUa/opcua-asyncio/blob/master/examples/server-with-encryption.py">(Link)</a>.</li>
+<li><strong>modbus-server</strong>: A Modbus TCP Server written in Python used for testing the collection from different registers. It is based on the Docker image <a href="https://github.com/cybcon/modbus-server">oitc/modbus-server</a>.</li>
+</ul>
+<hr>
+<div style="background-color: #E0F2F1; color: black; padding: 10px; border-radius: 8px; font-size: 1.5em;">
+  Secure IoT Gateway services
+</div>
+<ul>
+<li><strong>cpc-partition</strong>: A container implementing clients for the communication protocols Modbus/TCP and OPC UA. The configuration via XML-files allows for flexible scaling and endpoint definition. The aggregated data from the Brownfield components is distributed via Shared Memory to the Interface and psM+O partitions. <em>Maintainer: Heiko Schoon (HS Emden/Leer)</em></li>
+<li><strong>psmo-partition</strong>: Contains a Python script for reading the shared memory of the cpc-partition and consuming the machine data stored inside. <em>Maintainer: Heiko Schoon (HS Emden/Leer)</em></li>
+<li><strong>interface-partition</strong>: OPC UA Server accessible from IT-side. Updates variables in namespace using the xml-file stored in shared memory from the cpc-partition container. Implements OPC UA methods for sending Requests to the Brownfield and to interact with the User-Management services (User database for authentication with username/password and authorization via PyCasbin <a href="https://github.com/casbin/pycasbin">(Link)</a>). <em>Maintainer: Heiko Schoon (HS Emden/Leer)</em></li>
+<li><strong>intermediate-vor-partition</strong>: Implements the VoR steps (2, Request Verification), (3, Request Mapping) and (4, Propagation Backend). <em>Maintainer: Yuanchen Zhao (RWTH Aachen)</em></li>
+<li><strong>intermediate-vor-partition-cpc</strong>: Implements the VoR steps (4, Propagation Frontend), (5, Acceptance) and (6, Mapping Verification). <em>Maintainer: Yuanchen Zhao (RWTH Aachen)</em></li>
+</ul>
+<hr>
+<div style="background-color: #FF6665; color: black; padding: 10px; border-radius: 8px; font-size: 1.5em;">
+  Central M+O services
+</div>
+<ul>
+<li><strong>central-mo-client</strong>: OPC UA Client and business function. Uses the data exposed by the OPC UA Server for a currently undefined business function, e.g. visualization via node-red.<br>
+Also implements the fuzzing services for testing the different steps of the Verification-of-Request steps. <em>Maintainer: Heiko Schoon (HS Emden/Leer)</em></li>
+</ul>
+<hr>
+<h2><strong>Usage</strong></h2>
+<p>Clone the repository using Git:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">git</span> clone https://gitlab.technik-emden.de/bmbf_siot-gateway/secure-iot-gateway.git
+</code></pre><p>Navigate to the repository directory</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token builtin class-name">cd</span> siot-gateway-docker
+</code></pre><p>Building, (re)creating, starting:</p>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">docker-compose</span> <span class="token parameter variable">-f</span> docker-compose.yaml up <span class="token parameter variable">--build</span>
+</code></pre><h3 id="uaexpert-view-of-the-aggregated-endpoints-from-cpc">UAExpert view of the aggregated endpoints from CPC </h3>
+<p><img src="./doc/uaexpert_interface_opcua_server.png" alt="alt text"></p>
+<h3 id="uaexpert-vor-method-call">UAExpert VoR method call </h3>
+<p><img src="./doc/uaexpert_interface_method_call.png" alt="alt text"></p>
+<h3 id="docker-terminal">Docker Terminal </h3>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>Attaching to brownfield-opcua-server, central-mo-client, interface-partition, intermediate-vor-partition
+brownfield-opcua-server     <span class="token operator">|</span> Brownfield OPC UA Servers started successfully.
+interface-partition         <span class="token operator">|</span> OPC UA Server of the interface partition is running.
+central-mo-client           <span class="token operator">|</span> Central M+O Application started.
+
+<span class="token comment"># Submit Requests with running interface-partition, but offline intermediate-vor-partition: =&gt; requests will be stored in POSIX queue</span>
+central-mo-client           <span class="token operator">|</span> Submit request with priority <span class="token number">9</span> at <span class="token number">2025</span>-03-11 <span class="token number">15</span>:43:09.646760+00:00
+interface-partition         <span class="token operator">|</span> Request with priority <span class="token number">9</span> at <span class="token number">2025</span>-03-11T15:43:09.651060+00:00 received and forwared.
+central-mo-client           <span class="token operator">|</span> Request ID:       cada693b-8e9a-4a77-8f96-21fbb38f91a6                                                                                  
+central-mo-client           <span class="token operator">|</span> Server Timestamp: <span class="token number">2025</span>-03-11T15:43:09.651060+00:00                                                                                      
+central-mo-client           <span class="token operator">|</span> Notification:     Submission received
+central-mo-client           <span class="token operator">|</span> Submit request with priority <span class="token number">24</span> at <span class="token number">2025</span>-03-11 <span class="token number">15</span>:43:11.655272+00:00                                                                     
+interface-partition         <span class="token operator">|</span> Request with priority <span class="token number">24</span> at <span class="token number">2025</span>-03-11T15:43:11.657791+00:00 received and forwared.
+central-mo-client           <span class="token operator">|</span> Request ID:       32a0938f-f626-4873-b959-df3137f21517                                                                                  
+central-mo-client           <span class="token operator">|</span> Server Timestamp: <span class="token number">2025</span>-03-11T15:43:11.657791+00:00
+central-mo-client           <span class="token operator">|</span> Notification:     Submission received                                                                                                   
+central-mo-client           <span class="token operator">|</span> Submit request with priority <span class="token number">5</span> at <span class="token number">2025</span>-03-11 <span class="token number">15</span>:43:13.661215+00:00
+interface-partition         <span class="token operator">|</span> Request with priority <span class="token number">5</span> at <span class="token number">2025</span>-03-11T15:43:13.662997+00:00 received and forwared.
+central-mo-client           <span class="token operator">|</span> Request ID:       a5592e3d-2448-43b0-afb1-133ac1b74a5c                                                                                  
+central-mo-client           <span class="token operator">|</span> Server Timestamp: <span class="token number">2025</span>-03-11T15:43:13.662997+00:00
+central-mo-client           <span class="token operator">|</span> Notification:     Submission received                                                               
+
+<span class="token comment"># intermediate-vor-partition started and begins processing message queue content with respect to the priority of the request.</span>
+intermediate-vor-partition  <span class="token operator">|</span> Intermediate VoR Partition started<span class="token operator">!</span>
+intermediate-vor-partition  <span class="token operator">|</span> Message Queue /interface_partition_mq attached<span class="token operator">!</span>
+intermediate-vor-partition  <span class="token operator">|</span> Request with priority <span class="token number">24</span> and payload b<span class="token string">"{'request_id': '32a0938f-f626-4873-b959-df3137f21517', 'timestamp': datetime.datetime(2025, 3, 11, 15, 43, 11, 655272, tzinfo=datetime.timezone.utc), 'modification': 'Enhance automated assembly line', 'description': {'description_0': 'Refactor sensor data integration', 'description_1': 'Install new automation features', 'description_2': 'Enable production line optimization'}, 'impact': {'impact_0': 'Lower operational costs', 'impact_1': 'Higher yield rates'}, 'prio': 24}"</span> received.
+intermediate-vor-partition  <span class="token operator">|</span> Request with priority <span class="token number">9</span> and payload b<span class="token string">"{'request_id': 'cada693b-8e9a-4a77-8f96-21fbb38f91a6', 'timestamp': datetime.datetime(2025, 3, 11, 15, 43, 9, 646760, tzinfo=datetime.timezone.utc), 'modification': 'Improve sensor calibration process', 'description': {'description_0': 'Enhance production scheduling'}, 'impact': {'impact_0': 'Increased throughput', 'impact_1': 'Faster production cycles', 'impact_2': 'Improved resource utilization'}, 'prio': 9}"</span> received.
+intermediate-vor-partition  <span class="token operator">|</span> Request with priority <span class="token number">5</span> and payload b<span class="token string">"{'request_id': 'a5592e3d-2448-43b0-afb1-133ac1b74a5c', 'timestamp': datetime.datetime(2025, 3, 11, 15, 43, 13, 661215, tzinfo=datetime.timezone.utc), 'modification': 'Update production software', 'description': {'description_0': 'Update system diagnostics'}, 'impact': {'impact_0': 'Higher yield rates'}, 'prio': 5}"</span> received.
+
+<span class="token comment"># Now the request come in and all partitions that are associated with their processing are running.</span>
+central-mo-client           <span class="token operator">|</span> Submit request with priority <span class="token number">14</span> at <span class="token number">2025</span>-03-11 <span class="token number">15</span>:43:15.665898+00:00
+interface-partition         <span class="token operator">|</span> Request with priority <span class="token number">14</span> at <span class="token number">2025</span>-03-11T15:43:15.667656+00:00 received and forwared.
+intermediate-vor-partition  <span class="token operator">|</span> Request with priority <span class="token number">14</span> and payload b<span class="token string">"{'request_id': '69460836-f61e-448d-8f7a-c8edf25135d6', 'timestamp': datetime.datetime(2025, 3, 11, 15, 43, 15, 665898, tzinfo=datetime.timezone.utc), 'modification': 'Install new production machinery', 'description': {'description_0': 'Enhance production scheduling'}, 'impact': {'impact_0': 'Enhanced system reliability', 'impact_1': 'Faster production cycles'}, 'prio': 14}"</span> received.
+central-mo-client           <span class="token operator">|</span> Request ID:       <span class="token number">69460836</span>-f61e-448d-8f7a-c8edf25135d6
+central-mo-client           <span class="token operator">|</span> Server Timestamp: <span class="token number">2025</span>-03-11T15:43:15.667656+00:00
+central-mo-client           <span class="token operator">|</span> Notification:     Submission received                                                                 
+
+central-mo-client           <span class="token operator">|</span> Submit request with priority <span class="token number">28</span> at <span class="token number">2025</span>-03-11 <span class="token number">15</span>:43:17.670960+00:00                                                                 
+interface-partition         <span class="token operator">|</span> Request with priority <span class="token number">28</span> at <span class="token number">2025</span>-03-11T15:43:17.673943+00:00 received and forwared.
+intermediate-vor-partition  <span class="token operator">|</span> Request with priority <span class="token number">28</span> and payload b<span class="token string">"{'request_id': '650b6353-0706-4513-ba86-2e3dafcf86e0', 'timestamp': datetime.datetime(2025, 3, 11, 15, 43, 17, 670960, tzinfo=datetime.timezone.utc), 'modification': 'Implement new machine learning model', 'description': {'description_0': 'Enable production line optimization', 'description_1': 'Install new automation features'}, 'impact': {'impact_0': 'Reduced downtime'}, 'prio': 28}"</span> received.
+central-mo-client           <span class="token operator">|</span> Request ID:       650b6353-0706-4513-ba86-2e3dafcf86e0
+central-mo-client           <span class="token operator">|</span> Server Timestamp: <span class="token number">2025</span>-03-11T15:43:17.673943+00:00                                                                                      
+central-mo-client           <span class="token operator">|</span> Notification:     Submission received
+
+central-mo-client           <span class="token operator">|</span> Submit request with priority <span class="token number">2</span> at <span class="token number">2025</span>-03-11 <span class="token number">15</span>:43:19.677723+00:00
+intermediate-vor-partition  <span class="token operator">|</span> Request with priority <span class="token number">2</span> and payload b<span class="token string">"{'request_id': '14ec21c6-00d8-4dcc-9a97-8674ca8caf4d', 'timestamp': datetime.datetime(2025, 3, 11, 15, 43, 19, 677723, tzinfo=datetime.timezone.utc), 'modification': 'Upgrade system monitoring tools', 'description': {'description_0': 'Update system diagnostics', 'description_1': 'Update inventory tracking system', 'description_2': 'Install new automation features'}, 'impact': {'impact_0': 'Reduced downtime'}, 'prio': 2}"</span> received.
+interface-partition         <span class="token operator">|</span> Request with priority <span class="token number">2</span> at <span class="token number">2025</span>-03-11T15:43:19.680922+00:00 received and forwared.
+central-mo-client           <span class="token operator">|</span> Request ID:       14ec21c6-00d8-4dcc-9a97-8674ca8caf4d
+central-mo-client           <span class="token operator">|</span> Server Timestamp: <span class="token number">2025</span>-03-11T15:43:19.680922+00:00                                                                                      
+central-mo-client           <span class="token operator">|</span> Notification:     Submission received
+</code></pre><hr>
+<h2><strong>Dependencies</strong></h2>
+<ul>
+<li>Python 3.x libraries:
+<ul>
+<li><code>asyncua</code> — OPC UA communication</li>
+<li><code>pyModbusTCP</code> — ModbusTCP communication</li>
+<li><code>xmlschema</code> — XML Schema validation and parsing</li>
+<li><code>posix-ipc</code> — POSIX-based inter-process communication</li>
+<li><code>casbin</code> — Authorization/Access control</li>
+<li><code>bcrypt</code> — Password hashing and security</li>
+<li><code>requests</code> — HTTP requests</li>
+<li><code>flask</code> — Web application framework</li>
+</ul>
+</li>
+<li>Docker Engine</li>
+</ul>
+<hr>
+<h2><strong>Partners</strong></h2>
+<p><img src="./doc/Secure_IoT_Gateway_Partners.png" alt="alt text"></p>
+<hr>
+<h2><strong>Contact</strong></h2>
+<p><strong>Heiko Schoon</strong><br>
+University of Applied Sciences Emden/Leer<br>
+<a href="mailto:heiko.schoon@hs-emden-leer.de">heiko.schoon@hs-emden-leer.de</a></p>
+<p><strong>Yuanchen Zhao</strong><br>
+RWTH Aachen<br>
+<a href="mailto:%5By.zaoh@iat.rwth-aachen.de">y.zaoh@iat.rwth-aachen.de</a></p>
+<hr>
+<h2><strong>Licensing</strong></h2>
+<p>Gratis or libre? ... No, gratis and libre:<br>
+This is free software (free as in speech and free as in beer) released under a MIT license. Complete licensing information is available in the <a href="./LICENSE">LICENSE</a> file.</p>
+
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>
