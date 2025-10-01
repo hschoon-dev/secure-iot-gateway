@@ -1,17 +1,114 @@
-**CHANGELOG**  
+# Changelog
 
-- 🚀 **Enhancements**:  
-  - Added support for injecting additional variables when CPC servers start/connect.  
-  - Improved ModbusTCP variable integration with OPC UA Server.  
-  - Introduced POSIX Message Queue for intermediate partition requests.  
+All notable changes to this project will be documented in this file.
 
-- 🛠 **Fixes & Stability**:  
-  - Fixed starvation and semaphore collision in the interface partition.  
-  - Improved reconnection logic (ModbusTCP: every 30s).  
-  - Added warning when SHM usage exceeds 90%.  
-  - Resolved OPC UA object errors and logging confusion.  
+## [Unreleased]
 
-- 🧹 **Cleanup & Maintenance**:  
-  - Refactored and removed deprecated code.  
-  - Improved error handling for XML files.  
-  - Updated README and documentation.
+---
+
+## [OMAG Demonstrator Integration] - 2025-09-03
+- Updated documentation and README files to reflect recent changes and improvements.
+- Enhanced verification of request and RBAC mechanisms based on discussions with Yuanchen.
+- Added OMAGs certificates for testing the demonstrator.
+- Improved namespace testing for Siemens S7-1500 PLC.
+- Updated XML configuration files for the CPC partition.
+- Split Modbus-TCP files into two separate libraries for better modularity.
+- Extended `OpcUaClientManager` to support namespace aliases.
+- Debugged and improved error handling for `IdentifierType String` in OPC UA threads.
+- Implemented OPC UA read method via string identifier for Siemens S7-1500 use case.
+
+---
+
+## [Master Thesis Completion Merge] - 2025-07
+- Added support for **LOGO Modbus Server** providing compatibility with LOGO PLCs.
+- Configured demonstrator setup at HSEL, including S7-1200 PLC and RevPi Laser Engraving station.
+- Fixed issues with **Docker Compose deployment**.
+- Progressed towards **D13 demonstrator** for SIoT project (IEEE conference).
+- Improved documentation and code readability with updated code comments.
+
+---
+
+## [Flask Server Bridge, CPC-to-OPCUA Mapping & Acceptance Verification] - 2025-05
+- **Flask Server Integration**
+  - Added `flask-server-bridge` with modular lifecycle control.
+  - Enabled threaded operation (pending full validation).
+- **Acceptance Verification**
+  - Added CPC value verification logic against acceptance criteria.
+  - Initial CPC-to-OPCUA runtime value mapping.
+- **Database Enhancements**
+  - SQL query updates to improve sorting by priority/timestamp.
+  - Introduced `mapped_requests.db` for intermediate storage.
+- **Code Refactoring**
+  - Split `VoR_2` functions into libraries for readability/testing.
+  - Removed legacy code and comments.
+- **Testing**
+  - Initial tests on Flask server bridge.
+  - Acceptance verification pending full load tests.
+- **Containerization**
+  - New temporary VoR backend container with acceptance verification.
+
+---
+
+## [Threading, Authentication & Authorization Enhancements] - 2025-05
+- **VoR Integration**
+  - Forwarding logic updated to exclude credentials.
+  - Began integration of VoR components.
+- **Performance & Stability**
+  - Optimized CPU usage under high load.
+  - Fixed infinite recursion and callback registration bugs.
+  - Thread safety fixes in SQLite operations.
+- **Authentication & Authorization**
+  - Introduced foundational User and Authorization Management.
+  - Deprecated `UserManagerXML` in favor of scalable solution.
+  - Initial tests for user and RBAC OPC UA methods.
+- **Testing**
+  - Integration tests via centralMO client.
+  - Early systematic partition testing.
+- **Refactoring**
+  - Introduced variable typing & return types.
+  - Moved legacy code into `legacy/` folder.
+  - Cleaned up credentials handling.
+- **DevOps**
+  - Optimized Dockerfiles.
+  - Updated README for CPC partition.
+- **Artifacts**
+  - Added `rbac.csv` example for testing.
+
+---
+
+## [Container Networking, Interface Structure & User Management] - 2025-04
+- Added **Bash script** for automated container network startup and connections.
+- Dynamic import of interface descriptions.
+- Improved naming logic in OPC UA server interface.
+- Added hierarchical structure support in interface OPC UA server.
+- Integrated **Ecotec-ModbusTCP Server** as Docker container.
+- Initial implementation of **user management for interface partitioning**.
+- Updated request interface & OPC UA methods.
+- Request authorization groundwork for VoR step 1.
+- Documentation improvements including new CHANGELOG.
+
+---
+
+## [CPC Aggregation Service & VoR Support] - 2025-04
+- Improved **Interface Server Integration**
+  - Added variable injection on CPC startup/connection.
+  - Improved ModbusTCP variable integration.
+  - Updated SHM format with metadata support.
+- **Stability & Performance**
+  - Added reconnection logic for ModbusTCP (30s).
+  - Warnings for SHM usage >90%.
+  - Byte size measurement for SHM objects.
+  - Introduced POSIX MQ for request submission.
+  - Fixed starvation and semaphore issues.
+- **Bug Fixes**
+  - Resolved OPC UA object errors.
+  - Improved XML error handling.
+  - Fixed logging issues in CPC partition.
+- **Code Cleanup**
+  - Removed deprecated code.
+  - Updated README and docs.
+- **Testing**
+  - Verified SHM behavior under high utilization.
+  - Tested with non-responsive servers.
+
+---

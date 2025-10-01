@@ -1,21 +1,27 @@
+# Author: Heiko Schoon
+# Organization: Hochschule Emden/Leer
+# Date: 23. September 2025
+
 services:
 # Emulated CPC applications:
   # Emulated brownfield OPC UA Server
-  # brownfield-opcua-server:
-  #   container_name: brownfield-opcua-server
-  #   build: brownfield-opcua-server/
-  #   attach: false
-  #   networks:
-  #     static-network:
-  #       ipv4_address: 172.20.128.1
+  brownfield-opcua-server:
+    container_name: brownfield-opcua-server
+    build: brownfield-opcua-server/
+    volumes:
+      # Logging files
+      - type: bind
+        source: ./brownfield-opcua-server/logs
+        target: /app/logs
+    attach: false
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.1
 
   ecotec-modbus-server:
     container_name: ecotec-modbus-server
     image: oitc/modbus-server:latest
-    #restart: always
     command: -f /server_config.json
-    #ports:
-    #  - 5020:5020
     volumes:
       - ./modbus-server/server_config.json:/server_config.json:ro
     attach: false
@@ -29,28 +35,31 @@ services:
   central-mo-client:
     container_name: central-mo-client
     build: central-mo-client/
+    volumes:
+      - type: bind
+        source: ./central-mo-client/logs
+        target: /app/logs
     depends_on:
       interface-partition: 
         condition: service_started
-    attach: true
+    attach: false
 
 
   # Application of the gateway's Interface Partition
   interface-partition:
     container_name: interface-partition
     ipc: "service:cpc-partition"
-    #ipc: "service:cpc-partition"
     build: interface-partition/
-    # volumes:
-    #   - type: bind
-    #     source: ./interface-partition/user_manager/credentials.db
-    #     target: /interface-partition/user_manager/credentials.db
+    volumes:
+      - type: bind
+        source: ./interface-partition/logs
+        target: /app/logs
     ports:
       - 4840:4840
     depends_on:
       cpc-partition: 
         condition: service_started
-    attach: true
+    attach: false
 
 
   # Intermediate VoR Partition
@@ -59,37 +68,56 @@ services:
     build: intermediate-vor-partition/
     ipc: "service:interface-partition"
     volumes:
+      # Database for mapped requests
       - type: bind
         source: ./intermediate-vor-partition/config/mapped_requests.db
         target: /app/config/mapped_requests.db
+      # Logging files
+      - type: bind
+        source: ./intermediate-vor-partition/logs
+        target: /app/logs
     depends_on:
       interface-partition: 
         condition: service_started
     attach: false
 
-  # Second Intermediate VoR Partition (only temporary) TODO: remove
+  # Second Intermediate VoR Partition
   intermediate-vor-partition-cpc:
     container_name: intermediate-vor-partition-cpc
     build: intermediate-vor-partition-cpc/
-    #ipc: "service:interface-partition-cpc"
     volumes:
+      # Database for mapped requests
       - type: bind
         source: ./intermediate-vor-partition/config/mapped_requests.db
         target: /app/config/mapped_requests.db
+      # Configuration file for modified acceptance ruleset
       - type: bind
         source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
         target: /app/config/Acceptance_Ruleset_modified.xml
+      # Logging files
+      - type: bind
+        source: ./intermediate-vor-partition-cpc/logs
+        target: /app/logs
     depends_on:
       intermediate-vor-partition: 
         condition: service_started
-    attach: false
+      cpc-partition:
+        condition: service_started
+    attach: true
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.5
 
   # Application of the gateway's psM+O Partition
-  # emulates shared memory
   psmo-partition:
     container_name: psmo-partition
     ipc: "service:cpc-partition"
     build: psmo-partition/
+    volumes:
+      # Logging files
+      - type: bind
+        source: ./psmo-partition/logs
+        target: /app/logs
     depends_on:
       cpc-partition: 
         condition: service_started
@@ -99,21 +127,25 @@ services:
   cpc-partition:
     container_name: cpc-partition 
     build: cpc-partition/
+    volumes:
+      # Logging files
+      - type: bind
+        source: ./cpc-partition/logs
+        target: /app/logs
     ipc: "shareable"
     depends_on:
-      # brownfield-opcua-server: 
-      #   condition: service_started
-      ecotec-modbus-server: # if ModbusTCP Servers are emulated
+       brownfield-opcua-server: 
+         condition: service_started
+       ecotec-modbus-server:
         condition: service_started
     attach: true
     networks:
       static-network:
           ipv4_address: 172.20.128.4
 
+
 networks:
   static-network:
     ipam:
       config:
         - subnet: 172.20.0.0/16
-          #docker-compose v3+ do not use ip_range
-          #ip_range: 172.28.5.0/24

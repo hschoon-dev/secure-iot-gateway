@@ -1,0 +1,51 @@
+Modbus Logo  10.200.1.142 Port 503
+Adresse Modbus Datgentyp Logo Bezeichnung Format
+8257 FC5 Write Single Coil M2 Kompressor 1  true,false 
+8258 FC5 Write Single Coil M3 Kompressor 2  true,false 
+8259 FC5 Write Single Coil M4 Kompressor 3 true,false 
+8260 FC1 Read Coils M5 Störung Kompressor 1 true,false 
+8261 FC1 Read Coils M6 Störung Trockner 1 true,false 
+8262 FC1 Read Coils M7 Störung Kondensat  true,false 
+8263 FC1 Read Coils M8
+8264 FC5 Write Single Coil M9 Kompressor 4 true,false 
+8265 FC1 Read Coils M10 Störung Kompressor 2 true,false 
+8266 FC1 Read Coils M11 Störung Kompressor 3 true,false 
+8267 FC1 Read Coils M12 Störung Kompressor 4 true,false
+
+529 FC3 Read Holding Register AM2
+530 FC3 Read Holding Register AM3
+531 FC3 Read Holding Register AM4
+532 FC3 Read Holding Register AM5
+533 FC3 Read Holding Register AM6
+534 FC3 Read Holding Register AM7
+535 FC3 Read Holding Register AM8
+536 FC3 Read Holding Register AM9
+537 FC3 Read Holding Register AM10 Druck Float
+538 FC3 Read Holding Register AM11 Taupunkt Float
+539 FC3 Read Holding Register AM12 Volumenstrom 1 Float
+540 FC3 Read Holding Register AM13 Volumenstrom 2 Float
+541 FC3 Read Holding Register AM14
+542 FC3 Read Holding Register AM15
+543 FC3 Read Holding Register AM16
+544 FC3 Read Holding Register AM17
+545 FC3 Read Holding Register AM18
+546 FC3 Read Holding Register AM19
+547 FC3 Read Holding Register AM20
+
+1 FC2 Read Discrete Input I2 Kompressor 2 Start über physischen Fernkontakt true,false
+2 FC2 Read Discrete Input I3 Kompressor 3 Start über physischen Fernkontakt true,false
+3 FC2 Read Discrete Input I4 Kompressor 4 Start über physischen Fernkontakt true,false
+4 FC2 Read Discrete Input I5
+5 FC2 Read Discrete Input I6
+6 FC2 Read Discrete Input I7
+7 FC2 Read Discrete Input I8
+8 FC2 Read Discrete Input I9 Störung Kondensat  true,false
+9 FC2 Read Discrete Input I10 Störung Kompressor 1 true,false
+10 FC2 Read Discrete Input I11 Störung Kompressor 2 true,false
+11 FC2 Read Discrete Input I12 Störung Kompressor 3 true,false
+12 FC2 Read Discrete Input I13 Störung Kompressor 4 true,false
+
+8196 FC1 Read Coil Status Q5 Störung Trockner 1  true,false
+8197 FC1 Read Coil Status Q6 Störung Trockner 2 true,false
+8198 FC1 Read Coil Status Q7 Störung Trockner 3  true,false
+8199 FC1 Read Coil Status Q8 Störung Trockner 4 true,false

@@ -1,0 +1,31 @@
+# Docker Compose file for Raspberry Pi for emulating CPC Applications
+# It includes the brownfield OPC UA Server and the Ecotec Modbus Server
+#
+# Author: Heiko Schoon
+# Organization: Hochschule Emden/Leer
+# Date: 23. September 2025
+
+services:
+   brownfield-opcua-server:
+    container_name: brownfield-opcua-server
+    build: brownfield-opcua-server/
+    volumes:
+      # Logging files
+      - type: bind
+        source: ./brownfield-opcua-server/logs
+        target: /app/logs
+    ports:
+      - 4840:4840
+      - 4841:4841
+    attach: true
+
+
+   ecotec-modbus-server:
+    container_name: ecotec-modbus-server
+    image: oitc/modbus-server:latest
+    command: -f /server_config.json
+    ports:
+      - 503:503
+    volumes:
+      - ./modbus-server/server_config.json:/server_config.json:ro
+    attach: true

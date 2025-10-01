@@ -1,0 +1,111 @@
+# Docker Compose file for Raspberry Pi for testing the SIoT Gateway
+# It includes the folowing applications:
+# - Central M+O Client: for testing the interface functionalities via OPC UA
+# - Interface Partition: exposing of aggregated CPC data and exposing of OPC UA methods for VoR
+# - Intermediate VoR Partition: Processing of incoming requests and forwarding to Second Intermediate VoR Partition
+# - Second Intermediate VoR Partition: Processing of incoming requests and forwarding to CPC Partition
+# - psM+O Partition: Dummy partition, can be filled with edge M+O applications
+# - CPC Partition: Data aggregation based on XML-configuration, implementing positive VoR Requests in CPC
+#
+# Author: Heiko Schoon
+# Organization: Hochschule Emden/Leer
+# Date: 23. September 2025
+
+
+services:
+
+# Gateway-Applications:
+  # Central M+O Application
+  central-mo-client:
+    container_name: central-mo-client
+    build: central-mo-client/
+    volumes:
+      - type: bind
+        source: ./central-mo-client/logs
+        target: /app/logs
+    depends_on:
+      interface-partition: 
+        condition: service_started
+    attach: true
+
+
+  # Application of the gateway's Interface Partition
+  interface-partition:
+    container_name: interface-partition
+    ipc: "service:cpc-partition"
+    build: interface-partition/
+    volumes:
+      - type: bind
+        source: ./interface-partition/logs
+        target: /app/logs
+    ports:
+      - 4840:4840
+    depends_on:
+      cpc-partition: 
+        condition: service_started
+    attach: true
+
+
+  # Intermediate VoR Partition
+  intermediate-vor-partition:
+    container_name: intermediate-vor-partition
+    build: intermediate-vor-partition/
+    ipc: "service:interface-partition"
+    volumes:
+      - type: bind
+        source: ./intermediate-vor-partition/config/mapped_requests.db
+        target: /app/config/mapped_requests.db
+      - type: bind
+        source: ./intermediate-vor-partition/logs
+        target: /app/logs
+    depends_on:
+      interface-partition: 
+        condition: service_started
+    attach: false
+
+  # Second Intermediate VoR Partition (only temporary) TODO: remove
+  intermediate-vor-partition-cpc:
+    container_name: intermediate-vor-partition-cpc
+    build: intermediate-vor-partition-cpc/
+    #ipc: "service:interface-partition-cpc"
+    volumes:
+      - type: bind
+        source: ./intermediate-vor-partition/config/mapped_requests.db
+        target: /app/config/mapped_requests.db
+      - type: bind
+        source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
+        target: /app/config/Acceptance_Ruleset_modified.xml
+      - type: bind
+        source: ./intermediate-vor-partition-cpc/logs
+        target: /app/logs
+    depends_on:
+      intermediate-vor-partition: 
+        condition: service_started
+    attach: false
+
+  # Application of the gateway's psM+O Partition
+  # emulates shared memory
+  psmo-partition:
+    container_name: psmo-partition
+    ipc: "service:cpc-partition"
+    build: psmo-partition/
+    volumes:
+      - type: bind
+        source: ./psmo-partition/logs
+        target: /app/logs
+    depends_on:
+      cpc-partition: 
+        condition: service_started
+    attach: false
+
+  # Application of the gateway's CPC Partition
+  cpc-partition:
+    container_name: cpc-partition 
+    build: cpc-partition/
+    volumes:
+      - type: bind
+        source: ./cpc-partition/logs
+        target: /app/logs
+    ipc: "shareable"
+    network_mode: "host"
+    attach: true
