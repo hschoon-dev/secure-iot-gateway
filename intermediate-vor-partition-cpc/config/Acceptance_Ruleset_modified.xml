@@ -17,4 +17,4 @@
             <required_value>none</required_value>
         </warning>
     </technical_system>
-<affected_endpoints><affected_endpoint><name>Mixer_SP_Pump_B_Power</name><value>0</value></affected_endpoint><affected_endpoint><name>Pump_A_Power_Pump_B_Power</name><value>0</value></affected_endpoint><affected_endpoint><name>Pump_B_Power_Pump_B_Power</name><value>0</value></affected_endpoint><affected_endpoint><name>Heater_Power_Pump_B_Power</name><value>0</value></affected_endpoint></affected_endpoints></ruleset>
+<affected_endpoints><affected_endpoint><name>MotorSpeed_SP_MotorSpeed_SP</name><value>0</value></affected_endpoint></affected_endpoints></ruleset>

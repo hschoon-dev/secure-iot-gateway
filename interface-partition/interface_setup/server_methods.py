@@ -47,12 +47,12 @@ _logger.error(f"Credentials DB path: {credentials_db_path}")
 _user_manager = UserManager(credentials_db_path, max_connections=10)
 
 
-try:
+"""try:
     if not os.getenv("ADMIN_PASSWORD"):
         raise ValueError("ADMIN_PASSWORD environment variable is not set.")
     _create_init_admin = _user_manager.create_user(username="admin", password=os.getenv("ADMIN_PASSWORD"))
 except Exception as e:
-    _logger.error(f"Error creating initial Admin user: {e}")
+    _logger.error(f"Error creating initial Admin user: {e}")"""
 
 from pathlib import Path
 path = Path(__file__).resolve().parent

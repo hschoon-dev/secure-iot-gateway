@@ -71,7 +71,7 @@ class OpcUaClient:
         if self.security_settings['username'] is not None and self.security_settings['password'] is not None:
             self.client.set_user(self.security_settings['username'])
             self.client.set_password(self.security_settings['password'])
-            raise NotImplementedError("User authentication via username and password is not implemented for FreeOpcUa Server.")
+            _logger.warning(f"User authentication via username and password is not implemented for FreeOpcUa Servers.")
         if policy == 'SecurityPolicyNone':
             try:
                 await self.client.connect()
