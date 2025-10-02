@@ -194,6 +194,7 @@ async def is_client_connected(client):
 
 async def main():
     """Main function to execute request submissions in a loop"""
+    await asyncio.sleep(5)  # Initial delay to ensure server is up
     client = None
     try:
         client = await setup_client()

@@ -39,6 +39,8 @@ services:
       - type: bind
         source: ./central-mo-client/logs
         target: /app/logs
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       interface-partition: 
         condition: service_started
@@ -54,6 +56,8 @@ services:
       - type: bind
         source: ./interface-partition/logs
         target: /app/logs
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - 4840:4840
     depends_on:
