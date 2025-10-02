@@ -1,0 +1,22 @@
+# config/settings.yaml
+opcua:
+  # interval: 1          # optional; defaults to 1
+  files:
+    xml_config: config/opcua-endpoints_factory_and_docker.xml
+    xsd_schema:  config/opcua-endpoints.xsd
+  shared_memory:
+    name: opcua_shm
+    size: 10240          # bytes; default 1024*10
+  semaphore:
+    name: opcua_semaphore
+
+modbustcp:
+  # interval: 1          # optional; defaults to 1
+  files:
+    xml_config: config/modbustcp-endpoints_ecotec.xml
+    xsd_schema:  config/modbustcp-endpoints.xsd
+  shared_memory:
+    name: modbus_shm
+    size: 12288          # bytes; default 1024*12
+  semaphore:
+    name: modbus_semaphore

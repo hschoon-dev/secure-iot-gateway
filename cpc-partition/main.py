@@ -37,6 +37,15 @@ from opcua_client_manager import OpcUaClientManager
 from modbus_tcp_client_manager import ModbusClientManager
 
 from flask_server_bridge.flask_server_bridge import FlaskServerBridge
+from config_loader import load_config
+
+# Make project root importable if needed
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+CONFIG = load_config(
+    path=Path(__file__).parent / "config/settings.yaml",  # or .json
+    base_dir=Path(__file__).parent,
+)
 
 path = os.path.dirname(os.path.abspath(__file__))
 logging_path = os.path.join(path, "logs/app.log")
@@ -83,7 +92,15 @@ async def opcua_service() -> None:
     """
     This function starts the OPC UA service and reads the data from the OPC UA server.
     """
-    sys.path.insert(0, "..")
+    opcua_config            = CONFIG.opcua
+    xml_config_file_opcua   = opcua_config.files.xml_config
+    xsd_file_opcua          = opcua_config.files.xsd_schema
+    opcua_interval          = opcua_config.interval
+    opcua_shm_name          = opcua_config.shared_memory.name
+    opcua_shm_size          = opcua_config.shared_memory.size
+    opcua_semaphore_name    = opcua_config.semaphore.name
+    
+    """sys.path.insert(0, "..")
     path_base = Path(__file__).parent
     xml_config_file_opcua =  Path(path_base / "config/opcua-endpoints_factory_and_docker.xml")
     xsd_file_opcua = Path(path_base / "config/opcua-endpoints.xsd")
@@ -91,7 +108,7 @@ async def opcua_service() -> None:
     opcua_interval = 1 # Interval in seconds
     opcua_shm_name = 'opcua_shm'
     opcua_shm_size = 1024*10
-    opcua_semaphore_name = 'opcua_semaphore'
+    opcua_semaphore_name = 'opcua_semaphore'"""
 
     # Prepare lists for shm and semaphore
     opcua_shm_psmo = shared_memory.SharedMemory(name=f"{opcua_shm_name}_psmo", create=True, size=opcua_shm_size)
@@ -121,7 +138,15 @@ async def modbus_tcp_service() -> None:
     """
     This function starts the Modbus TCP service and reads the data from the Modbus TCP server.
     """
-    sys.path.insert(0, "..")
+    modbustcp_config            = CONFIG.modbustcp
+    xml_config_file_modbustcp   = modbustcp_config.files.xml_config
+    xsd_file_modbustcp          = modbustcp_config.files.xsd_schema
+    modbus_interval             = modbustcp_config.interval
+    modbus_shm_name             = modbustcp_config.shared_memory.name
+    modbus_shm_size             = modbustcp_config.shared_memory.size
+    modbus_semaphore_name       = modbustcp_config.semaphore.name
+
+    """sys.path.insert(0, "..")
     path_base = Path(__file__).parent
     xml_config_file_modbustcp =  Path(path_base / "config/modbustcp-endpoints_ecotec.xml")
     xsd_file_modbustcp = Path(path_base / "config/modbustcp-endpoints.xsd")
@@ -129,7 +154,7 @@ async def modbus_tcp_service() -> None:
     modbus_interval = 1
     modbus_shm_name = 'modbus_shm'
     modbus_shm_size = 1024*12
-    modbus_semaphore_name = 'modbus_semaphore'
+    modbus_semaphore_name = 'modbus_semaphore'"""
 
     # Prepare lists for shm and semaphore
     modbus_shm_psmo = shared_memory.SharedMemory(name=f"{modbus_shm_name}_psmo", create=True, size=modbus_shm_size)
