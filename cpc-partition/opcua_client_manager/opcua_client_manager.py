@@ -1,3 +1,26 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/opcua_client_manager.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains an OPC UA client manager that handles
+    multiple OPC UA clients based on an XML configuration file.
+    It supports secure connections, periodic reading of node values,
+    and writing the values to shared memory for inter-process
+    communication.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import asyncio
 #import xml.etree.ElementTree as ET
 from defusedxml import ElementTree as ET

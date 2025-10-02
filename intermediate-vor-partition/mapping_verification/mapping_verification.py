@@ -1,4 +1,27 @@
-#import xml.etree.ElementTree as ET
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/mapping_verification.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The VoR step mapping verification includes the mapping rules,
+    mapping process, and mapped request storage. The mapping rules
+    are defined in an XML file and loaded into the system. The mapping
+    process maps incoming requests to affected endpoints based on the
+    defined rules. The mapped requests are stored in a SQLite database.
+
+ Autor(en):
+    - Yuanchen Zhao (developer for the VoR framework)
+    - Heiko Schoon (edited monolithic code into this module)
+
+ Maintainer:
+    - tbd
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 from defusedxml import ElementTree as ET
 import sqlite3
 import json

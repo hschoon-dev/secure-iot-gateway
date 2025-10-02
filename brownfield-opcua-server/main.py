@@ -1,3 +1,25 @@
+"""
+------------------------------------------------------------
+ Modul:    brownfield-opcua-server/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    Implements the secured and unsecured OPC UA servers
+    needed for the brownfield test scenario. It is used
+    to test the secure-iot-gateway/cpc-partition.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Do not use this code in production. It is for testing
+    and demonstration purposes only.
+------------------------------------------------------------
+"""
+
 import asyncio
 import multiprocessing
 import logging

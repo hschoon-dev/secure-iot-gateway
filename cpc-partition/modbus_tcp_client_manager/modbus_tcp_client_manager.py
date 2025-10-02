@@ -1,3 +1,27 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/modbus_tcp_client_manager.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains Modbus TCP client manager implementation
+    for managing multiple Modbus TCP clients in the context of
+    the CPC partitions data aggregation.
+    It supports connections, periodic reading of node values,
+    and writing the values to shared memory for inter-process
+    communication.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import asyncio
 #import xml.etree.ElementTree as ET
 from defusedxml import ElementTree as ET

@@ -1,3 +1,25 @@
+"""
+------------------------------------------------------------
+ Modul:    central-mo-client/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    Implements an OPC UA client for the central M+O application.
+    It connects to the secured OPC UA server in the Secure IoT
+    Gateway and submits requests for testing purposes.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Do not use this code in production. It is for testing
+    and demonstration purposes only.
+------------------------------------------------------------
+"""
+
 from test_requests  import generate_request_parameters, create_request_arguments, add_users_to_user_manager
 from asyncua import Client, ua
 import asyncio

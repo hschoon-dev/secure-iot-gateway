@@ -1,3 +1,24 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/opcua_client.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains OPC UA client implementation for
+    communication with OPC UA servers in the context of
+    the CPC partition.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 from asyncua import Client, ua
 from asyncua.crypto.security_policies import (
     SecurityPolicyBasic128Rsa15,

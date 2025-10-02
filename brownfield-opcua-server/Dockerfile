@@ -10,4 +10,4 @@ RUN apt-get update && apt-get install -y tzdata
 ENV TZ=Europe/Berlin
 
 COPY . .
-CMD [ "python3", "-u", "./run_test_servers.py" ]
+CMD [ "python3", "-u", "./main.py" ]

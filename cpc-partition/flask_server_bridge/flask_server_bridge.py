@@ -1,3 +1,28 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/flask_server_bridge.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains a Flask server that acts as a bridge
+    between the VoR framework and the cpc-partition.
+
+ Autor(en):
+    - Yuanchen Zhao (basic implementation of the Flask server)
+    - Heiko Schoon (integration in Docker and modularization
+      of the code)
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development. Not all functions are fully implemented.
+    Flask server is for development and testing purposes only.
+    Security aspects (e.g., authentication, encryption) are not
+    fully addressed. Will be replaced by a gRPC server with mTLS.
+------------------------------------------------------------
+"""
+
 from flask import Flask, request, Response
 from defusedxml import ElementTree as ET
 import logging

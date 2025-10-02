@@ -1,10 +1,10 @@
 # Brownfield OPC UA Server
 
-This folder contains the implementation of OPC UA servers for brownfield devices. The main script to run the servers is `run_test_servers.py`.
+This folder contains the implementation of OPC UA servers for brownfield devices. The main script to run the servers is `main.py`.
 
 ## Contents
 
-### `run_test_servers.py`
+### `main.py`
 
 This script is responsible for starting both secured and unsecured OPC UA servers using multiprocessing. It imports the following functions:
 - `start_unsecured_server` from `opcua_unsecured_server`
@@ -36,8 +36,8 @@ The `Dockerfile` in this folder is used to create a Docker image for the brownfi
 
 ## Usage
 
-To run the OPC UA servers, execute the `run_test_servers.py` script:
+To run the OPC UA servers, execute the `main.py` script:
 
 ```sh
-python run_test_servers.py
+python main.py
 ```

@@ -1,3 +1,24 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/modbus_tcp_client.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains Modbus TCP client implementation for
+    communication with Modbus TCP servers in the context of
+    the CPC partition.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP.utils import test_bit, set_bit
 import logging

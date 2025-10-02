@@ -1,3 +1,27 @@
+"""
+------------------------------------------------------------
+ Modul:    central-mo-client/test_requests.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    Includes test requests for the Central MO Client
+    to test the request handling and role-based access.
+    Uses dictionaries with example users, parameters,
+    and modifications etc. to generate requests.
+
+ Autor(en):
+    - Heiko Schoon (Code and examples for the VoR1-testing)
+    - Yuanchen Zhao (Examples for the VoR2-6-testing)
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Do not use this code in production. It is for testing
+    and demonstration purposes only.
+------------------------------------------------------------
+"""
+
 import logging
 import datetime
 import random

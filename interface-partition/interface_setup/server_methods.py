@@ -1,3 +1,28 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/server_methods.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module sets up the OPC UA methods for request 
+    submission and user management. It includes methods
+    for submitting requests, adding/removing users, updating
+    user secrets, checking user existence, listing users,
+    setting user roles, and getting user details.
+    The POSIX message queue is used for inter-process
+    communication with the intermediate VoR partition.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import datetime
 import uuid
 import logging

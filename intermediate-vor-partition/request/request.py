@@ -1,3 +1,29 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/request.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The request class represents a request in the VoR
+    partition of the Secure IoT Gateway. It includes
+    attributes such as issuer ID, request ID, timestamp,
+    description, impact, parameters, modification, and
+    priority. The class also implements comparison methods
+    to allow sorting of requests based on priority and
+    timestamp.
+
+ Autor(en):
+    - Yuanchen Zhao (developer for the VoR framework)
+    - Heiko Schoon (edited monolithic code into this module)
+
+ Maintainer:
+    - tbd
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import uuid
 
 class Request:

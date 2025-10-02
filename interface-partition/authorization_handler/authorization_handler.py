@@ -1,3 +1,23 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/authorization_handler.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains an authorization handler using the
+    Casbin library to manage role-based access control (RBAC).
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import casbin
 import os
 import logging

@@ -1,3 +1,33 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This script serves as the main entry point for the
+    intermediate VoR partition of the Secure IoT Gateway.
+    It handles pulling requests from a SQLite database,
+    processing them through acceptance and mapping verification,
+    and providing feedback (not implemented yet) to the 
+    interface partition.
+    The communication with the cpc-partition is temporarily
+    handled via HTTP requests to a Flask server bridge.
+
+ Autor(en):
+    - Yuanchen Zhao (developer for the VoR framework)
+    - Heiko Schoon (edited monolithic code into this module
+      and prepared it for use in a containerized environment)
+
+ Maintainer:
+    - tbd
+
+ Hinweis:
+    Ongoing development. Flask server bridge is a temporary solution.
+    Future work will focus on implementing a more robust communication
+    mechanism between the partitions using gRPC with mTLS.
+------------------------------------------------------------
+"""
+
 import sqlite3
 import json
 from datetime import datetime

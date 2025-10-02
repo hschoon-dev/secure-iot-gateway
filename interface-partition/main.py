@@ -1,3 +1,30 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The main function initializes and runs the OPC UA server
+    for the interface partition of the Secure IoT Gateway.
+    It sets up logging, shared memory, semaphores, and message
+    queues for inter-process communication with other VoR
+    components. The server populates its address space based
+    on data from shared memory and periodically updates the
+    values to reflect changes in the underlying data sources.
+    The logging configuration supports both console and rotating
+    file logging with adjustable log levels.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import asyncio
 import logging
 from logging.handlers import RotatingFileHandler

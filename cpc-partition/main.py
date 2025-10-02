@@ -1,3 +1,27 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module is the main entry point for the CPC partition
+    of the Secure IoT Gateway. It initializes and starts the
+    OPC UA and Modbus TCP clients, sets up shared memory
+    and semaphores for inter-process communication, and runs
+    a Flask server to bridge (temporary) communication with 
+    other VoR components.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import asyncio
 import logging
 import sys

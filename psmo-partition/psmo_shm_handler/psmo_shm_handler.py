@@ -1,3 +1,29 @@
+"""
+------------------------------------------------------------
+ Modul:    psmo-partition/psmo_shm_handler.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This plant-specific M+O handler module manages
+    inter-process communication via shared memory and
+    semaphores. It includes threads to read data from
+    shared memory segments for OPC UA and Modbus TCP.
+
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - heiko.schoon@hs-emden-leer.de
+
+ Hinweis:
+    Ongoing development. This is a placeholder module
+    for future plant-specific M+O implementations. It 
+    currently only provides an API to read shared
+    memory segments for OPC UA and Modbus TCP data.
+------------------------------------------------------------
+"""
+
 from threading import Thread, Event
 import time
 import json

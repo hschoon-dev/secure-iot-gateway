@@ -1,3 +1,25 @@
+"""
+------------------------------------------------------------
+ Modul:    brownfield-opcua-server/opcua_secured_server.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    Includes a secured OPC UA server for testing of the
+    aggregation component of the Secure IoT Gateway.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Do not use this code in production. It is for testing
+    and demonstration purposes only.
+------------------------------------------------------------
+"""
+
+
 import asyncio
 import sys
 #import argparse

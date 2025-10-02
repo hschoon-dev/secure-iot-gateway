@@ -1,3 +1,28 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/user_manager.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The user manager module provides functionality for
+    managing user accounts, including creating, updating,
+    deleting, and retrieving user information. It securely
+    handles password hashing and verification using bcrypt
+    with unique salts for each user. The module interacts
+    with an SQLite database through a connection pool to
+    ensure thread-safe operations.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import sqlite3
 import os
 import bcrypt

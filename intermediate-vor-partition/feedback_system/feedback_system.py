@@ -1,3 +1,25 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/feedback_system.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The feedback system module provides a simple feedback
+    mechanism for the VoR partition to submit feedback
+    to the interface partition. This is a placeholder...
+
+ Autor(en):
+    - Yuanchen Zhao (developer for the VoR framework)
+    - Heiko Schoon (created the module skeleton)
+
+ Maintainer:
+    - tbd
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import logging
 
 _logger = logging.getLogger(__name__)
