@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+"""from flask import Flask, request, Response
 import xml.etree.ElementTree as ET
 
 class FlaskServerBridge:
@@ -50,4 +50,4 @@ if __name__ == '__main__':
 # TODO: run OPC UA client and Flask server simultaneously by using mutithreading
 # TODO: Inform the propagation frontend via the OPC UA client and Flask server that the next request can be pulled.
 # frontend => request acceptance-variables from flask-server => grab values from OPC UA Clients => send to frontend
-# frontend => send modifications => send to flask-server => implement in CPC => send feedback to frontend
+# frontend => send modifications => send to flask-server => implement in CPC => send feedback to frontend"""

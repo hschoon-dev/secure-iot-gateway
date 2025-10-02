@@ -11,7 +11,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 # local imports
-from flask_server_bridge.flask_server_bridge import FlaskServerBridge
+#from flask_server_bridge.flask_server_bridge import FlaskServerBridge
 
 path = os.path.dirname(os.path.abspath(__file__))
 acceptance_ruleset_path = os.path.join(path, "config/Acceptance_Ruleset.xml")
@@ -271,10 +271,10 @@ def send_back_results(affected_endpoints_dict):
         _logger.error(f"Failed to send back to Flask server: {response.status_code} - {response.text}")
 
 
-def run_bridge():
+"""def run_bridge():
     # Initialize the Flask server bridge
     bridge = FlaskServerBridge()
-    bridge.run(debug=False, threaded=True)  # Start the Flask server in a separate thread
+    bridge.run(debug=False, threaded=True)  # Start the Flask server in a separate thread"""
 
 def pull_request_and_process():
     time.sleep(2)

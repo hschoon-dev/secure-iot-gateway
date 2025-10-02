@@ -43,7 +43,6 @@ _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), s
 
 
 _mq = posix_ipc.MessageQueue("/interface_partition_mq", posix_ipc.O_CREX)
-# TODO: Admin123_secure_password_2025
 
 @uamethod 
 # TODO: Update method parameters according the project/NOA-standard requirements and yuanchens additional developments
@@ -95,7 +94,7 @@ def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_charact
 
     # 1) Authenticate the request issuer
     if not _user_manager.verify_credentials(username=issuer_id, password=credentials):
-        _logger.error(f"Authentication failed for {issuer_id}  with credentials {credentials}")
+        _logger.error(f"Authentication failed for {issuer_id}")
         return request_id, server_timestamp, f"Authentication failed for {issuer_id}"
 
     # 2) Authorize the request issuer
