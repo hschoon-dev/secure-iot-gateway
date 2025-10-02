@@ -1,3 +1,24 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/opcua_client.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains OPC UA client implementation for
+    communication with OPC UA servers in the context of
+    the CPC partition.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 from asyncua import Client, ua
 from asyncua.crypto.security_policies import (
     SecurityPolicyBasic128Rsa15,
@@ -35,7 +56,10 @@ class OpcUaClient:
         self.client.application_uri = client_app_uri
         self.nodes = nodes
         self.connected = False
-        self._retry_interval = 5
+        self._retry_interval = 10
+        self._retry_count = 0
+        self._max_retries = 6
+        self._stopped_reconnection_attempts = False
         self._last_connection_attempt_time = 0
 
     async def connect(self) -> None:
@@ -47,11 +71,12 @@ class OpcUaClient:
         if self.security_settings['username'] is not None and self.security_settings['password'] is not None:
             self.client.set_user(self.security_settings['username'])
             self.client.set_password(self.security_settings['password'])
+            _logger.warning(f"User authentication via username and password is not implemented for FreeOpcUa Servers.")
         if policy == 'SecurityPolicyNone':
             try:
                 await self.client.connect()
                 self.connected = True
-                _logger.warning(f"Connected to {self.server_app_uri}")
+                _logger.info(f"Connected to {self.server_app_uri}")
             except Exception as e:
                 self.connected = False
                 _logger.error(f"Error connecting to {self.server_app_uri}.")
@@ -84,6 +109,11 @@ class OpcUaClient:
         """
         Retry to connect to the OPC UA server with a minimum interval between attempts.
         """
+        if self._retry_count >= self._max_retries:
+            self._stopped_reconnection_attempts = True
+            _logger.error(f"Maximum retry attempts reached for {self.server_app_uri}. Giving up.")
+            return
+
         current_time = time.time()
         if current_time - self._last_connection_attempt_time < self._retry_interval:
             return  # Do not attempt to reconnect if the retry interval has not passed
@@ -96,7 +126,8 @@ class OpcUaClient:
             _logger.info(f"(Re)connection to {self.server_app_uri} successful.")
         except Exception as e:
             self.connected = False
-            _logger.error(f"Reconnection to {self.server_app_uri} failed.")
+            self._retry_count += 1
+            _logger.warning(f"Reconnection to {self.server_app_uri} failed.")
 
 
     async def read_value(self, node_id: ua.NodeId) -> tuple[str | None, Optional[any], str | None]:
@@ -110,6 +141,8 @@ class OpcUaClient:
             node = self.client.get_node(node_id)
             qualified_name = await node.read_browse_name()
             #display_name = await node.read_display_name()
+            if qualified_name is None:
+                _logger.error(f"Could not read browse name from {node_id} on {self.server_app_uri}.")
                         
             browse_name = f"{qualified_name.NamespaceIndex}:{qualified_name.Name}"
             value = await node.get_value()

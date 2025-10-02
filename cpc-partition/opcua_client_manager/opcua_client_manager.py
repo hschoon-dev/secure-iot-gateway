@@ -1,3 +1,26 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/opcua_client_manager.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains an OPC UA client manager that handles
+    multiple OPC UA clients based on an XML configuration file.
+    It supports secure connections, periodic reading of node values,
+    and writing the values to shared memory for inter-process
+    communication.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import asyncio
 #import xml.etree.ElementTree as ET
 from defusedxml import ElementTree as ET
@@ -107,7 +130,7 @@ class OpcUaClientManager:
         while True:
             opcua_values = {}
             for client in self.clients:
-                if not client.connected:
+                if not client.connected and not client._stopped_reconnection_attempts:
                     await client.retry_connection()
                     if not client.connected:
                         opcua_values[f"OPC UA Connections:{client.alias}"] = {
@@ -115,7 +138,10 @@ class OpcUaClientManager:
                                                      "varType": "Boolean",
                                                      "description": "Connection status to the OPC UA server"
                                                  }
-                else:
+                if client._stopped_reconnection_attempts:
+                    self.clients.remove(client)
+                    _logger.error(f"Removing OPC UA client for {client.server_app_uri} from the client list.")
+                if client.connected:
                     opcua_values[f"OPC UA Connections:{client.alias}"] = {
                                                     "value": client.connected,
                                                     "varType": "Boolean",

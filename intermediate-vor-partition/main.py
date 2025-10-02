@@ -1,3 +1,31 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The main function initializes and runs the Intermediate VoR
+    partition of the Secure IoT Gateway. It sets up logging,
+    shared memory, semaphores, and message queues for inter-process
+    communication with other VoR components. The partition listens
+    for incoming requests via a message queue, verifies and maps
+    them according to predefined rules, and provides feedback
+    to the interface partition. The logging configuration supports
+    both console and rotating file logging with adjustable log levels.
+
+ Autor(en):
+    - Yuanchen Zhao (developer for the VoR framework)
+    - Heiko Schoon (edited monolithic code into this module,
+      added logging, message queue handling, and controlled shutdown)
+
+ Maintainer:
+    - tbd
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import posix_ipc
 import logging
 from logging.handlers import RotatingFileHandler

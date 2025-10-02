@@ -1,3 +1,27 @@
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/cpc_clients_for_vor.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains client implementations for the
+    communication with the CPC in the context of the VoR 
+    framework.
+    It includes functions to interact with both OPC UA
+    and Modbus servers, allowing for reading and writing
+    of variables as required by the VoR processes.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development. Not all functions are fully implemented.
+------------------------------------------------------------
+"""
+
 from asyncua import Client
 from asyncua import ua
 import asyncio

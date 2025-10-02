@@ -1,3 +1,28 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/server_methods.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module sets up the OPC UA methods for request 
+    submission and user management. It includes methods
+    for submitting requests, adding/removing users, updating
+    user secrets, checking user existence, listing users,
+    setting user roles, and getting user details.
+    The POSIX message queue is used for inter-process
+    communication with the intermediate VoR partition.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import datetime
 import uuid
 import logging
@@ -21,6 +46,14 @@ credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
 _logger.error(f"Credentials DB path: {credentials_db_path}")
 _user_manager = UserManager(credentials_db_path, max_connections=10)
 
+
+"""try:
+    if not os.getenv("ADMIN_PASSWORD"):
+        raise ValueError("ADMIN_PASSWORD environment variable is not set.")
+    _create_init_admin = _user_manager.create_user(username="admin", password=os.getenv("ADMIN_PASSWORD"))
+except Exception as e:
+    _logger.error(f"Error creating initial Admin user: {e}")"""
+
 from pathlib import Path
 path = Path(__file__).resolve().parent
 parent_path = path.parent
@@ -35,7 +68,6 @@ _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), s
 
 
 _mq = posix_ipc.MessageQueue("/interface_partition_mq", posix_ipc.O_CREX)
-# TODO: Admin123_secure_password_2025
 
 @uamethod 
 # TODO: Update method parameters according the project/NOA-standard requirements and yuanchens additional developments
@@ -87,7 +119,7 @@ def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_charact
 
     # 1) Authenticate the request issuer
     if not _user_manager.verify_credentials(username=issuer_id, password=credentials):
-        _logger.error(f"Authentication failed for {issuer_id}  with credentials {credentials}")
+        _logger.error(f"Authentication failed for {issuer_id}")
         return request_id, server_timestamp, f"Authentication failed for {issuer_id}"
 
     # 2) Authorize the request issuer

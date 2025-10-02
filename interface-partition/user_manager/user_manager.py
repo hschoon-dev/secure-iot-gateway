@@ -1,3 +1,28 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/user_manager.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The user manager module provides functionality for
+    managing user accounts, including creating, updating,
+    deleting, and retrieving user information. It securely
+    handles password hashing and verification using bcrypt
+    with unique salts for each user. The module interacts
+    with an SQLite database through a connection pool to
+    ensure thread-safe operations.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import sqlite3
 import os
 import bcrypt
@@ -18,7 +43,46 @@ class UserManager():
     def __init__(self, db_file_path: str, max_connections: int = 5):
         self.db_path: str = db_file_path
         self.connection_pool: SQLiteConnectionPool = SQLiteConnectionPool(db_file_path, max_connections)
-        self.db: DatabaseConnector = DatabaseConnector(db_file_path, connection_pool=self.connection_pool) 
+        self.db: DatabaseConnector = DatabaseConnector(db_file_path, connection_pool=self.connection_pool)
+        self._bootstrap_admin_or_die()
+
+    def _read_admin_password_from_env(self) -> str | None:
+        try:
+            _admin_password = os.getenv("ADMIN_PASSWORD")
+            return _admin_password
+        except Exception as e:
+            _logger.error(f"Error reading ADMIN_PASSWORD from environment: {e}")
+
+    def _bootstrap_admin_or_die(self) -> None:
+        """
+        Ensure an 'admin' user exists. If missing and no password is provided, abort startup.
+        Idempotent: never overwrites existing admin credentials.
+        """
+        try:
+            exists, record = self.retrieve_user("admin")
+        except Exception as e:
+            _logger.critical("User store not accessible during bootstrap: %s", e, exc_info=True)
+            raise SystemExit(2)
+
+        if exists and record:
+            _logger.info("Admin user already present; skipping bootstrap.")
+            return
+
+        # Missing admin: require a password or abort
+        admin_pw = self._read_admin_password_from_env()
+        if not admin_pw:
+            _logger.critical(
+                "No admin user exists and ADMIN_PASSWORD/ADMIN_PASSWORD_FILE not provided. "
+                "Refusing to start in an insecure state."
+            )
+            raise SystemExit(2)
+
+        try:
+            self.create_user(username="admin", password=admin_pw)
+            _logger.info("Initial admin user created.")
+        except Exception as e:
+            _logger.critical("Failed to create initial admin user: %s", e, exc_info=True)
+            raise SystemExit(2)
 
     def create_user(self, username: str, password: str) -> bool:
         """

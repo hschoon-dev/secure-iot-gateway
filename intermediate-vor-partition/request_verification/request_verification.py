@@ -1,4 +1,30 @@
-#import xml.etree.ElementTree as ET
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/request_verification.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The Rule and RuleSet classes provide a framework for defining
+    and managing verification rules for requests in the VoR
+    partition of the Secure IoT Gateway. These classes allow
+    for the creation of individual rules, grouping them into
+    rule sets, and evaluating requests against these rules to
+    determine their validity. The implementation includes
+    methods for adding, removing, and evaluating rules, as well
+    as handling rule priorities and conditions.
+
+ Autor(en):
+    - Yuanchen Zhao (developer for the VoR framework)
+    - Heiko Schoon (edited monolithic code into this module)
+
+ Maintainer:
+    - tbd
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 from defusedxml import ElementTree as ET
 from datetime import datetime
 import logging

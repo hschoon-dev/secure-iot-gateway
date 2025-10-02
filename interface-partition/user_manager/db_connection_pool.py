@@ -1,3 +1,26 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/db_connection_pool.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    The connection pool module provides a thread-safe
+    connection pool for SQLite database connections.
+    It allows multiple threads to efficiently share
+    a limited number of database connections, ensuring
+    that each thread gets its own connection when needed.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import sqlite3
 import queue
 import threading

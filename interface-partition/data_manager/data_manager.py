@@ -1,3 +1,27 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/data_manager.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains a data manager that handles the
+    interaction between an OPC UA server and shared memory.
+    It creates OPC UA objects and variables based on the
+    contents of shared memory and updates them as needed.
+    It supports both OPC UA and Modbus TCP shared memory as
+    well as data type conversions.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import asyncio
 import logging
 import json

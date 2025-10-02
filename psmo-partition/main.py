@@ -1,3 +1,37 @@
+"""
+------------------------------------------------------------
+ Modul:    psmo-partition/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This script serves as the main entry point for the
+    plant-specific M+O partition of the Secure IoT Gateway.
+    It initializes threads to read data from shared memory
+    segments for OPC UA and Modbus TCP, using semaphores
+    for synchronization. The retrieved data is placed into
+    queues for further processing by plant-specific M+O
+    implementations.
+    This is a placeholder module for future plant-specific
+    M+O implementations. It currently only provides an API
+    to read shared memory segments for OPC UA and Modbus TCP
+    data. Future processing can be added within the main
+    loop where data is retrieved from the queues.
+
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - heiko.schoon@hs-emden-leer.de
+
+ Hinweis:
+    Ongoing development. This is a placeholder module
+    for future plant-specific M+O implementations. It 
+    currently only provides an API to read shared
+    memory segments for OPC UA and Modbus TCP data.
+------------------------------------------------------------
+"""
+
 import logging
 import queue
 import time

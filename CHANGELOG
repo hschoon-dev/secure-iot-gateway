@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ---
+## [Security & Maintenance Hardening] - 2025-10-02
+- Updated project LICENSE.
+- Adjusted Dockerfile to ensure logging uses the Europe/Berlin timezone.
+- Performed test run (iO) to validate changes.
+- Added baseline .env file for local configuration.
+- Removed accidentally checked-in user/password from the offline database to prevent offline hash cracking.
+- Mitigated XML-related risks by switching to defusedxml and deleting sensitive log outputs.
+- Cleaned up code and improved documentation; marked/attributed authors in individual files.
+
+---
+
+## [Integration of VoR-functions] - 2025-09-30
+- included issuer_characteristics as optional component of a VoR Request.
+- integrated Flask server communication within cpc-partition (dev only!)
+
+---
 
 ## [OMAG Demonstrator Integration] - 2025-09-03
 - Updated documentation and README files to reflect recent changes and improvements.

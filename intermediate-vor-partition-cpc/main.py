@@ -1,3 +1,33 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This script serves as the main entry point for the
+    intermediate VoR partition of the Secure IoT Gateway.
+    It handles pulling requests from a SQLite database,
+    processing them through acceptance and mapping verification,
+    and providing feedback (not implemented yet) to the 
+    interface partition.
+    The communication with the cpc-partition is temporarily
+    handled via HTTP requests to a Flask server bridge.
+
+ Autor(en):
+    - Yuanchen Zhao (developer for the VoR framework)
+    - Heiko Schoon (edited monolithic code into this module
+      and prepared it for use in a containerized environment)
+
+ Maintainer:
+    - tbd
+
+ Hinweis:
+    Ongoing development. Flask server bridge is a temporary solution.
+    Future work will focus on implementing a more robust communication
+    mechanism between the partitions using gRPC with mTLS.
+------------------------------------------------------------
+"""
+
 import sqlite3
 import json
 from datetime import datetime
@@ -11,7 +41,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 # local imports
-from flask_server_bridge.flask_server_bridge import FlaskServerBridge
+#from flask_server_bridge.flask_server_bridge import FlaskServerBridge
 
 path = os.path.dirname(os.path.abspath(__file__))
 acceptance_ruleset_path = os.path.join(path, "config/Acceptance_Ruleset.xml")
@@ -271,10 +301,10 @@ def send_back_results(affected_endpoints_dict):
         _logger.error(f"Failed to send back to Flask server: {response.status_code} - {response.text}")
 
 
-def run_bridge():
+"""def run_bridge():
     # Initialize the Flask server bridge
     bridge = FlaskServerBridge()
-    bridge.run(debug=False, threaded=True)  # Start the Flask server in a separate thread
+    bridge.run(debug=False, threaded=True)  # Start the Flask server in a separate thread"""
 
 def pull_request_and_process():
     time.sleep(2)

@@ -49,7 +49,7 @@ g2, Motor, MachineryGroup
 g2, FumeExtractionSystem, SafetyGroup
 
 // Define user-role assignments (g): user inheritance
-g, john, Admin
+g, admin, Admin
 g, sarah, PlantOperator
 g, mike, MaintenancePersonnel
 g, david, PlantOperator

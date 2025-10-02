@@ -1,3 +1,25 @@
+"""
+------------------------------------------------------------
+ Modul:    central-mo-client/main.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    Implements an OPC UA client for the central M+O application.
+    It connects to the secured OPC UA server in the Secure IoT
+    Gateway and submits requests for testing purposes.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Do not use this code in production. It is for testing
+    and demonstration purposes only.
+------------------------------------------------------------
+"""
+
 from test_requests  import generate_request_parameters, create_request_arguments, add_users_to_user_manager
 from asyncua import Client, ua
 import asyncio
@@ -50,7 +72,7 @@ def setup_logging(
 
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.WARNING)
+_logger = setup_logging(logging.INFO)
 
 async def submit_request(client: Client, in_args, params):
     """Submit the request to the server and log results"""
@@ -194,6 +216,7 @@ async def is_client_connected(client):
 
 async def main():
     """Main function to execute request submissions in a loop"""
+    await asyncio.sleep(5)  # Initial delay to ensure server is up
     client = None
     try:
         client = await setup_client()

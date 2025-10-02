@@ -1,3 +1,27 @@
+"""
+------------------------------------------------------------
+ Modul:    interface-partition/interface_setup.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module contains the interface setup for the Interface
+    Partition. It includes the DataManager class that handles
+    the interaction between an OPC UA server and shared memory.
+    It creates the OPC UA methods for request submission and
+    user management, and sets up the OPC UA server with security
+    policies and certificate validation.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 import logging
 import sys
 
