@@ -1,6 +1,7 @@
 **Docker implementation of the Secure IoT Gateway**
 =======================
 _________
+![dependabot](https://img.shields.io/badge/dependabot-active-brightgreen?style=flat-square&logo=dependabot)
 A guide for developers is available in [DEV.md](./DEV.md), with setup steps and configuration advice for different labs and equipment. Please refer to it for integration and development instructions.
 _________
 A Docker-based IoT gateway setup for OPC UA and ModbusTCP communication.

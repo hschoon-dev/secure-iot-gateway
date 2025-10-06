@@ -23,7 +23,7 @@
 ------------------------------------------------------------
 """
 
-from flask import Flask, request, Response
+from flask import Flask, app, request, Response, jsonify
 from defusedxml import ElementTree as ET
 import logging
 
@@ -38,71 +38,166 @@ class FlaskServerBridge:
 
         @self.app.route('/read_values_xml', methods=['POST'])
         def read_values_xml():
-            # BUG: Not implemented: Parse the XML to identify requested variables and their sources (OPC UA or Modbus)
-            call_this = vor_5_placeholder()
-            _logger.error(f"Called placeholder function: {call_this}")  
+            # ------------------------------------------------------------
+            # 1) Request-XML parsen → Variablenliste bauen
+            # ------------------------------------------------------------
             try:
-                # Decode the incoming XML data
-                xml_data = request.data.decode('utf-8')  
-                root = ET.fromstring(xml_data)   
+                xml_data = request.data.decode('utf-8', errors='replace')
+                root = ET.fromstring(xml_data)  # <ruleset>…</ruleset>
 
                 list_of_vars = []
-                parent = "0:System1" # BUG Should be configurable
-                for tag, key in [
+
+                # feste Variablen nach deiner Logik/Benennung
+                # Mapping: XML → OPC-UA-Variablenname
+                fixed_map = [
+                    # (<XPath auf current_value>, <OPC-UA-Var>)
                     ("key_personnel_present/current_value", "KeyPersonnelPresent"),
-                    (".//technical_system[@id='System_1']/system_available/current_value", "SystemAvailable"),
-                    (".//technical_system[@id='System_1']/operation_mode/current_value", "OperationMode"),
-                    (".//technical_system[@id='System_1']/warning/current_value", "Warning"),
-                ]:
-                    _logger.warning(f"Processing tag: {tag} with key: {key}")
-                    list_of_vars.append(key)
-                    #elem = root.find(tag)
-                    #_logger.warning(f"Found element: {elem} for tag: {tag}")
-                    #if elem is not None:
-                    #    elem.text = str("not implemented")  # BUG: Here, you would implement the logic to fetch the actual value from OPC UA or Modbus
-                
-                _logger.warning(f"List of vars to fetch: {list_of_vars}")
+                    ("technical_system/availability/current_value", "SystemAvailable"),
+                    ("technical_system/operation_mode/current_value", "OperationMode"),
+                    ("technical_system/warning/current_value", "Warning"),
+                ]
+                for xpath, var in fixed_map:
+                    elem = root.find(xpath)
+                    if elem is not None:
+                        list_of_vars.append(var)
 
-                dict_of_fetched_values = read_list_of_vars_from_opcua(placeholder_opcua_client(), list_of_vars) # BUG: Not completed
-                # TODO: continue programming processing...
+                # dynamische Endpunkte
+                affected = root.find("affected_endpoints")
+                if affected is not None:
+                    for ae in affected.findall("affected_endpoint"):
+                        name_elem = ae.find("name")
+                        if name_elem is not None and name_elem.text:
+                            var_name = name_elem.text.strip()
+                            if var_name:
+                                list_of_vars.append(var_name)
 
-                affected_endpoints_elem = root.find('affected_endpoints')
-                if affected_endpoints_elem is not None:
-                    for affected_endpoint in affected_endpoints_elem.findall('affected_endpoint'):
-                        name_elem = affected_endpoint.find('name')
-                        value_elem = affected_endpoint.find('value')
-                        if name_elem is not None and value_elem is not None:
-                            var_name = name_elem.text
-                            # BUG: Here, you would implement the logic to fetch the actual value from OPC UA or Modbus
-                            print(f"Updated {var_name}: value = {value_elem.text}")
+                # deduplizieren, Reihenfolge egal
+                list_of_vars = sorted(set(list_of_vars))
+                _logger.debug(f"Vars to fetch: {list_of_vars}")
 
-                # Convert the modified tree back to a string
-                filled_xml = ET.tostring(root, encoding='utf-8', method='xml')
+                if not list_of_vars:
+                    return Response("<error>no variables requested</error>",
+                                    mimetype="application/xml", status=400)
 
-                # Return the updated XML
-                _logger.info(f"Processed XML and returning response: {filled_xml.decode('utf-8')}")
-                return Response(filled_xml, mimetype='application/xml')
+            except ET.ParseError as e:
+                _logger.error(f"XML parse error: {e}")
+                return Response("<error>invalid xml</error>", mimetype="application/xml", status=400)
+            except Exception as e:
+                _logger.exception(f"Error parsing XML request: {e}")
+                return Response("<error>internal parse error</error>", mimetype="application/xml", status=500)
+
+            # ------------------------------------------------------------
+            # 2) Werte EINMALIG von OPC UA holen (hier: nur OPC UA; Modbus optional)
+            #    – mit einfachem Timeout-Schutz
+            # ------------------------------------------------------------
+            DUMMY = {
+                # feste Variablen
+                "KeyPersonnelPresent": "true",          # aus OPC UA Bool oder string? capitalization? BUG: YYeesssssss!
+                "SystemAvailable": "available",       # String/Enum
+                "OperationMode": "idle",              # String/Enum
+                "Warning": "none",                    # String/Enum
+
+                # affected_endpoints (aus <name>)
+                "Mixer_SP_Pump_A_Power": 8.0,           # int/float je nach Knoten-Typ
+                "Pump_A_Power_Pump_A_Power": 8.0,
+                "Pump_B_Power_Pump_A_Power": 8.0,
+                "Heater_Power_Pump_A_Power": 8.0,
+            }
+            try:
+                #client = placeholder_opcua_client()
+
+                #async def _fetch():
+                #    return await read_list_of_vars_from_opcua(client, list_of_vars)
+
+                dict_of_fetched_values = DUMMY
+                #try: #BUG: Flask does not support asyncio natively, so this might not work as intended.
+                #    dict_of_fetched_values = await asyncio.wait_for(_fetch(), timeout=3.0)
+                #except asyncio.TimeoutError:
+                #    _logger.error("OPC UA fetch timed out")
+                #    dict_of_fetched_values = {}
+            except Exception as e:
+                _logger.exception(f"Error fetching values: {e}")
+                dict_of_fetched_values = {}
+
+            if not dict_of_fetched_values:
+                # Wir antworten konsistent mit N/A, statt komplett abzubrechen
+                _logger.warning("No values fetched; returning N/A placeholders.")
+
+            # ------------------------------------------------------------
+            # 3) Antwort-XML befüllen (eingehendes XML wird überschrieben)
+            #    - feste Felder
+            #    - affected_endpoints
+            #    Fehlende Werte → "N/A"
+            # ------------------------------------------------------------
+            try:
+                # feste Variablen füllen
+                fill_pairs = [
+                    ("key_personnel_present/current_value", "KeyPersonnelPresent"),
+                    ("technical_system/availability/current_value", "SystemAvailable"),
+                    ("technical_system/operation_mode/current_value", "OperationMode"),
+                    ("technical_system/warning/current_value", "Warning"),
+                ]
+                for xpath, var in fill_pairs:
+                    elem = root.find(xpath)
+                    if elem is not None:
+                        val = dict_of_fetched_values.get(var, "N/A")
+                        elem.text = str(val)
+
+                # dynamische Endpunkte füllen
+                affected = root.find("affected_endpoints")
+                if affected is not None:
+                    for ae in affected.findall("affected_endpoint"):
+                        name_elem = ae.find("name")
+                        value_elem = ae.find("value")
+                        if name_elem is None or value_elem is None:
+                            continue
+                        var_name = (name_elem.text or "").strip()
+                        if not var_name:
+                            continue
+                        value_elem.text = str(dict_of_fetched_values.get(var_name, "N/A"))
+
+                filled_xml_bytes = ET.tostring(root, encoding='utf-8', method='xml')
 
             except Exception as e:
-                _logger.error(f"Error processing XML: {e}")
-                return Response(f"<error>{str(e)}</error>", mimetype='application/xml')
+                _logger.exception(f"Error filling XML: {e}")
+                return Response("<error>failed to build response</error>",
+                                mimetype='application/xml', status=500)
+
+            # ------------------------------------------------------------
+            # 4) Response zurückgeben
+            # ------------------------------------------------------------
+            return Response(filled_xml_bytes, mimetype='application/xml', status=200)
 
 
         @self.app.route('/update_endpoints', methods=['POST'])
         def update_endpoints():
+            # ------------------------------------------------------------
+            # 1) Request-JSON parsen → Variablenliste bauen # BUG: Wieso jetzt plötzlich JSON???
+            # ------------------------------------------------------------
             # BUG: Not implemented: Write the value back to the appropriate OPC UA or Modbus endpoint
-            instead_call_this = vor_6_placeholder()
-            _logger.error(f"Called placeholder function: {instead_call_this}")
+            #instead_call_this = await vor_6_placeholder()
+            #_logger.error(f"Called placeholder function: {instead_call_this}")
             data = request.get_json(force=True)
-            results = {}
+            _logger.error(f"update_endpoints called with data: {data}")
 
-            for var_name, value in data.items(): # BUG: check data format
-                try:
-                    results[var_name] = {"status": "ok", "value": value}
-                except Exception as e:
-                    results[var_name] = {"status": "error", "error": str(e)}
-            return Response(f"Update results: {results}", mimetype='application/json')
-            #return jsonify({"status": "done", "results": results}) # BUG: why use this instead of Response?
+            # ------------------------------------------------------------
+            # 2) Werte EINMALIG schreiben
+            # ------------------------------------------------------------
+            # BUG: Here the endpoints for OPC UA or Modbus should be determined from data
+            opc_ua_endpoints = []
+            modbus_endpoints = []
+            # ... 
+            results = {}
+            # results = _write_values_to_opcua_and_modbus(opc_ua_endpoints, modbus_endpoints)
+
+
+            # ------------------------------------------------------------
+            # 4) Response zurückgeben
+            # ------------------------------------------------------------
+            # BUG: For now, we just echo back the received values with a dummy "ok" status
+            results = {var_name: {"status": "ok", "value": value} for var_name, value in data.items()}
+            return jsonify(results), 200
+
             
     def run(self, debug=False, threaded=True):
         self.app.run(debug=debug, host="0.0.0.0", port=5000, threaded=threaded)
