@@ -1,2 +1,2 @@
-asyncua==1.1.5
+asyncua==1.1.8
 posix-ipc
