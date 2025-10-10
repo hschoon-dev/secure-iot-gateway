@@ -199,3 +199,9 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+---
+
+Third-Party Licenses
+This project includes code from:
+- Yuanchen Zhao's project (MIT). See LICENSES/MIT-License-yuanchen-zhao.txt.
