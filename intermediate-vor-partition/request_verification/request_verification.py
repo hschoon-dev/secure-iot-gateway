@@ -33,6 +33,50 @@ import logging
 from request import Request
 from feedback_system import FeedbackSystem
 
+import logging, re
+from typing import Any
+
+# 1) What fields are allowed to be referenced from rules?
+ALLOWED_FIELDS = {
+    "id",
+    "issuer_id",
+    "issuer_characteristics",
+    "request_id",
+    "timestamp",
+    "description",
+    "impact",
+    "parameters",
+    "modification",
+    "priority",
+    "Request_verified_status",
+}
+
+# 2) Regexes for safety checks
+# allow: identifiers, numbers, strings, True/False/None, (), whitespace,
+# and these operators/keywords: and or not == != < <= > >= in not in
+_ALLOWED_TOKEN_STREAM = re.compile(
+    r"""^
+        (?:
+            \s+ |
+            \( | \) |
+            (?:and|or|not|in|True|False|None)\b |
+            (?:==|!=|<=|>=|<|>) |
+            (?:[A-Za-z_][A-Za-z0-9_]*) |
+            (?:\d+(?:\.\d+)?) |
+            (?:'[^'\\]*(?:\\.[^'\\]*)*' | "[^"\\]*(?:\\.[^"\\]*)*")
+        )+$
+    """,
+    re.VERBOSE,
+)
+
+# function-call detector: only 'bool(' is permitted
+_FUNC_CALL = re.compile(r'(?<!\w)([A-Za-z_][A-Za-z0-9_]*)\s*\(')
+
+# any obviously-dangerous characters: dot, braces, brackets, dunders, colon, backtick, semicolon
+_BAD_CHARS = re.compile(r'[.\[\]{}\\:`;]')
+
+_REQUEST_FIELD = re.compile(r'\brequest\.(\w+)\b')
+
 _logger = logging.getLogger(__name__)
 
 class Rule:
@@ -44,15 +88,88 @@ class Rule:
     def validate(self, request):
         try:
             _logger.debug(f"Evaluating rule {self.rule_id} for request {request.id}: {self.condition}")
-            return eval(self.condition, {"request": request})
+            #return eval(self.condition, {"request": request})
+            return self.validate_rule(self.condition, request)
         except Exception:
             _logger.error(f"Error evaluating rule {self.rule_id} for request {request.id}")
+            return False
+        
+    def _primitive(self, value: Any) -> Any:
+        """Project request attributes to harmless primitives."""
+        # Keep strings/bools/ints/floats; lists/tuples/sets become tuples; dicts become frozenset of items
+        # You can tailor this for your fields.
+        if value is None or isinstance(value, (str, bool, int, float)):
+            return value
+        if isinstance(value, (list, tuple, set)):
+            return tuple(value)
+        if isinstance(value, dict):
+            return tuple(sorted(value.items()))
+        # Fallback: string representation (prevents objects leaking through)
+        return str(value)
+
+    def _rewrite_and_validate(self, expr: str) -> tuple[str, dict]:
+        """
+        - Validate that only allowed request.* fields are referenced.
+        - Replace request.<field> with a safe local identifier <field>.
+        - Enforce token whitelist and only allow bool() calls.
+        Returns: (rewritten_expr, locals_dict)
+        """
+        locals_map: dict[str, Any] = {}
+
+        # 1) Replace request.<field> with <field> (and collect used fields)
+        def repl(m: re.Match) -> str:
+            fld = m.group(1)
+            if fld not in ALLOWED_FIELDS or fld.startswith("_"):
+                raise ValueError(f"Disallowed field: {fld}")
+            return fld
+
+        rewritten = _REQUEST_FIELD.sub(repl, expr)
+
+        # 2) Hard rejects: no dots/brackets/braces/dunders/colon/backtick/semicolon remain
+        if _BAD_CHARS.search(rewritten) or "__" in rewritten:
+            raise ValueError("Disallowed characters/tokens present")
+
+        # 3) Only allow bool(...) as a function call
+        for fname in _FUNC_CALL.findall(rewritten):
+            if fname != "bool":
+                raise ValueError(f"Only bool(...) calls are allowed, found: {fname}")
+
+        # 4) Token stream whitelist
+        if not _ALLOWED_TOKEN_STREAM.match(rewritten):
+            raise ValueError("Expression contains disallowed tokens")
+
+        # 5) Ensure all bare identifiers are either allowed field names or allowed keywords/bool
+        keywords = {"and", "or", "not", "in", "True", "False", "None", "bool"}
+        ids = set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", rewritten))
+        unknown = ids - (ALLOWED_FIELDS | keywords)
+        if unknown:
+            raise ValueError(f"Unknown identifiers: {', '.join(sorted(unknown))}")
+
+        return rewritten, locals_map
+
+    def validate_rule(self, condition: str, request_obj) -> bool:
+        try:
+            # Build locals for only the fields that appear (after rewrite we know names)
+            rewritten, _ = self._rewrite_and_validate(condition)
+
+            # Collect field values from request, projected to primitives
+            # (We scan rewritten to decide which fields are used)
+            used_fields = set(re.findall(r"\b(" + "|".join(map(re.escape, ALLOWED_FIELDS)) + r")\b", rewritten))
+            locals_dict = {name: self._primitive(getattr(request_obj, name, None)) for name in used_fields}
+
+            # Safe eval: no builtins; expose only our locals and a safe bool
+            safe_globals = {"__builtins__": {}}
+            safe_locals = {"bool": bool, **locals_dict}
+
+            return bool(eval(rewritten, safe_globals, safe_locals))
+        except Exception as e:
+            _logger.warning("Rejected/failed condition %r: %s", condition, e)
             return False
 
 # Template of Request Verification Rule Sets
 class RuleSet:
     def __init__(self, xml_file):
-        self.rules = []
+        self.rules: list[Rule] = []
         self.load_rules_from_xml(xml_file)
 
     def load_rules_from_xml(self, xml_file):

@@ -86,7 +86,7 @@ class OPCUA_Thread(Thread):
                     else:
                         _logger.info(f"Shared Memory Content of {self._shm_name}: {json.dumps(opcua_values, indent=4)}")
 
-                    response = hashlib.md5(opcua_values_json.encode()).hexdigest()
+                    response = hashlib.sha256(opcua_values_json.encode()).hexdigest()
                     shm.buf[:shm_size] = b'\x00' * shm_size  # Clear the shared memory buffer
                     shm.buf[:len(response)] = response.encode('utf-8')
                 semaphore.release()
@@ -145,7 +145,7 @@ class ModbusTCP_Thread(Thread):
                     else:
                         _logger.info(f"Shared Memory Content of {self._shm_name}: {json.dumps(modbus_values, indent=4)}")
 
-                    response = hashlib.md5(modbus_values_json.encode()).hexdigest()
+                    response = hashlib.sha256(modbus_values_json.encode()).hexdigest()
                     shm.buf[:shm_size] = b'\x00' * shm_size  # Clear the shared memory buffer
                     shm.buf[:len(response)] = response.encode('utf-8')
                 semaphore.release()

@@ -36,13 +36,14 @@ _logger = logging.getLogger(__name__)
 
 # tbc
 
-def vor_5_placeholder():
-    sleep(1)
+async def vor_5_placeholder():
+    await asyncio.sleep(1)
     return f"Placeholder 'VoR_5 call for CPC state' result"
 
-def placeholder_opcua_client():
+async def placeholder_opcua_client():
     # BUG: Not completed
     # It has to be a secured conn because its the secured brownflied server :(
+    # and what if the ressources are distributed over several servers? Modbus and OPC UA?
     return
 
 async def read_list_of_vars_from_opcua(client: Client, var_names: list[str]) -> dict[str, any]: # BUG: Not completed
@@ -86,6 +87,6 @@ async def read_list_of_vars_from_modbus(client: ModbusClient, var_names, endpoin
         _logger.error(f"Error reading from Modbus: {e}")
     return results
 
-def vor_6_placeholder():
-    sleep(1)
+async def vor_6_placeholder():
+    await asyncio.sleep(1)
     return f"Placeholder 'VoR_6 call for implement CPC change' result"

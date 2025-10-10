@@ -160,7 +160,7 @@ class DataManager:
                                 _logger.debug(f"Shared Memory Content of {self._opcua_shm}: {json.dumps(opcua_values, indent=4)}")
                             except json.JSONDecodeError as e:
                                 _logger.error(f"Error decoding JSON from shared memory: {e}")
-                            opcua_shm_response = hashlib.md5(opcua_values_json.encode()).hexdigest()
+                            opcua_shm_response = hashlib.sha256(opcua_values_json.encode()).hexdigest()
                             opcua_shm.buf[:opcua_shm_size] = b'\x00' * opcua_shm_size  # Clear the shared memory buffer
                             opcua_shm.buf[:len(opcua_shm_response)] = opcua_shm_response.encode('utf-8')
                         opcua_semaphore.release()
@@ -250,7 +250,7 @@ class DataManager:
                                 _logger.debug(f"Shared Memory Content of {self._modbus_shm}: {json.dumps(modbus_values, indent=4)}")
                             except json.JSONDecodeError as e:
                                 _logger.error(f"Error decoding JSON from shared memory: {e}")
-                            modbus_shm_response = hashlib.md5(modbus_values_json.encode()).hexdigest()
+                            modbus_shm_response = hashlib.sha256(modbus_values_json.encode()).hexdigest()
                             modbus_shm.buf[:modbus_shm_size] = b'\x00' * modbus_shm_size  # Clear the shared memory buffer
                             modbus_shm.buf[:len(modbus_shm_response)] = modbus_shm_response.encode('utf-8')
                         modbus_semaphore.release()

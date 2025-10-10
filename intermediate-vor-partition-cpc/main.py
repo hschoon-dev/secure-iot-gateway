@@ -290,13 +290,24 @@ def mapping_verification(request, xml_data):
     return affected_endpoint_dict
 
 def send_back_results(affected_endpoints_dict):
-    url = "http://172.20.128.4:5000/update_endpoints"
-
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(url, json=affected_endpoints_dict, headers=headers)
+    try:
+        _logger.info(f"Sending back to Flask server: {affected_endpoints_dict}")
+        url = "http://172.20.128.4:5000/update_endpoints"
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(url, json=affected_endpoints_dict, headers=headers, timeout=5)
+    except requests.RequestException as e:
+        _logger.error(f"Error sending back to Flask server: {e}")
+        return
+    except Exception as e:
+        _logger.error(f"Unexpected error: {e}")
+        return
 
     if response.ok:
-        _logger.info(f"Sent back to Flask server: {response.json()}")
+        # Versuch, JSON zu parsen – wenn nicht möglich, Text loggen
+        try:
+            _logger.info(f"Response from Flask server: {response.json()}")
+        except ValueError:
+            _logger.info(f"Response from Flask server (non-JSON body): {response.text!r}")
     else:
         _logger.error(f"Failed to send back to Flask server: {response.status_code} - {response.text}")
 
@@ -320,16 +331,27 @@ def pull_request_and_process():
             if request is not None:            
                 xml_data = read_xml_file(acceptance_ruleset_path)
                 
-                # Add affected endpoints to the XML data
-                xml_data_with_endpoints = add_affected_endpoints_to_xml(xml_data, request['affected_endpoint_list'])
+                try:
+                    # Add affected endpoints to the XML data
+                    xml_data_with_endpoints = add_affected_endpoints_to_xml(xml_data, request['affected_endpoint_list'])
 
-                filled_xml = send_request(xml_data_with_endpoints)
+                    filled_xml = send_request(xml_data_with_endpoints)
+                except Exception as e:
+                    _logger.error(f"Error sending request to Flask server: {e}")
+                    filled_xml = None
 
                 if filled_xml and acceptance_verification(filled_xml):
-                    affected_endpoints_dict = mapping_verification(request, filled_xml)
-                    _logger.info(f"Affected endpoints dict: {affected_endpoints_dict}")
+                    try:
+                        affected_endpoints_dict = mapping_verification(request, filled_xml)
+                        _logger.info(f"Affected endpoints dict: {affected_endpoints_dict}")
+                    except Exception as e:
+                        _logger.error(f"Error during mapping verification: {e}")
+                        affected_endpoints_dict = None
                     if affected_endpoints_dict is not None:
-                        send_back_results(affected_endpoints_dict)
+                        try:
+                            send_back_results(affected_endpoints_dict)
+                        except Exception as e:
+                            _logger.error(f"Error sending back results to Flask server: {e}")
 
                     # mapping_verification_finished = True  
                     # if not mapping_verification_finished:

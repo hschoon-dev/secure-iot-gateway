@@ -107,7 +107,7 @@ services:
         condition: service_started
       cpc-partition:
         condition: service_started
-    attach: false
+    attach: true
     networks:
       static-network:
         ipv4_address: 172.20.128.5
