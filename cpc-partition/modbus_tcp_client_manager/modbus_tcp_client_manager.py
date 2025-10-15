@@ -142,7 +142,8 @@ class ModbusClientManager:
             
             # TODO: Test with gRPC: dann payload noch in die Funktion einfügen... plus IP:PORT
             try:
-                response = send_json_payload()
+                grpc_payload = json.dumps(modbus_values)
+                response = send_json_payload(grpc_payload, source="MODBUSTCP")
                 if response is None:
                     _logger.error(f"Error sending gRPC with JSON")
             except Exception as e:
