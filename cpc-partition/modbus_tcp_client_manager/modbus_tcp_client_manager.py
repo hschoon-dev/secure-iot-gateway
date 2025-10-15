@@ -33,6 +33,7 @@ import os
 import posix_ipc
 
 from modbus_tcp_client import ModbusTCPClient
+from grpc_sender import send_json_payload
 
 _logger = logging.getLogger(__name__)
 
@@ -138,7 +139,15 @@ class ModbusClientManager:
                                                         "varType": "String",
                                                         "description": f"{client.endpoints[endpoint_name]['description']}"
                                                     }
-                            
+            
+            # TODO: Test with gRPC: dann payload noch in die Funktion einfügen... plus IP:PORT
+            try:
+                response = send_json_payload()
+                if response is None:
+                    _logger.error(f"Error sending gRPC with JSON")
+            except Exception as e:
+                _logger.error(f"Exception sending gRPC with JSON: {e}")
+
             # Write the modbus_values to shared memory with semaphore
             for shm, sem in zip(shm_list, semaphore_list):
                 sem: posix_ipc.Semaphore

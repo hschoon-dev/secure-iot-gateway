@@ -107,7 +107,7 @@ services:
         condition: service_started
       cpc-partition:
         condition: service_started
-    attach: true
+    attach: false
     networks:
       static-network:
         ipv4_address: 172.20.128.5
@@ -122,10 +122,15 @@ services:
       - type: bind
         source: ./psmo-partition/logs
         target: /app/logs
+    ports:
+      - "50051:50051"
     depends_on:
       cpc-partition: 
         condition: service_started
-    attach: false
+    attach: true
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.6
 
   # Application of the gateway's CPC Partition
   cpc-partition:

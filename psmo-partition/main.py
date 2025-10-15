@@ -39,7 +39,7 @@ import sys
 import os
 from logging.handlers import RotatingFileHandler
 
-from psmo_shm_handler import OPCUA_Thread, ModbusTCP_Thread
+from psmo_shm_handler import OPCUA_Thread, ModbusTCP_Thread, JSON_gRPC_Thread
 
 path = os.path.dirname(os.path.abspath(__file__))
 logging_path = os.path.join(path, "logs/app.log")
@@ -93,6 +93,9 @@ def main():
     modbus_semaphore_name = 'modbus_semaphore_psmo'
     modbus_queue = queue.Queue(maxsize=5)
     modbus_thread = ModbusTCP_Thread(modbus_semaphore_name, modbus_shm_name, modbus_queue)
+
+    json_grpc_thread = JSON_gRPC_Thread()
+    json_grpc_thread.start()
 
     opcua_thread.start()
     modbus_thread.start()
