@@ -34,6 +34,7 @@ import os
 import posix_ipc
 
 from opcua_client import OpcUaClient
+from grpc_sender import send_json_payload
 
 
 _logger = logging.getLogger(__name__)
@@ -168,6 +169,17 @@ class OpcUaClientManager:
                                                             "varType": "String",
                                                             "description": f"{node['description']}"
                                                         }
+                                
+            # TODO: Test with gRPC: dann payload noch in die Funktion einfügen... plus IP:PORT
+            try:
+                grpc_payload = json.dumps(opcua_values)
+                response = send_json_payload(grpc_payload, source="OPCUA")
+                if response is None:
+                    _logger.error(f"Error sending gRPC with JSON")
+            except Exception as e:
+                _logger.error(f"Exception sending gRPC with JSON: {e}")
+
+
             # Write the opcua_values to shared memory with semaphore protection
             for shm, sem in zip(shm_list, semaphore_list):
                 sem: posix_ipc.Semaphore

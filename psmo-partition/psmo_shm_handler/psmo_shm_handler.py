@@ -47,16 +47,22 @@ _logger = logging.getLogger(__name__)
 
 class JsonSenderServicer(jsontransfer_pb2_grpc.JsonSenderServicer):
     def SendJson(self, request, context):
-        print(f"Received JSON message:")
-        print(f"  ID: {request.id}")
-        print(f"  Source: {request.source}")
-        print(f"  JSON Payload: {request.json_payload}")
-        # You can parse it if needed:
+        _logger.debug(f"Received JSON message:")
+
         try:
             data = json.loads(request.json_payload)
-            print("  Parsed data:", data)
+            if request.source == "MODBUSTCP":
+                _logger.warning(f"Received data with length {len(data)} from ModbusTCP source on timestamp {request.id}.")
+                _logger.debug(f"Parsed data: {data}")
+            elif request.source == "OPCUA":
+                _logger.warning(f"Received data with length {len(data)} from OPC UA source on timestamp {request.id}.")
+                _logger.debug(f"Parsed data: {data}")
+            else:
+                _logger.error(f"Received call from unknown source.")
+                _logger.debug(f"Parsed data: {data}")
+            
         except Exception as e:
-            print("  Failed to parse JSON:", e)
+            _logger.error(f"Failed to parse JSON: {e}")
         return empty_pb2.Empty()
 
 class JSON_gRPC_Thread(Thread):
@@ -67,7 +73,7 @@ class JSON_gRPC_Thread(Thread):
 
     def run(self):
         try:
-            server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+            server = grpc.server(futures.ThreadPoolExecutor(max_workers=2)) # TODO: look if we can reduce the number of threads even further to 1
             jsontransfer_pb2_grpc.add_JsonSenderServicer_to_server(JsonSenderServicer(), server)
             server.add_insecure_port("[::]:50051")
             _logger.info(f"Server started on port 50051")
