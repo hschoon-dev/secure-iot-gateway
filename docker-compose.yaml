@@ -60,10 +60,14 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - 4840:4840
+#      - "50051:50051"
     depends_on:
-      cpc-partition: 
+      cpc-partition:
         condition: service_started
-    attach: false
+    attach: true
+    networks:
+      static-network:
+        ipv4_address: 172.20.128.7
 
 
   # Intermediate VoR Partition
@@ -115,19 +119,24 @@ services:
   # Application of the gateway's psM+O Partition
   psmo-partition:
     container_name: psmo-partition
-    ipc: "service:cpc-partition"
+    #ipc: "service:cpc-partition"
     build: psmo-partition/
     volumes:
       # Logging files
       - type: bind
         source: ./psmo-partition/logs
         target: /app/logs
-    ports:
-      - "50051:50051"
-    depends_on:
-      cpc-partition: 
-        condition: service_started
-    attach: true
+#    ports:
+#      - "50051:50051"
+    #depends_on:
+      #cpc-partition: 
+      #  condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('localhost', 50051)); s.close()"]
+      interval: 3s
+      timeout: 1s
+      retries: 10
+    attach: false
     networks:
       static-network:
         ipv4_address: 172.20.128.6
@@ -146,8 +155,10 @@ services:
        brownfield-opcua-server: 
          condition: service_started
        ecotec-modbus-server:
-        condition: service_started
-    attach: true
+         condition: service_started
+       psmo-partition:
+         condition: service_healthy
+    attach: false
     networks:
       static-network:
           ipv4_address: 172.20.128.4

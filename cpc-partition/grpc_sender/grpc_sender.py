@@ -7,10 +7,10 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-def send_json_payload(payload: str, source: str = "default"):
+def send_json_payload(payload: str, source: str = "default", dest: str = None):
     try:
-        # Connect to the gRPC server
-        with grpc.insecure_channel("172.20.128.6:50051") as channel:
+        # Connect to the gRPC server of the psmo-Partition
+        with grpc.insecure_channel(dest) as channel:
             stub = jsontransfer_pb2_grpc.JsonSenderStub(channel)
 
             timestamp = datetime.datetime.now(datetime.timezone.utc)

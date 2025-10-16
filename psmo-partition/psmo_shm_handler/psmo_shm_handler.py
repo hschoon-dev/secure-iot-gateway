@@ -27,7 +27,6 @@
 from threading import Thread, Event
 import time
 import json
-#import asyncio
 from multiprocessing import shared_memory
 import logging
 from queue import Queue
@@ -35,57 +34,10 @@ from queue import Queue
 import posix_ipc
 import hashlib
 
-import grpc
-from concurrent import futures
-from google.protobuf import empty_pb2
-import jsontransfer_pb2
-import jsontransfer_pb2_grpc
 
 
 _logger = logging.getLogger(__name__)
 
-
-class JsonSenderServicer(jsontransfer_pb2_grpc.JsonSenderServicer):
-    def SendJson(self, request, context):
-        _logger.debug(f"Received JSON message:")
-
-        try:
-            data = json.loads(request.json_payload)
-            if request.source == "MODBUSTCP":
-                _logger.warning(f"Received data with length {len(data)} from ModbusTCP source on timestamp {request.id}.")
-                _logger.debug(f"Parsed data: {data}")
-            elif request.source == "OPCUA":
-                _logger.warning(f"Received data with length {len(data)} from OPC UA source on timestamp {request.id}.")
-                _logger.debug(f"Parsed data: {data}")
-            else:
-                _logger.error(f"Received call from unknown source.")
-                _logger.debug(f"Parsed data: {data}")
-            
-        except Exception as e:
-            _logger.error(f"Failed to parse JSON: {e}")
-        return empty_pb2.Empty()
-
-class JSON_gRPC_Thread(Thread):
-    def __init__(self):
-        super().__init__(name="gRPC-Server", daemon=True)
-        Thread.__init__(self)
-        self._stop_event = Event()
-
-    def run(self):
-        try:
-            server = grpc.server(futures.ThreadPoolExecutor(max_workers=2)) # TODO: look if we can reduce the number of threads even further to 1
-            jsontransfer_pb2_grpc.add_JsonSenderServicer_to_server(JsonSenderServicer(), server)
-            server.add_insecure_port("[::]:50051")
-            _logger.info(f"Server started on port 50051")
-        except Exception as e:
-            _logger.error(f"Error starting gRPC-Server: {e}")
-        if server is not None:
-            server.start()
-            server.wait_for_termination()
-        
-
-    def stop(self):
-        self._stop_event.set()
 
 
 class OPCUA_Thread(Thread):

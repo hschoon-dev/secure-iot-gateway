@@ -34,6 +34,9 @@ import posix_ipc
 import random
 import argparse
 
+from queue import Queue
+from grpc_json_handler import JSON_gRPC_Thread
+
 # Own modules
 from interface_setup import setup_opcua_server
 from data_manager import DataManager
@@ -111,31 +114,61 @@ async def main():
     log_level = getattr(logging, args.log_level.upper(), logging.WARNING)
     _logger = setup_logging(log_level)
 
+    opcua_queue = Queue()
+    modbustcp_queue = Queue()
+
+    grpc_server_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
+    grpc_server_thread.start()
+
     server = await setup_opcua_server()
     await asyncio.sleep(5)
 
-    opcua_shm_name = 'opcua_shm_interface'
+    """opcua_shm_name = 'opcua_shm_interface'
     opcua_sem_name = 'opcua_semaphore_interface'
     modbus_shm_name = 'modbus_shm_interface'
-    modbus_sem_name = 'modbus_semaphore_interface'
+    modbus_sem_name = 'modbus_semaphore_interface'"""
 
     # Initial shared memory reading for OPC UA Server setup
     opcua_variables = []
-    data_manager = DataManager(server, opcua_shm_name, opcua_sem_name, modbus_shm_name, modbus_sem_name)
+    #data_manager = DataManager(server, opcua_shm_name, opcua_sem_name, modbus_shm_name, modbus_sem_name)
+    data_manager = DataManager(server, opcua_queue, modbustcp_queue)
 
     _logger.info("OPC UA Server of the interface partition is running.")
     async with server:
         try:
-            # Initial population of OPC UA Server
+            """# Initial population of OPC UA Server
             opcua_variables = await asyncio.create_task(data_manager.create_opcua_population())
             _logger.debug(f"OPC UA: {opcua_variables}")
-            modbus_variables = await asyncio.create_task(data_manager.create_modbus_population())
+            modbus_variables = await asyncio.create_task(data_manager.create_modbustcp_population())
             _logger.debug(f"ModbusTCP: {modbus_variables}")
 
             # Periodic update of OPC UA Server
             periodic_update_opcua = asyncio.create_task(data_manager.update_population_from_opcua_shm(opcua_variables))
             periodic_update_modbus_tcp = asyncio.create_task(data_manager.update_population_from_modbus_tcp_shm(modbus_variables))
-            await asyncio.gather(periodic_update_opcua, periodic_update_modbus_tcp)
+            await asyncio.gather(periodic_update_opcua, periodic_update_modbus_tcp)"""
+
+            # Initial population
+            _logger.warning(f"Queue IDs -> main opcua={id(opcua_queue)} modbus={id(modbustcp_queue)}")
+            _logger.warning(f"Queue IDs -> grpc opcua={id(grpc_server_thread._opcua_queue)} modbus={id(grpc_server_thread._modbustcp_queue)}")
+            _logger.warning(f"Queue IDs -> data_manager opcua={id(data_manager._opcua_queue)} modbus={id(data_manager._modbustcp_queue)}")
+
+
+            _logger.info(f"Start populating...")
+            opcua_variables = await data_manager.create_opcua_population(opcua_queue)
+            _logger.info(f"Initial OPC UA values created from OPC UA Queue.")
+            _logger.info(f"{opcua_variables}")
+            modbustcp_variables = await data_manager.create_modbustcp_population(modbustcp_queue)
+            _logger.info(f"Initial OPC UA values created from ModbusTCP Queue.")
+            _logger.info(f"{modbustcp_variables}")
+
+            # Continuous updates
+            periodic_update_opcua = asyncio.create_task(
+                data_manager.update_population_from_opcua_queue(opcua_queue, opcua_variables)
+            )
+            periodic_update_modbustcp = asyncio.create_task(
+                data_manager.update_population_from_modbustcp_queue(modbustcp_queue, modbustcp_variables)
+            )
+            await asyncio.gather(periodic_update_opcua, periodic_update_modbustcp)
 
 
         except asyncio.CancelledError:
@@ -144,7 +177,7 @@ async def main():
         except KeyboardInterrupt:
             #periodic_update.cancel()
             periodic_update_opcua.cancel()
-            periodic_update_modbus_tcp.cancel()
+            periodic_update_modbustcp.cancel()
             #periodic_vor_request.cancel()
             _logger.error("KeyboardInterrupt")
 

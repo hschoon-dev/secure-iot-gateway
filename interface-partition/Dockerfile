@@ -6,9 +6,19 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy only the proto directory first (for faster rebuilds when proto changes)
+COPY grpc_json_handler/proto ./grpc_json_handler/proto
+
+# Generate Python gRPC code from .proto files
+RUN python -m grpc_tools.protoc \
+    -I ./grpc_json_handler/proto \
+    --python_out=. \
+    --grpc_python_out=. \
+    ./grpc_json_handler/proto/*.proto
+
 RUN apt-get update && apt-get install -y tzdata
 ENV TZ=Europe/Berlin
 
 COPY . .
 
-CMD [ "python3", "-u", "./main.py", "--log-level", "WARNING" ]
+CMD [ "python3", "-u", "./main.py", "--log-level", "INFO" ]
