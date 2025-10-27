@@ -153,6 +153,7 @@ class ModbusClientManager:
                 _logger.error(f"Exception sending gRPC with JSON: {e}")
 
             # Write the modbus_values to shared memory with semaphore
+            # TODO: Remove SHM
             for shm, sem in zip(shm_list, semaphore_list):
                 sem: posix_ipc.Semaphore
                 shm: shared_memory.SharedMemory
