@@ -99,17 +99,17 @@ def main():
                 item = opcua_queue.get()
                 item_count = len(item.keys())
                 _logger.info(f"Retrieved {item_count} items from OPC UA queue. Waiting to process...")
-                _logger.info(f"Timestamp: {item["timestamp"]}")
-                _logger.info(f"Source: {item["source"]}")
-                _logger.info(f"Data: {item["data"]}")
+                _logger.info(f"Timestamp: {item['timestamp']}")
+                _logger.info(f"Source: {item['source']}")
+                _logger.info(f"Data: {item['data']}")
 
             if not modbustcp_queue.empty():
                 item = modbustcp_queue.get()
                 item_count = len(item.keys())
                 _logger.info(f"Retrieved {item_count} items from ModbusTCP queue. Waiting to process...")
-                _logger.info(f"Timestamp: {item["timestamp"]}")
-                _logger.info(f"Source: {item["source"]}")
-                _logger.info(f"Data: {item["data"]}")
+                _logger.info(f"Timestamp: {item['timestamp']}")
+                _logger.info(f"Source: {item['source']}")
+                _logger.info(f"Data: {item['data']}")
 
     except Exception as e:
         _logger.error(f"Error handling main-process: {e}")

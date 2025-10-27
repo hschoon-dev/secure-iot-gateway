@@ -85,7 +85,7 @@ class OpcUaClientManager:
                 node_info = {}
                 # String-Identifier is used in the Siemens S7 OPC UA server (OMAG usecase)
                 if str(node.find('IdentifierType').text) == 'String':
-                    node_id = ua.NodeId.from_string(f'ns={int(node.find('NamespaceIndex').text)};s={str(node.find('Identifier').text)}')
+                    node_id = ua.NodeId.from_string(f"ns={int(node.find('NamespaceIndex').text)};s={str(node.find('Identifier').text)}")
                     node_info = {
                         'node_id': node_id,
                         'datatype': node.find('datatype').text,

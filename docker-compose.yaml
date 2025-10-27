@@ -50,7 +50,8 @@ services:
   # Application of the gateway's Interface Partition
   interface-partition:
     container_name: interface-partition
-    ipc: "service:cpc-partition"
+    #ipc: "service:cpc-partition"
+    ipc: "shareable"
     build: interface-partition/
     volumes:
       - type: bind
@@ -60,10 +61,15 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - 4840:4840
-#      - "50051:50051"
-    depends_on:
-      cpc-partition:
-        condition: service_started
+    #   - "50051:50051"
+    #depends_on:
+    #  cpc-partition:
+    #    condition: service_started
+    #healthcheck:
+    #  test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('localhost', 50051)); s.close()"]
+    #  interval: 3s
+    #  timeout: 1s
+    #  retries: 10
     attach: true
     networks:
       static-network:
@@ -131,11 +137,11 @@ services:
     #depends_on:
       #cpc-partition: 
       #  condition: service_started
-    healthcheck:
-      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('localhost', 50051)); s.close()"]
-      interval: 3s
-      timeout: 1s
-      retries: 10
+    #healthcheck:
+    #  test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('localhost', 50051)); s.close()"]
+    #  interval: 3s
+    #  timeout: 1s
+    #  retries: 10
     attach: false
     networks:
       static-network:
@@ -157,7 +163,9 @@ services:
        ecotec-modbus-server:
          condition: service_started
        psmo-partition:
-         condition: service_healthy
+         condition: service_started
+       interface-partition:
+         condition: service_started
     attach: false
     networks:
       static-network:
