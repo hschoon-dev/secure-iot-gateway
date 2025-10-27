@@ -49,6 +49,10 @@ class OPCUA_Thread(Thread):
         Thread.__init__(self)
         self._stop_event = Event()
 
+        # Added deprecation warning:
+        _logger.warning(f"The module is deprecated! Use grpc_json_handler instead.")
+        raise DeprecationWarning
+
     def run(self):
         try:
             # await queue.async_put(1)

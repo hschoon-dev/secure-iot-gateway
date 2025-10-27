@@ -85,21 +85,12 @@ _logger = setup_logging(logging.INFO)
 
 def main():
     time.sleep(7)
-    #opcua_shm_name = 'opcua_shm_psmo'
-    #opcua_semaphore_name = 'opcua_semaphore_psmo'
-    opcua_queue = queue.Queue(maxsize=5)
-    #opcua_thread = OPCUA_Thread(opcua_semaphore_name, opcua_shm_name, opcua_queue)
 
-    #modbus_shm_name = 'modbus_shm_psmo'
-    #modbus_semaphore_name = 'modbus_semaphore_psmo'
+    opcua_queue = queue.Queue(maxsize=5)
     modbustcp_queue = queue.Queue(maxsize=5)
-    #modbus_thread = ModbusTCP_Thread(modbus_semaphore_name, modbus_shm_name, modbustcp_queue)
 
     json_grpc_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
     json_grpc_thread.start()
-
-    #opcua_thread.start()
-    #modbus_thread.start()
 
     try:
         _logger.info("psM+O partition is running.")
@@ -111,6 +102,7 @@ def main():
                 _logger.info(f"Timestamp: {item["timestamp"]}")
                 _logger.info(f"Source: {item["source"]}")
                 _logger.info(f"Data: {item["data"]}")
+
             if not modbustcp_queue.empty():
                 item = modbustcp_queue.get()
                 item_count = len(item.keys())
@@ -118,15 +110,12 @@ def main():
                 _logger.info(f"Timestamp: {item["timestamp"]}")
                 _logger.info(f"Source: {item["source"]}")
                 _logger.info(f"Data: {item["data"]}")
-            #time.sleep(.05)
+
     except Exception as e:
         _logger.error(f"Error handling main-process: {e}")
+
     except KeyboardInterrupt:
-        #opcua_thread.stop()
-        #modbus_thread.stop()
         json_grpc_thread.stop()
-        #opcua_thread.join()
-        #modbus_thread.join()
         json_grpc_thread.join()
 
 if __name__ == "__main__":
