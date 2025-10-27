@@ -39,165 +39,158 @@ class DataManager:
         self._opcua_queue = opcua_queue
         self._modbustcp_queue = modbustcp_queue
 
-    async def _create_opcua_objects(self, values: dict[str, dict[str, str | int | float | bool]],
-                                    opcua_object_name: str) -> list[tuple[str, Node | None]]:
+    async def _create_opcua_objects(self,
+        values: dict[str, dict[str, str | int | float | bool]],
+        opcua_object_name: str
+    ) -> list[tuple[str, Node | None]]:
         """
-        Create OPC UA objects and variables from shared memory values
-        :param values: Dictionary mapping variable names to their properties
-                                    Each value is a dict with 'value', 'varType', and 'description' keys
-        :param opcua_object_name: Name of the OPC UA object
-        :return: List of OPC UA variables
+        Create OPC UA objects and variables from shared memory values.
+        values: { "<group>: <varname>": {"value": ..., "varType": ..., "description": ...}, ... }
         """
-        opcua_variables = []
+        opcua_variables: list[tuple[str, Node | None]] = []
         _idx = await self._server.register_namespace(f"idx.{opcua_object_name}.ua")
-        obj = await self._server.nodes.objects.add_object(_idx, opcua_object_name)
+        root_obj = await self._server.nodes.objects.add_object(_idx, opcua_object_name)
 
         for name, varData in values.items():
-            value = varData['value']
-            varType = varData['varType']
-            description = varData['description']
-            # inside the name there is the first word before ":" e.g., "Ecotec: AM13 Volumenstrom 2"
-            # depending on this word, create a new object and add the variable to it
-            # if the object already exists, add the variable to it
-            if ":" in name:
-                object_name = name.split(":", 1)[0]
-                object_name_rest = name.split(":", 1)[1]
-                try:
-                    new_obj = await obj.get_child(f"{_idx}:{object_name}")
-                except Exception as e:
-                    _logger.warning(f"Creating new object: {object_name}...")#
-                    new_obj = await obj.add_object(_idx, object_name)                
-                try:
-                    converted_value = self._convert_value(varType, value)
-                    var = await new_obj.add_variable(_idx, object_name_rest, converted_value)
-                    await var.write_attribute(ua.AttributeIds.Description, 
-                                              ua.DataValue(ua.Variant(ua.LocalizedText(description))))
-                    opcua_variables.append((str(name), var))
-                except ValueError as e:
-                    _logger.error(f"Error converting value for {name}: {e}")
-                    opcua_variables.append((str(name), None))
-            else:
+            value = varData.get('value')
+            varType = varData.get('varType')
+            description = varData.get('description', "")
+
+            if ":" not in name:
                 _logger.error(f"Error creating object for {name}: No object name found.")
+                continue
+
+            object_name, object_name_rest = name.split(":", 1)
+            object_name_rest = object_name_rest.strip()
+
+            try:
+                try:
+                    new_obj = await root_obj.get_child(f"{_idx}:{object_name}")
+                except Exception:
+                    _logger.warning(f"Creating new object: {object_name}...")
+                    new_obj = await root_obj.add_object(_idx, object_name)
+
+                converted_value = self._convert_value(varType, value)
+                var = await new_obj.add_variable(_idx, object_name_rest, converted_value)
+                await var.write_attribute(
+                    ua.AttributeIds.Description,
+                    ua.DataValue(ua.Variant(ua.LocalizedText(description)))
+                )
+                opcua_variables.append((str(name), var))
+            except ValueError as e:
+                _logger.error(f"Error converting value for {name}: {e}")
+                opcua_variables.append((str(name), None))
+
         _logger.debug(f"Initial OPC UA Variables: {opcua_variables}")
         return opcua_variables
 
+    async def _get_message_from_queue(self, queue: Queue, timeout_s: float = 1.0) -> dict:
+        """
+        Non-blocking wrapper for stdlib Queue.get using a thread to keep the event loop responsive.
+        The event loop now always consumes queue.get() via asyncio.to_thread(...), so the blocking 
+        call happens in a worker thread, not in the event loop.
+        """
+        try:
+            message = await asyncio.to_thread(queue.get, True, timeout_s)
+            return message
+        except Empty:
+            raise
+        except Exception as e:
+            _logger.error(f"Queue get error: {e}")
+            raise
 
-    async def create_opcua_population(self, queue: Queue) -> list[tuple[str, Node | None]]:    
+    def _parse_payload(self, raw) -> dict:
         """
-        Waits for first valid message from queue and creates initial OPC UA population.
+        Accepts either a JSON string or a pre-parsed dict and returns a dict.
         """
-        _logger.info("Waiting for first message...")
-        variables = []
+        if raw is None:
+            return {}
+        if isinstance(raw, (dict, list)):
+            return raw
+        try:
+            return json.loads(raw)
+        except Exception as e:
+            _logger.error(f"JSON parse error: {e}")
+            return {}
+
+    async def create_population(self, queue: Queue, endpoint_label: str) -> list[tuple[str, Node | None]]:
+        """
+        Wait for first valid message from queue and create initial OPC UA population.
+        endpoint_label e.g. 'OPCUA_Endpoints' or 'ModbusTCP_Endpoints'
+        """
+        _logger.info(f"[{endpoint_label}] Waiting for first message...")
+        variables: list[tuple[str, Node | None]] = []
+
         while not variables:
             try:
-                message = queue.get(timeout=1.0)
-                _logger.info(f"Got message from queue: {type(message)}")
-                _logger.info(f"{message}")
-                if message["data"] is not None: # BUG Error creating population from queue: 'str' object has no attribute 'items'
-                    _logger.info(f"Creating initial population for OPC UA from message {message['timestamp']}")
-                    data = message["data"]
-                    parsed_data = json.loads(data)
-                    variables = await self._create_opcua_objects(parsed_data, f"OPCUA_Endpoints")
+                message = await self._get_message_from_queue(queue, timeout_s=1.0)
+                _logger.info(f"[{endpoint_label}] Got message: type={type(message)}")
+                data = self._parse_payload(message.get("data"))
+                if data:
+                    _logger.info(f"[{endpoint_label}] Creating initial population from {message.get('timestamp')}")
+                    variables = await self._create_opcua_objects(data, endpoint_label)
+                else:
+                    await asyncio.sleep(0.1)
             except Empty:
                 await asyncio.sleep(0.1)
             except Exception as e:
-                _logger.error(f"Error creating population from queue: {e}")
+                _logger.error(f"[{endpoint_label}] Error creating population from queue: {e}")
+
         return variables
 
-    async def create_modbustcp_population(self, queue: Queue) -> list[tuple[str, Node | None]]:
+    async def update_population(
+        self,
+        queue: Queue,
+        variables: list[tuple[str, Node | None]],
+        endpoint_label: str
+    ) -> None:
         """
-        Waits for first valid message from queue and creates initial OPC UA population.
+        Periodically update OPC UA variables based on incoming queue messages.
+        `variables` is the live list returned by create_population (mutated on growth).
         """
-        _logger.info("Waiting for first message...")
-        variables = []
-        while not variables:
-            try:
-                #message = queue.get(timeout=1.0)
-                message = await asyncio.to_thread(queue.get, True, 1.0)
-                _logger.info(f"Got message from queue: {type(message)}")
-                if message["data"] is not None:
-                    _logger.info(f"Creating initial population for OPC UA from message {message['timestamp']}")
-                    data = message["data"]
-                    parsed_data = json.loads(data)
-                    variables = await self._create_opcua_objects(parsed_data, f"ModbusTCP_Endpoints")
-            except Empty:
-                await asyncio.sleep(0.1)
-            except Exception as e:
-                _logger.error(f"Error creating population from queue: {e}")
-        return variables
-    
-
-    async def update_population_from_opcua_queue(self, queue: Queue, opcua_variables: list[tuple[str, Node | None]]) -> None:
-        """Periodically updates OPC UA variables based on incoming queue messages."""
         while True:
             try:
-                #message = queue.get(timeout=1.0)
-                message = await asyncio.to_thread(queue.get, True, 1.0)
-                try:
-                    data = json.loads(message["data"])
-                except Exception as e:
-                    _logger.error(f"Error udating population from queue: {e}")
+                message = await self._get_message_from_queue(queue, timeout_s=1.0)
+                data = self._parse_payload(message.get("data"))
+                if not isinstance(data, dict) or not data:
+                    continue
 
-                _logger.debug(f"Updating with message from {message['timestamp']}")
+                _logger.debug(f"[{endpoint_label}] Updating with message from {message.get('timestamp')}")
 
-                list_a = list(data.keys())
-                list_b = [name for name, _ in opcua_variables]
-                intersection = set(list_a) & set(list_b)
-                difference = set(list_a) - set(list_b)
+                names_in_data = set(data.keys())
+                names_in_server = {name for name, _ in variables}
 
-                for name in intersection:
-                    value = data[name]['value']
-                    varType = data[name]['varType']
-                    for var_name, node in opcua_variables:
-                        if var_name == name and node is not None:
-                            await node.set_value(self._convert_value(varType, value))
+                intersection = names_in_data & names_in_server
+                additions = names_in_data - names_in_server
 
-                for name in difference:
-                    _logger.info(f"Adding new variable {name}")
-                    new_vars = await self._create_opcua_objects({name: data[name]}, f"OPCUA_Endpoints")
-                    opcua_variables.extend(new_vars)
+                # Update existing
+                if intersection:
+                    # Build a map once for faster lookup
+                    var_map = {name: node for name, node in variables}
+                    for name in intersection:
+                        entry = data[name]
+                        value = entry.get('value')
+                        varType = entry.get('varType')
+                        node = var_map.get(name)
+                        if node is not None:
+                            try:
+                                await node.set_value(self._convert_value(varType, value))
+                            except Exception as e:
+                                _logger.error(f"[{endpoint_label}] Set value failed for {name}: {e}")
 
-            except Empty:
-                await asyncio.sleep(0.1)
-            except Exception as e:
-                _logger.error(f"Error updating variables from queue: {e}")
-                await asyncio.sleep(0.5)
-
-
-
-    async def update_population_from_modbustcp_queue(self, queue: Queue, modbus_tcp_variables: list[tuple[str, Node | None]]) -> None:
-        """Periodically updates OPC UA variables based on incoming queue messages."""
-        while True:
-            try:
-                message = queue.get(timeout=1.0)
-                try:
-                    data = json.loads(message["data"])
-                except Exception as e:
-                    _logger.error(f"Error udating population from queue: {e}")
-
-                _logger.debug(f"Updating with message from {message['timestamp']}")
-
-                list_a = list(data.keys())
-                list_b = [name for name, _ in modbus_tcp_variables]
-                intersection = set(list_a) & set(list_b)
-                difference = set(list_a) - set(list_b)
-
-                for name in intersection:
-                    value = data[name]['value']
-                    varType = data[name]['varType']
-                    for var_name, node in modbus_tcp_variables:
-                        if var_name == name and node is not None:
-                            await node.set_value(self._convert_value(varType, value))
-
-                for name in difference:
-                    _logger.info(f"Adding new variable {name}")
-                    new_vars = await self._create_opcua_objects({name: data[name]}, f"ModbusTCP_Endpoints")
-                    modbus_tcp_variables.extend(new_vars)
+                # Add new variables
+                for name in additions:
+                    _logger.info(f"[{endpoint_label}] Adding new variable {name}")
+                    try:
+                        new_vars = await self._create_opcua_objects({name: data[name]}, endpoint_label)
+                        variables.extend(new_vars)
+                    except Exception as e:
+                        _logger.error(f"[{endpoint_label}] Error adding {name}: {e}")
 
             except Empty:
                 await asyncio.sleep(0.1)
             except Exception as e:
-                _logger.error(f"Error updating variables from queue: {e}")
+                _logger.error(f"[{endpoint_label}] Error updating variables from queue: {e}")
                 await asyncio.sleep(0.5)
 
 

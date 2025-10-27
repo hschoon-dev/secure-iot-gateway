@@ -133,21 +133,22 @@ async def main():
     async with server:
         try:
             _logger.info(f"Start populating...")
-            opcua_variables = await data_manager.create_opcua_population(opcua_queue)
-            _logger.info(f"Initial OPC UA values created from OPC UA Queue.")
-            _logger.info(f"{opcua_variables}")
-            modbustcp_variables = await data_manager.create_modbustcp_population(modbustcp_queue)
-            _logger.info(f"Initial OPC UA values created from ModbusTCP Queue.")
-            _logger.info(f"{modbustcp_variables}")
+            
+            # Create initial populations
+            opcua_variables = await data_manager.create_population(opcua_queue, "OPCUA_Endpoints")
+            _logger.info("Initial OPC UA values created from OPC UA Queue.")
+            modbustcp_variables = await data_manager.create_population(modbustcp_queue, "ModbusTCP_Endpoints")
+            _logger.info("Initial OPC UA values created from ModbusTCP Queue.")
 
-            # Continuous updates
+            # Continuous updates (two independent tasks → no change in concurrency/threading behavior)
             periodic_update_opcua = asyncio.create_task(
-                data_manager.update_population_from_opcua_queue(opcua_queue, opcua_variables)
+                data_manager.update_population(opcua_queue, opcua_variables, "OPCUA_Endpoints")
             )
             periodic_update_modbustcp = asyncio.create_task(
-                data_manager.update_population_from_modbustcp_queue(modbustcp_queue, modbustcp_variables)
+                data_manager.update_population(modbustcp_queue, modbustcp_variables, "ModbusTCP_Endpoints")
             )
             await asyncio.gather(periodic_update_opcua, periodic_update_modbustcp)
+
 
 
         except asyncio.CancelledError:
