@@ -24,6 +24,7 @@
 
 import asyncio
 import logging
+import json
 from asyncua import ua, Node, Server
 from queue import Queue, Empty
 
@@ -94,7 +95,9 @@ class DataManager:
                 _logger.info(f"{message}")
                 if message["data"] is not None: # BUG Error creating population from queue: 'str' object has no attribute 'items'
                     _logger.info(f"Creating initial population for OPC UA from message {message['timestamp']}")
-                    variables = await self._create_opcua_objects(message["data"], f"opcua_queue")
+                    data = message["data"]
+                    parsed_data = json.loads(data)
+                    variables = await self._create_opcua_objects(parsed_data, f"OPCUA_Endpoints")
             except Empty:
                 await asyncio.sleep(0.1)
             except Exception as e:
@@ -114,7 +117,9 @@ class DataManager:
                 _logger.info(f"Got message from queue: {type(message)}")
                 if message["data"] is not None:
                     _logger.info(f"Creating initial population for OPC UA from message {message['timestamp']}")
-                    variables = await self._create_opcua_objects(message["data"], f"modbustcp_queue")
+                    data = message["data"]
+                    parsed_data = json.loads(data)
+                    variables = await self._create_opcua_objects(parsed_data, f"ModbusTCP_Endpoints")
             except Empty:
                 await asyncio.sleep(0.1)
             except Exception as e:
@@ -128,7 +133,11 @@ class DataManager:
             try:
                 #message = queue.get(timeout=1.0)
                 message = await asyncio.to_thread(queue.get, True, 1.0)
-                data = message["data"]
+                try:
+                    data = json.loads(message["data"])
+                except Exception as e:
+                    _logger.error(f"Error udating population from queue: {e}")
+
                 _logger.debug(f"Updating with message from {message['timestamp']}")
 
                 list_a = list(data.keys())
@@ -145,7 +154,7 @@ class DataManager:
 
                 for name in difference:
                     _logger.info(f"Adding new variable {name}")
-                    new_vars = await self._create_opcua_objects({name: data[name]}, f"opcua_queue")
+                    new_vars = await self._create_opcua_objects({name: data[name]}, f"OPCUA_Endpoints")
                     opcua_variables.extend(new_vars)
 
             except Empty:
@@ -161,7 +170,11 @@ class DataManager:
         while True:
             try:
                 message = queue.get(timeout=1.0)
-                data = message["data"]
+                try:
+                    data = json.loads(message["data"])
+                except Exception as e:
+                    _logger.error(f"Error udating population from queue: {e}")
+
                 _logger.debug(f"Updating with message from {message['timestamp']}")
 
                 list_a = list(data.keys())
@@ -178,7 +191,7 @@ class DataManager:
 
                 for name in difference:
                     _logger.info(f"Adding new variable {name}")
-                    new_vars = await self._create_opcua_objects({name: data[name]}, f"opcua_queue")
+                    new_vars = await self._create_opcua_objects({name: data[name]}, f"ModbusTCP_Endpoints")
                     modbus_tcp_variables.extend(new_vars)
 
             except Empty:

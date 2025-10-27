@@ -14,7 +14,7 @@ service JsonSender {
 
 // The JSON payload container
 message JsonMessage {
-  string id = 1;              // Optional metadata
+  string id = 1;              // timestamp
   string source = 2;          // e.g. "Ecotec"
   string json_payload = 3;    // The raw JSON string (UTF-8)
 }
