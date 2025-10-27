@@ -123,10 +123,6 @@ async def main():
     server = await setup_opcua_server()
     await asyncio.sleep(5)
 
-    """opcua_shm_name = 'opcua_shm_interface'
-    opcua_sem_name = 'opcua_semaphore_interface'
-    modbus_shm_name = 'modbus_shm_interface'
-    modbus_sem_name = 'modbus_semaphore_interface'"""
 
     # Initial shared memory reading for OPC UA Server setup
     opcua_variables = []
@@ -136,23 +132,6 @@ async def main():
     _logger.info("OPC UA Server of the interface partition is running.")
     async with server:
         try:
-            """# Initial population of OPC UA Server
-            opcua_variables = await asyncio.create_task(data_manager.create_opcua_population())
-            _logger.debug(f"OPC UA: {opcua_variables}")
-            modbus_variables = await asyncio.create_task(data_manager.create_modbustcp_population())
-            _logger.debug(f"ModbusTCP: {modbus_variables}")
-
-            # Periodic update of OPC UA Server
-            periodic_update_opcua = asyncio.create_task(data_manager.update_population_from_opcua_shm(opcua_variables))
-            periodic_update_modbus_tcp = asyncio.create_task(data_manager.update_population_from_modbus_tcp_shm(modbus_variables))
-            await asyncio.gather(periodic_update_opcua, periodic_update_modbus_tcp)"""
-
-            # Initial population
-            _logger.warning(f"Queue IDs -> main opcua={id(opcua_queue)} modbus={id(modbustcp_queue)}")
-            _logger.warning(f"Queue IDs -> grpc opcua={id(grpc_server_thread._opcua_queue)} modbus={id(grpc_server_thread._modbustcp_queue)}")
-            _logger.warning(f"Queue IDs -> data_manager opcua={id(data_manager._opcua_queue)} modbus={id(data_manager._modbustcp_queue)}")
-
-
             _logger.info(f"Start populating...")
             opcua_variables = await data_manager.create_opcua_population(opcua_queue)
             _logger.info(f"Initial OPC UA values created from OPC UA Queue.")
