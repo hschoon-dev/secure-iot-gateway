@@ -79,8 +79,8 @@ def setup_logging(
     )
     return logging.getLogger(__name__)
 
-#_logger = setup_logging(logging.INFO)
-_logger = logging.getLogger(__name__)
+_logger = setup_logging(logging.DEBUG)
+#_logger = logging.getLogger(__name__)
 
 
 async def send_vor_request(mq:posix_ipc.MessageQueue, request:str):

@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.12
 
 LABEL maintainer="Heiko Schoon, Hochschule Emden/Leer, Fachbereich Technik, <heiko.schoon@hs-emden-leer.de>"
 

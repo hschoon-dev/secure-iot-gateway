@@ -162,7 +162,8 @@ async def setup_client(max_retries=5, retry_delay=5):
     """Setup and connect to OPC UA client with security"""
     _logger.info(f"Central M+O Application started.")
 
-    url = "opc.tcp://interface-partition:4840/freeopcua/server/"  # Ensure this matches the server address
+    #url = "opc.tcp://interface-partition:4840/freeopcua/server/"  # Ensure this matches the server address
+    url = "opc.tcp://172.20.128.7:4840/freeopcua/server/"
 
     cert_base = Path(__file__).parent
     client_cert = Path(cert_base / "certificates/python_client/mo_client_cert.der")
@@ -216,7 +217,7 @@ async def is_client_connected(client):
 
 async def main():
     """Main function to execute request submissions in a loop"""
-    await asyncio.sleep(5)  # Initial delay to ensure server is up
+    await asyncio.sleep(15)  # Initial delay to ensure server is up
     client = None
     try:
         client = await setup_client()

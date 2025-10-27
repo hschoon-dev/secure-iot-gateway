@@ -35,7 +35,9 @@ import json
 
 # Local imports
 #from user_manager_xml import UserManagerXML # Deprecated
-from user_manager import UserManager
+#from user_manager import UserManager
+from user_manager import UserManagerTinyDB as UserManager
+
 from authorization_handler import AuthorizationHandler
 
 _logger = logging.getLogger(__name__)
