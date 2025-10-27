@@ -177,15 +177,15 @@ async def setup_opcua_server() -> Server:
     # Define input arguments
     # issuer_id: str, credentials: str, timestamp: str, description: list, impact: list, parameters: list, modification: str,  priority: int):
     args: list[tuple[str, ua.ObjectIds, int, list, str]] = [
-        ("IssuerID",        ua.ObjectIds.String,    -1, [],     "Unique identifier of the request issuer"),
-        ("Credentials",     ua.ObjectIds.String,    -1, [],     "Credentials of the request issuer"),
+        ("IssuerID",                ua.ObjectIds.String,    -1, [],     "Unique identifier of the request issuer"),
+        ("Credentials",             ua.ObjectIds.String,    -1, [],     "Credentials of the request issuer"),
         ("Issuer characteristics",  ua.ObjectIds.String,     1, [0],    "Origin tags of the request"),       # IP address, container instance, model identifier, etc.
-        ("Timestamp",       ua.ObjectIds.DateTime,  -1, [],     "Timestamp of Request"),
-        ("Description",     ua.ObjectIds.String,     1, [0],    "Description of Request"),
-        ("Impact",          ua.ObjectIds.String,    -1, [],     "Impact of Request"),
-        ("Parameters",      ua.ObjectIds.String,    -1, [],     "Parameters affected by the Request"),
-        ("Modification",    ua.ObjectIds.String,    -1, [],     "Requested Modification"),
-        ("Priority",        ua.ObjectIds.Int32,     -1, [],     "Priority"),
+        ("Timestamp",               ua.ObjectIds.DateTime,  -1, [],     "Timestamp of Request"),
+        ("Description",             ua.ObjectIds.String,     1, [0],    "Description of Request"),
+        ("Impact",                  ua.ObjectIds.String,    -1, [],     "Impact of Request"),
+        ("Parameters",              ua.ObjectIds.String,    -1, [],     "Parameters affected by the Request"),
+        ("Modification",            ua.ObjectIds.String,    -1, [],     "Requested Modification"),
+        ("Priority",                ua.ObjectIds.Int32,     -1, [],     "Priority"),
     ]
 
     input_args: list[ua.Argument] = []
