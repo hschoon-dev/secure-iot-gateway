@@ -135,16 +135,6 @@ services:
       - type: bind
         source: ./psmo-partition/logs
         target: /app/logs
-#    ports:
-#      - "50051:50051"
-    #depends_on:
-      #cpc-partition: 
-      #  condition: service_started
-    #healthcheck:
-    #  test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('localhost', 50051)); s.close()"]
-    #  interval: 3s
-    #  timeout: 1s
-    #  retries: 10
     attach: false
     networks:
       static-network:
