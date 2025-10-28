@@ -28,9 +28,9 @@ import sys
 import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from multiprocessing import shared_memory
+#from multiprocessing import shared_memory
 import threading
-import posix_ipc
+#import posix_ipc
 
 # local imports
 from opcua_client_manager import OpcUaClientManager
@@ -111,19 +111,20 @@ async def opcua_service() -> None:
     opcua_semaphore_name = 'opcua_semaphore'"""
 
     # Prepare lists for shm and semaphore
-    opcua_shm_psmo = shared_memory.SharedMemory(name=f"{opcua_shm_name}_psmo", create=True, size=opcua_shm_size)
-    opcua_shm_interface = shared_memory.SharedMemory(name=f"{opcua_shm_name}_interface", create=True, size=opcua_shm_size)
-    opcua_shm_list = [opcua_shm_psmo, opcua_shm_interface]
+    #opcua_shm_psmo = shared_memory.SharedMemory(name=f"{opcua_shm_name}_psmo", create=True, size=opcua_shm_size)
+    #opcua_shm_interface = shared_memory.SharedMemory(name=f"{opcua_shm_name}_interface", create=True, size=opcua_shm_size)
+    #opcua_shm_list = [opcua_shm_psmo, opcua_shm_interface]
     
-    opcua_semaphore_psmo = posix_ipc.Semaphore(f"{opcua_semaphore_name}_psmo", posix_ipc.O_CREX)
-    opcua_semaphore_interface = posix_ipc.Semaphore(f"{opcua_semaphore_name}_interface", posix_ipc.O_CREX)
-    opcua_sem_list = [opcua_semaphore_psmo, opcua_semaphore_interface]
+    #opcua_semaphore_psmo = posix_ipc.Semaphore(f"{opcua_semaphore_name}_psmo", posix_ipc.O_CREX)
+    #opcua_semaphore_interface = posix_ipc.Semaphore(f"{opcua_semaphore_name}_interface", posix_ipc.O_CREX)
+    #opcua_sem_list = [opcua_semaphore_psmo, opcua_semaphore_interface]
 
     opcua_manager = OpcUaClientManager(xml_config_file_opcua, xsd_file_opcua)
     if await opcua_manager.start_clients() == []:
         _logger.error(f"Start clients returned empty list.")
         return
-    await opcua_manager.periodic_read(opcua_interval, opcua_shm_list, opcua_sem_list)
+    #await opcua_manager.periodic_read(opcua_interval, opcua_shm_list, opcua_sem_list)
+    await opcua_manager.periodic_read(opcua_interval)
 
 def opcua_service_thread() -> None:
     """
@@ -157,17 +158,18 @@ async def modbus_tcp_service() -> None:
     modbus_semaphore_name = 'modbus_semaphore'"""
 
     # Prepare lists for shm and semaphore
-    modbus_shm_psmo = shared_memory.SharedMemory(name=f"{modbus_shm_name}_psmo", create=True, size=modbus_shm_size)
-    modbus_shm_interface = shared_memory.SharedMemory(name=f"{modbus_shm_name}_interface", create=True, size=modbus_shm_size)
-    modbus_shm_list = [modbus_shm_psmo, modbus_shm_interface]
+    #modbus_shm_psmo = shared_memory.SharedMemory(name=f"{modbus_shm_name}_psmo", create=True, size=modbus_shm_size)
+    #modbus_shm_interface = shared_memory.SharedMemory(name=f"{modbus_shm_name}_interface", create=True, size=modbus_shm_size)
+    #modbus_shm_list = [modbus_shm_psmo, modbus_shm_interface]
     
-    modbus_semaphore_psmo = posix_ipc.Semaphore(f"{modbus_semaphore_name}_psmo", posix_ipc.O_CREX)
-    modbus_semaphore_interface = posix_ipc.Semaphore(f"{modbus_semaphore_name}_interface", posix_ipc.O_CREX)
-    modbus_sem_list = [modbus_semaphore_psmo, modbus_semaphore_interface]
+    #modbus_semaphore_psmo = posix_ipc.Semaphore(f"{modbus_semaphore_name}_psmo", posix_ipc.O_CREX)
+    #modbus_semaphore_interface = posix_ipc.Semaphore(f"{modbus_semaphore_name}_interface", posix_ipc.O_CREX)
+    #modbus_sem_list = [modbus_semaphore_psmo, modbus_semaphore_interface]
 
     modbus_manager = ModbusClientManager(xml_config_file_modbustcp, xsd_file_modbustcp)
     await modbus_manager.start_clients()
-    await modbus_manager.periodic_read(modbus_interval, modbus_shm_list, modbus_sem_list)
+    #await modbus_manager.periodic_read(modbus_interval, modbus_shm_list, modbus_sem_list)
+    await modbus_manager.periodic_read(modbus_interval)
 
 def modbus_tcp_service_thread() -> None:
     """

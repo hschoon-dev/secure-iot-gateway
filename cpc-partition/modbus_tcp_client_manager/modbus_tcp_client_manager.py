@@ -25,12 +25,12 @@
 import asyncio
 #import xml.etree.ElementTree as ET
 from defusedxml import ElementTree as ET
-from multiprocessing import shared_memory
+#from multiprocessing import shared_memory
 import json
 import xmlschema
 import logging
 import os
-import posix_ipc
+#import posix_ipc
 
 from modbus_tcp_client import ModbusTCPClient
 from grpc_sender import send_json_payload
@@ -75,7 +75,7 @@ class ModbusClientManager:
         for client in self.clients:
             client.client.close()
     
-    async def periodic_read(self, interval: float, shm_list: list[shared_memory.SharedMemory], semaphore_list: list[posix_ipc.Semaphore]) -> None:
+    async def periodic_read(self, interval: float) -> None:
         """
         Periodically read the ModbusTCP values and write them to shared memory.
         interval: The time interval in seconds between each read operation.
@@ -152,23 +152,6 @@ class ModbusClientManager:
             except Exception as e:
                 _logger.error(f"Exception sending gRPC with JSON: {e}")
 
-            # Write the modbus_values to shared memory with semaphore
-            # TODO: Remove SHM
-            for shm, sem in zip(shm_list, semaphore_list):
-                sem: posix_ipc.Semaphore
-                shm: shared_memory.SharedMemory
-
-                sem.release()
-                await asyncio.sleep(0.01)
-                sem.acquire()
-                shm_size = shm.size
-                modbus_values_json = json.dumps(modbus_values)
-                _logger.debug(f"Writing to shared memory {shm.name}: {modbus_values_json}")
-                shm.buf[:shm_size] = b'\x00' * shm_size  # Clear the shared memory buffer
-                shm.buf[:len(modbus_values_json)] = modbus_values_json.encode('utf-8')
-                if len(modbus_values_json)/shm_size >= 0.9: # Log a warning if the shared memory is more than 90% full
-                    _logger.error(f"ModbusTCP Shared Memory     {len(modbus_values_json)}/{shm_size} bytes used (more than 90% full).")
-                sem.release()
             await asyncio.sleep(interval)
 
     def load_endpoints_from_xml(self) -> dict[tuple[str, int, str], dict[str, dict[str, str | int]]]:

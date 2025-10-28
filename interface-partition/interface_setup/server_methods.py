@@ -36,7 +36,7 @@ import json
 # Local imports
 #from user_manager_xml import UserManagerXML # Deprecated
 #from user_manager import UserManager
-from user_manager import UserManagerTinyDB as UserManager
+from user_manager import UserManagerTinyDB
 
 from authorization_handler import AuthorizationHandler
 
@@ -46,7 +46,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(path)
 credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
 _logger.error(f"Credentials DB path: {credentials_db_path}")
-_user_manager = UserManager(credentials_db_path, max_connections=10)
+_user_manager = UserManagerTinyDB(credentials_db_path, max_connections=10)
 
 
 """try:
@@ -68,8 +68,13 @@ _logger.debug(f"Casbin model path: {casbin_model_path_res}")
 _logger.debug(f"Casbin policy path: {casbin_policy_path_res}")
 _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), str(casbin_policy_path_res))
 
+POSIX_SUPPORT = False
+try:
+    _mq = posix_ipc.MessageQueue("/interface_partition_mq", posix_ipc.O_CREX)
+    POSIX_SUPPORT = True
+except OSError:
+    POSIX_SUPPORT = False
 
-_mq = posix_ipc.MessageQueue("/interface_partition_mq", posix_ipc.O_CREX)
 
 @uamethod 
 # TODO: Update method parameters according the project/NOA-standard requirements and yuanchens additional developments
@@ -136,12 +141,15 @@ def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_charact
     
     # 3) Submit the request to the intermediate VoR partition
     # Setup POSIX message queue for ipc with the intermediate VoR partition
-    try:
-        _mq.send(request.encode(), timeout=None, priority=priority)
-        _logger.info(f"Request with priority {priority} at {server_timestamp} received and forwared.")
-    except Exception as e:
-        _logger.error(f"Error submit request method: {e}")
-        return request_id, server_timestamp, f"Error: {str(e)}"
+    if POSIX_SUPPORT:
+        try:
+            _mq.send(request.encode(), timeout=None, priority=priority)
+            _logger.info(f"Request with priority {priority} at {server_timestamp} received and forwared.")
+        except Exception as e:
+            _logger.error(f"Error submit request method: {e}")
+            return request_id, server_timestamp, f"Error: {str(e)}"
+    else:
+        return request_id, server_timestamp, f"Error: OS does not support POSIX."
 
     return request_id, server_timestamp, f"Submission received"
 
