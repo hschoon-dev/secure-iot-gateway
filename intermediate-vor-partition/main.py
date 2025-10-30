@@ -26,30 +26,18 @@
 ------------------------------------------------------------
 """
 
-#import posix_ipc
 import logging
 from logging.handlers import RotatingFileHandler
 import sys
 import time
 import signal
 import os
-#from typing import Any, Optional
-#import json
-#from pathlib import Path
 
-#from request import Request
-from request_verification import RequestVerifier, RuleSet
-from mapping_verification import RequestMapper, Mapping_RuleSets
+from request_verification import RuleSet
+from mapping_verification import Mapping_RuleSets
 from feedback_system import FeedbackSystem
 from grpc_request_handler import build_grpc_server
 from request_message_handler import RequestMessageHandler
-
-# Configure logging
-#logging.basicConfig(
-#    level=logging.WARNING,
-#    #format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-#)
-#_logger = logging.getLogger(__name__)
 
 path = os.path.dirname(os.path.abspath(__file__))
 verfication_ruleset_path = os.path.join(path, "config/Request_Verification_Ruleset.xml")

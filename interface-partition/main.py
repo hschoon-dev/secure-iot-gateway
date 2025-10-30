@@ -30,8 +30,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import sys
-import posix_ipc
-import random
 import argparse
 
 from queue import Queue
@@ -80,25 +78,6 @@ def setup_logging(
     return logging.getLogger(__name__)
 
 _logger = setup_logging(logging.WARNING)
-#_logger = logging.getLogger(__name__)
-
-
-async def send_vor_request(mq:posix_ipc.MessageQueue, request:str):
-    # Initial filling of the message queue:
-    for i in range(10):
-        prio = random.randint(0, 31)
-        mq.send(request.encode(), timeout=None, priority=prio)
-        _logger.error(f"Filled mq with request: {request} with priority: {prio}")
-
-    while True:
-        try:
-            prio = random.randint(0, 10)
-            mq.send(request.encode(), timeout=None, priority=prio)
-
-            _logger.error(f"Request sent: {request} with priority: {prio}")
-        except Exception as e:
-            _logger.error(f"Error sending request: {e}")
-        await asyncio.sleep(2)
     
 
 async def main():

@@ -1,3 +1,3 @@
-from .grpc_request_server import build_grpc_server
+from .grpc_request_handler import build_grpc_server
 
 __all__ = ["build_grpc_server"]

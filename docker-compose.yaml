@@ -53,8 +53,6 @@ services:
   # Application of the gateway's Interface Partition
   interface-partition:
     container_name: interface-partition
-    #ipc: "service:cpc-partition"
-    ipc: "shareable"
     build: interface-partition/
     volumes:
       - type: bind
@@ -74,7 +72,6 @@ services:
   intermediate-vor-partition:
     container_name: intermediate-vor-partition
     build: intermediate-vor-partition/
-    ipc: "service:interface-partition"
     volumes:
       # Database for mapped requests
       - type: bind

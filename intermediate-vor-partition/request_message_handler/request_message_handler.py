@@ -42,7 +42,7 @@ class RequestMessageHandler:
         # Items from protobuf are already strings; cast defensively
         return [str(x) for x in items]
 
-    def handle_grpc_submit(self, req_pb) -> Request:
+    def handle_grpc_submit(self, req_pb):
         """
         Convert proto SubmitRequest -> internal Request,
         run verification + mapping synchronously.
@@ -81,5 +81,3 @@ class RequestMessageHandler:
             raise RuntimeError("Mapping ruleset not available (None)")
         self._mapper.map_requests(verified_rq)
         _logger.info("Mapped request successfully")
-
-        return verified_rq

@@ -24,7 +24,7 @@ def send_json_payload(payload: str, source: str = "default", dest: str = None):
 
             # Try sending
             response = stub.SendJson(message)
-            _logger.warning("JSON message sent successfully.")
+            _logger.info("JSON message sent successfully.")
             return response
 
     except grpc.RpcError as e:

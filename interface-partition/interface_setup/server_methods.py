@@ -26,20 +26,13 @@
 import datetime
 import uuid
 import logging
-import posix_ipc
 import os
 from asyncua import uamethod
 from asyncua.ua import StatusCode, StatusCodes
 from typing import Any
-import json
 
-# Local imports
-#from user_manager_xml import UserManagerXML # Deprecated
-#from user_manager import UserManager
 from user_manager import UserManagerTinyDB
-
 from authorization_handler import AuthorizationHandler
-
 from grpc_request_handler import send_request_as_grpc
 
 _logger = logging.getLogger(__name__)
@@ -49,7 +42,6 @@ parent_path = os.path.dirname(path)
 credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
 _logger.error(f"Credentials DB path: {credentials_db_path}")
 _user_manager = UserManagerTinyDB(credentials_db_path, max_connections=10)
-
 
 """try:
     if not os.getenv("ADMIN_PASSWORD"):
@@ -69,13 +61,6 @@ casbin_policy_path_res = Path(parent_path / "authorization_handler" / "rbac_test
 _logger.debug(f"Casbin model path: {casbin_model_path_res}")
 _logger.debug(f"Casbin policy path: {casbin_policy_path_res}")
 _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), str(casbin_policy_path_res))
-
-POSIX_SUPPORT = False
-try:
-    _mq = posix_ipc.MessageQueue("/interface_partition_mq", posix_ipc.O_CREX)
-    POSIX_SUPPORT = True
-except OSError:
-    POSIX_SUPPORT = False
 
 
 @uamethod 
@@ -138,25 +123,15 @@ def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_charact
     if not _rbac_authorization_handler.verify_authorization(issuer_id, parameter_name=parameters, action=f'"{impact}"'):
         _logger.error(f"Authorization failed for {issuer_id} with parameters {parameters} and action {impact}")
         return request_id, server_timestamp, f"Request authorization failed: {issuer_id}"
-
-    # Convert the dictionary to a proper JSON string
-    request = json.dumps(request_dict)
     
     # 3) Submit the request to the intermediate VoR partition
     # Setup POSIX message queue for ipc with the intermediate VoR partition
-    if POSIX_SUPPORT:
-        try:
-            _mq.send(request.encode(), timeout=None, priority=priority)
-            _logger.info(f"Request with priority {priority} at {server_timestamp} received and forwared.")
-            try:
-                send_request_as_grpc(request=request_dict)
-            except Exception as e:
-                _logger.warning(f"gRPC-Error: {e}")
-        except Exception as e:
-            _logger.error(f"Error submit request method: {e}")
-            return request_id, server_timestamp, f"Error: {str(e)}"
-    else:
-        return request_id, server_timestamp, f"Error: OS does not support POSIX."
+    try:
+        send_request_as_grpc(request=request_dict)
+        _logger.info(f"Request with priority {priority} at {server_timestamp} received and forwared.")
+    except Exception as e:
+        _logger.error(f"Error submit request method: {e}")
+        return request_id, server_timestamp, f"Error: {str(e)}"
 
     return request_id, server_timestamp, f"Submission received"
 

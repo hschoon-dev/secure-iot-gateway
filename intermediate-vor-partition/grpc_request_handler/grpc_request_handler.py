@@ -1,4 +1,3 @@
-# server.py
 import grpc
 from concurrent import futures
 from datetime import datetime, timezone
@@ -39,20 +38,20 @@ class RequestService(request_pb2_grpc.RequestServiceServicer):
         latency_ms = int((server_recv_utc - client_ts_utc).total_seconds() * 1000)
         within_bounds = (latency_ms >= 0) and (latency_ms <= REALTIME_BOUND_MS)
 
-        _logger.warning(f"Request received:")
-        _logger.warning(f"  {str(request.issuer_id)}")
-        _logger.warning(f"  {str(request.issuer_characteristics)}")
-        _logger.warning(f"  {str(request.timestamp)}")
-        _logger.warning(f"  {str(request.description)}")
-        _logger.warning(f"  {str(request.impact)}")
-        _logger.warning(f"  {str(request.parameters)}")
-        _logger.warning(f"  {str(request.modification)}")
-        _logger.warning(f"  {str(request.priority)}")
-        _logger.warning(f"  {str(request.request_id)}")
+        _logger.debug(f"Request received:")
+        _logger.debug(f"  {str(request.issuer_id)}")
+        _logger.debug(f"  {str(request.issuer_characteristics)}")
+        _logger.debug(f"  {str(request.timestamp)}")
+        _logger.debug(f"  {str(request.description)}")
+        _logger.debug(f"  {str(request.impact)}")
+        _logger.debug(f"  {str(request.parameters)}")
+        _logger.debug(f"  {str(request.modification)}")
+        _logger.debug(f"  {str(request.priority)}")
+        _logger.debug(f"  {str(request.request_id)}")
 
         # === Process BEFORE replying ===
         try:
-            verified_rq = self._handler.handle_grpc_submit(request)
+            self._handler.handle_grpc_submit(request)
         except Exception as e:
             # Map domain-specific failures to appropriate gRPC codes
             _logger.error("Processing failure: %s", e, exc_info=True)
@@ -77,16 +76,8 @@ class RequestService(request_pb2_grpc.RequestServiceServicer):
 def _read_bytes(p: Path) -> bytes:
     return p.read_bytes()
 
-def build_grpc_server(
-    handler: RequestMessageHandler,
-    port: int = 50051,
-    cert_base: Path | None = None,
-    max_workers: int = 10,
-):
-    """
-    Build (but don't block on) a gRPC server with mTLS.
-    Caller is responsible for start()/stop().
-    """
+def build_grpc_server(handler: RequestMessageHandler, port: int = 50051, cert_base: Path | None = None, max_workers: int = 10):
+
     if cert_base is None:
         here = Path(__file__).resolve().parent
         rel = here.parent / "certificates" / "grpc"

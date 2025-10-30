@@ -125,13 +125,8 @@ class MappedRequest:
         # Convert the generated timestamp to a string
         #generation_timestamp_str = self.generation_timestamp.isoformat()
 
-        # Convert the description to a JSON string if it's a dictionary
-        _logger.warning(f"description is of type list {isinstance(self.description, list)}")
-        _logger.warning(f"description is of type dict {isinstance(self.description, dict)}")
+        # Convert the description to a JSON string if it's a dictionary or list
         description_str = json.dumps(self.description) if isinstance(self.description, (dict, list)) else self.description
-        # Convert the impact to a JSON string if it's a dictionary
-        #impact_str = json.dumps(self.impact) if isinstance(self.impact, dict) else self.impact
-        impact_str = self.impact
 
         try:
             db_connection = sqlite3.connect(self.db_name)
@@ -140,7 +135,7 @@ class MappedRequest:
                 INSERT OR REPLACE INTO mapped_requests 
                 (request_id, generation_timestamp, description, impact, priority, tags, affected_endpoint_list) 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (self.request_id, self.generation_timestamp, description_str, impact_str,
+            """, (self.request_id, self.generation_timestamp, description_str, self.impact,
                 self.priority, self.tags, affected_endpoint_list_json))
             db_connection.commit()
             return True
