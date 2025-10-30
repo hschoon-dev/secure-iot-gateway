@@ -81,7 +81,7 @@ class DataManager:
                 _logger.error(f"Error converting value for {name}: {e}")
                 opcua_variables.append((str(name), None))
 
-        _logger.debug(f"Initial OPC UA Variables: {opcua_variables}")
+        _logger.warning(f"Initial OPC UA Variables: {opcua_variables}")
         return opcua_variables
 
     async def _get_message_from_queue(self, queue: Queue, timeout_s: float = 1.0) -> dict:
@@ -155,7 +155,7 @@ class DataManager:
                 if not isinstance(data, dict) or not data:
                     continue
 
-                _logger.debug(f"[{endpoint_label}] Updating with message from {message.get('timestamp')}")
+                _logger.warning(f"[{endpoint_label}] Updating with message from {message.get('timestamp')}")
 
                 names_in_data = set(data.keys())
                 names_in_server = {name for name, _ in variables}

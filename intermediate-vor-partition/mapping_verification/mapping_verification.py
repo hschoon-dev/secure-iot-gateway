@@ -126,9 +126,12 @@ class MappedRequest:
         #generation_timestamp_str = self.generation_timestamp.isoformat()
 
         # Convert the description to a JSON string if it's a dictionary
-        description_str = json.dumps(self.description) if isinstance(self.description, dict) else self.description
+        _logger.warning(f"description is of type list {isinstance(self.description, list)}")
+        _logger.warning(f"description is of type dict {isinstance(self.description, dict)}")
+        description_str = json.dumps(self.description) if isinstance(self.description, (dict, list)) else self.description
         # Convert the impact to a JSON string if it's a dictionary
-        impact_str = json.dumps(self.impact) if isinstance(self.impact, dict) else self.impact
+        #impact_str = json.dumps(self.impact) if isinstance(self.impact, dict) else self.impact
+        impact_str = self.impact
 
         try:
             db_connection = sqlite3.connect(self.db_name)

@@ -40,6 +40,8 @@ from user_manager import UserManagerTinyDB
 
 from authorization_handler import AuthorizationHandler
 
+from grpc_request_handler import send_request_as_grpc
+
 _logger = logging.getLogger(__name__)
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -80,7 +82,8 @@ except OSError:
 # TODO: Update method parameters according the project/NOA-standard requirements and yuanchens additional developments
 # TODO: Implement additional UserManagement 
 def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_characteristics: list[str], timestamp: str, 
-                  description: list[str], impact: list[str], parameters: str, 
+                  #description: list[str], impact: list[str], parameters: str,
+                  description: list[str], impact: str, parameters: str,
                   modification: str, priority: int) -> tuple[str, str, str]:
     """
     OPC UA method to handle a request submission.
@@ -145,6 +148,10 @@ def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_charact
         try:
             _mq.send(request.encode(), timeout=None, priority=priority)
             _logger.info(f"Request with priority {priority} at {server_timestamp} received and forwared.")
+            try:
+                send_request_as_grpc(request=request_dict)
+            except Exception as e:
+                _logger.warning(f"gRPC-Error: {e}")
         except Exception as e:
             _logger.error(f"Error submit request method: {e}")
             return request_id, server_timestamp, f"Error: {str(e)}"
