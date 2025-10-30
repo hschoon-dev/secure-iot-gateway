@@ -22,16 +22,13 @@
 """
 
 import asyncio
-#import xml.etree.ElementTree as ET
 from defusedxml import ElementTree as ET
 from asyncua import  ua
 from pathlib import Path
-#from multiprocessing import shared_memory
 import json
 import xmlschema
 import logging
 import os
-#import posix_ipc
 
 from opcua_client import OpcUaClient
 from grpc_sender import send_json_payload

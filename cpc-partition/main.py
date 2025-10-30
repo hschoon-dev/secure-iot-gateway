@@ -28,9 +28,7 @@ import sys
 import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-#from multiprocessing import shared_memory
 import threading
-#import posix_ipc
 
 # local imports
 from opcua_client_manager import OpcUaClientManager
@@ -39,7 +37,6 @@ from modbus_tcp_client_manager import ModbusClientManager
 from flask_server_bridge.flask_server_bridge import FlaskServerBridge
 from config_loader import load_config
 
-# Make project root importable if needed
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 CONFIG = load_config(

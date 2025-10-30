@@ -23,20 +23,16 @@
 """
 
 import asyncio
-#import xml.etree.ElementTree as ET
 from defusedxml import ElementTree as ET
-#from multiprocessing import shared_memory
 import json
 import xmlschema
 import logging
 import os
-#import posix_ipc
 
 from modbus_tcp_client import ModbusTCPClient
 from grpc_sender import send_json_payload
 
 _logger = logging.getLogger(__name__)
-
 
 class ModbusClientManager:
     def __init__(self, xml_config_path: str, xsd_path: str):
