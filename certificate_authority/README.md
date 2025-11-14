@@ -3,6 +3,7 @@
 Here we describe the implementation of an self-signed CA. This is necessary for the gRPC communication with mTLS.
 Overview of gRPC services of the SIoT-Gateway and necessary certificates/keys:
 ```bash
+gRPC:
 secure-iot-gateway
 ├─ CPC-Partition (grpc-Client for the psM+O- AND the Interface-Partition)
 │  ├─ Certificates: cpc-client.crt, ca.crt 
@@ -26,6 +27,17 @@ secure-iot-gateway
 └─ ...
 # the CA-certificate of the corresponding gRPC-server/-client is needed 
 # (in this example the CA is the same for all)
+
+OPCUA+ModbusTCP:
+secure-iot-gateway
+├─ CPC-Partition (OPCUA-Client for the CPC-Domain)
+│  ├─ Certificates: cpc-opcua-client.crt, {cpc-endpoint-1.crt, cpc-endpoint-2.crt, ...}, pot. ca.crt
+│  └─ Private keys: cpc-opcua-client.key
+│
+├─ Interface-Partition (OPCUA-Server for the Central-M+O-Domain)
+│  ├─ Certificates: interface-opcua-server.crt, {central-mo-client-1.crt, central-mo-client-2.crt, ...}, pot. ca.crt
+│  └─ Private keys: interface-opcua-server.key
+└─ ...
 ```
 
 ____
@@ -64,7 +76,7 @@ openssl req -x509 -new -nodes -key certs/ca/ca.key -sha256 -days 3650 \
   -subj "/CN=demo-root-ca" -out certs/ca/ca.crt
 
 # 2) Server cert (SAN includes grpc-server)
-openssl genrsa -out certs/server/server.key 2048
+openssl genrsa -out certs/server/server.key 4096
 cat > certs/server/server.cnf <<EOF
 [req]
 distinguished_name=req
@@ -81,7 +93,7 @@ openssl x509 -req -in certs/server/server.csr -CA certs/ca/ca.crt -CAkey certs/c
   -out certs/server/server.crt -days 825 -sha256 -extfile certs/server/server.cnf -extensions req_ext
 
 # 3) Client cert
-openssl genrsa -out certs/client/client.key 2048
+openssl genrsa -out certs/client/client.key 4096
 openssl req -new -key certs/client/client.key -out certs/client/client.csr -subj "/CN=demo-client"
 openssl x509 -req -in certs/client/client.csr -CA certs/ca/ca.crt -CAkey certs/ca/ca.key -CAcreateserial \
   -out certs/client/client.crt -days 825 -sha256

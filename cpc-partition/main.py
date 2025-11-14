@@ -83,7 +83,7 @@ def setup_logging(
 
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.WARNING)
+_logger = setup_logging(logging.INFO)
 
 async def opcua_service() -> None:
     """

@@ -24,13 +24,6 @@ CLIENT_CERT = cert_base / "client" / "client.crt"
 CLIENT_KEY  = cert_base / "client" / "client.key"
 CA_CERT     = cert_base / "ca"     / "ca.crt"
 
-"""cert_base =             Path(__file__).parent.parent
-# Client certs for mTLS
-CLIENT_CERT = Path(cert_base /  "/certificates/grpc/client/client.crt")
-CLIENT_KEY  = Path(cert_base /  "/certificates/grpc/client/client.key")
-CA_CERT     = Path(cert_base /  "/certificates/grpc/ca/ca.crt")"""
-
-
 def send_request_as_grpc(request: dict[str, Any]):
     try:
         with open(CLIENT_KEY,"rb") as f: client_key = f.read()
