@@ -80,7 +80,7 @@ def setup_logging(
 
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.DEBUG)
+_logger = setup_logging(logging.INFO)
 
 
 def main():

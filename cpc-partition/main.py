@@ -70,7 +70,6 @@ def setup_logging(
     # Rotating file handler
     print(f"Logging to file: {log_file}")
     file_handler = RotatingFileHandler(
-        #log_path, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
         log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
     )
     file_handler.setFormatter(formatter)
@@ -83,7 +82,7 @@ def setup_logging(
 
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.INFO)
+_logger = setup_logging(logging.WARNING)
 
 async def opcua_service() -> None:
     """
@@ -93,34 +92,11 @@ async def opcua_service() -> None:
     xml_config_file_opcua   = opcua_config.files.xml_config
     xsd_file_opcua          = opcua_config.files.xsd_schema
     opcua_interval          = opcua_config.interval
-    opcua_shm_name          = opcua_config.shared_memory.name
-    opcua_shm_size          = opcua_config.shared_memory.size
-    opcua_semaphore_name    = opcua_config.semaphore.name
-    
-    """sys.path.insert(0, "..")
-    path_base = Path(__file__).parent
-    xml_config_file_opcua =  Path(path_base / "config/opcua-endpoints_factory_and_docker.xml")
-    xsd_file_opcua = Path(path_base / "config/opcua-endpoints.xsd")
-
-    opcua_interval = 1 # Interval in seconds
-    opcua_shm_name = 'opcua_shm'
-    opcua_shm_size = 1024*10
-    opcua_semaphore_name = 'opcua_semaphore'"""
-
-    # Prepare lists for shm and semaphore
-    #opcua_shm_psmo = shared_memory.SharedMemory(name=f"{opcua_shm_name}_psmo", create=True, size=opcua_shm_size)
-    #opcua_shm_interface = shared_memory.SharedMemory(name=f"{opcua_shm_name}_interface", create=True, size=opcua_shm_size)
-    #opcua_shm_list = [opcua_shm_psmo, opcua_shm_interface]
-    
-    #opcua_semaphore_psmo = posix_ipc.Semaphore(f"{opcua_semaphore_name}_psmo", posix_ipc.O_CREX)
-    #opcua_semaphore_interface = posix_ipc.Semaphore(f"{opcua_semaphore_name}_interface", posix_ipc.O_CREX)
-    #opcua_sem_list = [opcua_semaphore_psmo, opcua_semaphore_interface]
 
     opcua_manager = OpcUaClientManager(xml_config_file_opcua, xsd_file_opcua)
     if await opcua_manager.start_clients() == []:
         _logger.error(f"Start clients returned empty list.")
         return
-    #await opcua_manager.periodic_read(opcua_interval, opcua_shm_list, opcua_sem_list)
     await opcua_manager.periodic_read(opcua_interval)
 
 def opcua_service_thread() -> None:
@@ -140,32 +116,9 @@ async def modbus_tcp_service() -> None:
     xml_config_file_modbustcp   = modbustcp_config.files.xml_config
     xsd_file_modbustcp          = modbustcp_config.files.xsd_schema
     modbus_interval             = modbustcp_config.interval
-    modbus_shm_name             = modbustcp_config.shared_memory.name
-    modbus_shm_size             = modbustcp_config.shared_memory.size
-    modbus_semaphore_name       = modbustcp_config.semaphore.name
-
-    """sys.path.insert(0, "..")
-    path_base = Path(__file__).parent
-    xml_config_file_modbustcp =  Path(path_base / "config/modbustcp-endpoints_ecotec.xml")
-    xsd_file_modbustcp = Path(path_base / "config/modbustcp-endpoints.xsd")
-
-    modbus_interval = 1
-    modbus_shm_name = 'modbus_shm'
-    modbus_shm_size = 1024*12
-    modbus_semaphore_name = 'modbus_semaphore'"""
-
-    # Prepare lists for shm and semaphore
-    #modbus_shm_psmo = shared_memory.SharedMemory(name=f"{modbus_shm_name}_psmo", create=True, size=modbus_shm_size)
-    #modbus_shm_interface = shared_memory.SharedMemory(name=f"{modbus_shm_name}_interface", create=True, size=modbus_shm_size)
-    #modbus_shm_list = [modbus_shm_psmo, modbus_shm_interface]
-    
-    #modbus_semaphore_psmo = posix_ipc.Semaphore(f"{modbus_semaphore_name}_psmo", posix_ipc.O_CREX)
-    #modbus_semaphore_interface = posix_ipc.Semaphore(f"{modbus_semaphore_name}_interface", posix_ipc.O_CREX)
-    #modbus_sem_list = [modbus_semaphore_psmo, modbus_semaphore_interface]
 
     modbus_manager = ModbusClientManager(xml_config_file_modbustcp, xsd_file_modbustcp)
     await modbus_manager.start_clients()
-    #await modbus_manager.periodic_read(modbus_interval, modbus_shm_list, modbus_sem_list)
     await modbus_manager.periodic_read(modbus_interval)
 
 def modbus_tcp_service_thread() -> None:
