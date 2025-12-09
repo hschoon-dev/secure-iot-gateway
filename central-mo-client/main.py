@@ -168,9 +168,10 @@ async def setup_client(max_retries=5, retry_delay=5):
     cert_base = Path(__file__).parent
     client_cert = Path(cert_base / "certificates/python_client/mo_client_cert.der")
     client_private_key = Path(cert_base / "certificates/python_client/mo_client_key.pem")
-    server_cert = Path(cert_base / "certificates/trusted/server_cert.der")
+    server_cert = Path(cert_base / "certificates/trusted/interface_server_cert.der")
 
     client = Client(url)
+    client.application_uri = f"urn:freeopcua:client" #TODO: this value MUST match the configured certificate subjectAltName!
     # Set a reasonable timeout for operations
     client.session_timeout = 30000  # 30 seconds in milliseconds
     

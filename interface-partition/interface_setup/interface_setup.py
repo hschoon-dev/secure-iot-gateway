@@ -42,8 +42,8 @@ sys.path.insert(0, "..")
 _logger = logging.getLogger(__name__)
 
 cert_base =             Path(__file__).parent.parent
-server_cert =           Path(cert_base / "certificates/python-server/server_cert.der")
-server_private_key =    Path(cert_base / "certificates/python-server/server_key.pem")
+server_cert =           Path(cert_base / "certificates/python-server/interface_server_cert.der")
+server_private_key =    Path(cert_base / "certificates/python-server/interface_server_key.pem")
 client_cert =           Path(cert_base / "certificates/trusted/certs/mo_client_cert.der")
 ua_expert_cert =        Path(cert_base / "certificates/trusted/certs/uaexpert.der")
 ua_expert_cert_omag =   Path(cert_base / "certificates/trusted/certs/uaexpert_OMAG.der")
@@ -151,7 +151,7 @@ async def setup_opcua_server() -> Server:
 
     server = Server(user_manager=cert_user_manager)
     await server.init()
-    server_app_uri =   f"urn:freeopcua:python:server"
+    server_app_uri =   f"urn:freeopcua:interface_server" #TODO: this value MUST match the configured certificate subjectAltName!
     await server.set_application_uri(server_app_uri)
     server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
 

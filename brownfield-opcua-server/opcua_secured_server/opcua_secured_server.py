@@ -42,12 +42,12 @@ _logger = logging.getLogger(__name__)
 cert_base =             Path(__file__).parent
 server_cert =           Path(cert_base / "certificates/brownfield_server_cert.der")
 server_private_key =    Path(cert_base / "certificates/brownfield_server_key.pem")
-client_cert =           Path(cert_base / "certificates/trusted/client_cert.der")
+client_cert =           Path(cert_base / "certificates/trusted/cpc_client_cert.der")
 #client_private_key =    Path(cert_base / "certificates/python-client/client_key.pem")
 
 
 async def start_secured_server():
-    server_app_uri =   f"brownfield-server"
+    server_app_uri = f"urn:freeopcua:brownfield_server" #TODO: this value MUST match the configured certificate subjectAltName!
 
     cert_user_manager = CertificateUserManager()
     #await cert_user_manager.add_admin(client_cert, name='PythonClient')
