@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OPCUA_DIR="${ROOT_DIR}/opcua"
+#OPCUA_DIR="${ROOT_DIR}/opcua"
+OPCUA_DIR="${ROOT_DIR}"
 
 generate_selfsigned() {
     local dir="$1"
