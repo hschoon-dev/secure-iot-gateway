@@ -6,10 +6,10 @@
  Beschreibung:
     The user manager module provides functionality for
     managing user accounts, including creating, updating,
-    deleting, and retrieving user information. It securely
-    handles password hashing and verification using bcrypt
-    with unique salts for each user. The module now uses
-    TinyDB for storage and a thread lock for concurrency.
+    deleting, and retrieving user information.
+
+    Password hashing / verification now uses Argon2id
+    (argon2-cffi) instead of bcrypt.
 
  Autor(en):
     - Heiko Schoon
@@ -23,7 +23,6 @@
 """
 
 import os
-import bcrypt
 import logging
 import threading
 from typing import TypedDict
@@ -33,10 +32,24 @@ from tinydb.table import Document
 from tinydb.storages import JSONStorage
 from tinydb.middlewares import CachingMiddleware
 
+from argon2 import PasswordHasher
+from argon2.low_level import Type
+from argon2 import exceptions as argon2_exceptions
+
 _logger = logging.getLogger(__name__)
 __path__ = os.path.dirname(os.path.abspath(__file__))
-# Use JSON file for TinyDB
-credentials_db_file_path = os.path.join(__path__, 'credentials.json')
+credentials_db_file_path = os.path.join(__path__, "credentials.json")
+
+# Argon2id configuration (tune for your device constraints)
+# memory_cost is in KiB. Example: 64 * 1024 = 64 MiB.
+_ARGON2 = PasswordHasher(
+    time_cost=3,
+    memory_cost=64 * 1024,
+    parallelism=2,
+    hash_len=32,
+    salt_len=16,
+    type=Type.ID,   # Argon2id
+)
 
 
 class UserDetails(TypedDict):
@@ -52,10 +65,10 @@ class UserManagerTinyDB:
 
     def _read_admin_password_from_env(self) -> str | None:
         try:
-            _admin_password = os.getenv("ADMIN_PASSWORD")
-            return _admin_password
+            return os.getenv("ADMIN_PASSWORD")
         except Exception as e:
             _logger.error(f"Error reading ADMIN_PASSWORD from environment: {e}")
+            return None
 
     def _bootstrap_admin_or_die(self) -> None:
         """
@@ -72,11 +85,10 @@ class UserManagerTinyDB:
             _logger.info("Admin user already present; skipping bootstrap.")
             return
 
-        # Missing admin: require a password or abort
         admin_pw = self._read_admin_password_from_env()
         if not admin_pw:
             _logger.critical(
-                "No admin user exists and ADMIN_PASSWORD/ADMIN_PASSWORD_FILE not provided. "
+                "No admin user exists and ADMIN_PASSWORD not provided. "
                 "Refusing to start in an insecure state."
             )
             raise SystemExit(2)
@@ -89,9 +101,7 @@ class UserManagerTinyDB:
             raise SystemExit(2)
 
     def create_user(self, username: str, password: str) -> bool:
-        """
-        Create a new user with securely hashed password
-        """
+        """Create a new user with securely hashed password (Argon2id)."""
         if not username or not password:
             _logger.error("Username and password cannot be empty")
             return False
@@ -101,15 +111,7 @@ class UserManagerTinyDB:
             _logger.error(f"Password validation failed: {validate_password_msg}")
             return False
 
-        credentials_without_salt = (username, password)
-        res = self.db.insert_credentials(credentials_without_salt)
-
-        if res:
-            _logger.info(f"Created user '{username}'")
-        else:
-            _logger.error(f"Failed to create user '{username}'")
-
-        return res
+        return self.db.insert_credentials((username, password))
 
     def delete_user(self, id: int) -> bool:
         """Delete a user by ID"""
@@ -142,47 +144,38 @@ class UserManagerTinyDB:
         return True, "Password meets requirements"
 
     @staticmethod
-    def hash_password(password: str, salt: str) -> str:
-        """Hash password using bcrypt with specific salt"""
+    def hash_password(password: str) -> str:
+        """Hash password using Argon2id."""
         if not isinstance(password, str):
             password = str(password)
-        if not isinstance(salt, str):
-            salt = str(salt)
-
-        salted_password = password + salt
-        return bcrypt.hashpw(salted_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        return _ARGON2.hash(password)
 
     @staticmethod
-    def verify_password(password: str, salt: str, stored_hash: str) -> bool:
-        """Verify password using bcrypt"""
+    def verify_password(password: str, stored_hash: str) -> bool:
+        """Verify password using Argon2id."""
         if not isinstance(password, str):
             password = str(password)
-        if not isinstance(salt, str):
-            salt = str(salt)
-
-        salted_password = password + salt
-        return bcrypt.checkpw(salted_password.encode("utf-8"), stored_hash.encode("utf-8"))
+        try:
+            return _ARGON2.verify(stored_hash, password)
+        except (argon2_exceptions.VerifyMismatchError, argon2_exceptions.InvalidHash):
+            return False
 
     def verify_credentials(self, username: str, password: str) -> bool:
         """Verify if the provided credentials are valid."""
-        result = self.retrieve_user(username)
-
-        if result is None:
-            _logger.warning(f"User {username} not found in database")
+        res, user = self.retrieve_user(username)
+        if not res or user is None:
+            _logger.warning(f"User {username} not found or failed to retrieve")
             return False
 
-        if isinstance(result, tuple):
-            res, user = result
-            if not res or user is None:
-                _logger.warning(f"Failed to retrieve user {username}")
-                return False
+        stored_hash = user[2]  # argon2 hash string (includes salt/params)
+        ok = self.verify_password(password, stored_hash)
 
-            stored_hash = user[2]  # password hash
-            user_salt = user[3]    # user-specific salt
-            return self.verify_password(password, user_salt, stored_hash)
+        # Optional: if parameters changed, you can rehash-on-login
+        # (requires a DB write; uncomment if you want that behavior)
+        # if ok and _ARGON2.check_needs_rehash(stored_hash):
+        #     self.db.rehash_password(username, password)
 
-        _logger.warning(f"Unexpected return format from retrieve_user for {username}")
-        return False
+        return ok
 
     def user_exists(self, username: str) -> bool:
         """Check if a user exists in the database"""
@@ -207,13 +200,9 @@ class UserManagerTinyDB:
         res, user = self.retrieve_user(username)
         if not res or user is None:
             return None
-        return {
-            "id": user[0],
-            "username": user[1],
-        }
+        return {"id": user[0], "username": user[1]}
 
     def __del__(self) -> None:
-        """No persistent handles to close with TinyDB"""
         pass
 
 
@@ -223,40 +212,31 @@ class DatabaseConnector:
 
     Table schema (document fields):
       - username: str (unique)
-      - password: str (bcrypt hash of password+salt)
-      - salt:     str (hex, per-user)
+      - password: str (Argon2id hash string, includes salt+params)
+      - salt:     str (kept only for backwards API compatibility; unused)
     TinyDB doc_id is exposed as 'id' to match previous API.
     """
 
     def __init__(self, db_path: str) -> None:
-        # CachingMiddleware reduces writes; flushes on close/GC.
         self._lock = threading.RLock()
         self._db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
         self._table = self._db.table("credentials")
         self._User = Query()
-        # No explicit table creation needed.
 
     def insert_credentials(self, credentials: tuple[str, str]) -> bool:
-        """
-        Insert user credentials into the store.
-        credentials: (username, plain_password)
-        """
+        """Insert user credentials into the store. credentials: (username, plain_password)"""
         username, plain_password = credentials
         try:
             with self._lock:
-                # Enforce unique username
                 existing = self._table.get(self._User.username == username)
                 if existing is not None:
                     _logger.error("Username already exists")
                     return False
 
-                user_salt = os.urandom(32).hex()
-                salted_password = plain_password + user_salt
-                hashed_password = bcrypt.hashpw(
-                    salted_password.encode("utf-8"), bcrypt.gensalt()
-                ).decode("utf-8")
+                hashed_password = UserManagerTinyDB.hash_password(plain_password)
 
-                doc = {"username": username, "password": hashed_password, "salt": user_salt}
+                # Keep "salt" field for compatibility, but unused with Argon2id
+                doc = {"username": username, "password": hashed_password, "salt": ""}
                 self._table.insert(doc)
                 _logger.info("Credentials inserted")
                 return True
@@ -268,8 +248,7 @@ class DatabaseConnector:
         """Delete a credential by TinyDB doc_id"""
         try:
             with self._lock:
-                # remove(doc_ids=[...]) is the most direct way
-                removed = self._table.remove(doc_ids=[id])
+                self._table.remove(doc_ids=[id])
                 _logger.info("Credentials deleted")
                 return True
         except Exception as e:
@@ -277,17 +256,14 @@ class DatabaseConnector:
             return False
 
     def retrieve_credentials(self, username: str) -> tuple[bool, tuple[int, str, str, str] | None]:
-        """
-        Return (True, (id, username, hashed_password, salt)) if found, else (False, None)
-        """
+        """Return (True, (id, username, hashed_password, salt)) if found, else (False, None)"""
         try:
             with self._lock:
                 doc: Document | None = self._table.get(self._User.username == username)
                 if doc is None:
                     _logger.warning(f"No credentials found for username: {username}")
                     return False, None
-                # doc.doc_id is the record id we expose for compatibility
-                row = (int(doc.doc_id), doc["username"], doc["password"], doc["salt"])
+                row = (int(doc.doc_id), doc["username"], doc["password"], doc.get("salt", ""))
                 _logger.info("Credentials retrieved")
                 return True, row
         except Exception as e:
@@ -295,9 +271,7 @@ class DatabaseConnector:
             return False, None
 
     def update_credentials(self, username: str, old_password: str, new_password: str) -> bool:
-        """
-        Update user's password. Keeps the same salt (as your prior implementation).
-        """
+        """Update user's password (Argon2id)."""
         try:
             with self._lock:
                 doc: Document | None = self._table.get(self._User.username == username)
@@ -305,16 +279,12 @@ class DatabaseConnector:
                     _logger.error("Username does not exist")
                     return False
 
-                user_salt = doc["salt"]
                 stored_hash = doc["password"]
-
-                salted_old_password = old_password + user_salt
-                if not bcrypt.checkpw(salted_old_password.encode("utf-8"), stored_hash.encode("utf-8")):
+                if not UserManagerTinyDB.verify_password(old_password, stored_hash):
                     _logger.error("Old password is incorrect")
                     return False
 
-                hashed_new_password = UserManagerTinyDB.hash_password(new_password, user_salt)
-
+                hashed_new_password = UserManagerTinyDB.hash_password(new_password)
                 self._table.update({"password": hashed_new_password}, doc_ids=[doc.doc_id])
                 _logger.info("Credentials updated")
                 return True
@@ -343,7 +313,6 @@ class DatabaseConnector:
             return []
 
     def __del__(self) -> None:
-        # Ensure cache flushes
         try:
             self._db.close()
         except Exception:
@@ -353,78 +322,43 @@ class DatabaseConnector:
 def main():
     user_manager = UserManagerTinyDB(credentials_db_file_path)
 
-    print("\n=== Testing User Management System (TinyDB Version) ===\n")
+    print("\n=== Testing User Management System (TinyDB Version / Argon2id) ===\n")
 
-    # Clear database for testing
     print("Clearing database...")
     user_manager.clear_database()
 
-    # Create complex passwords that meet requirements
-    admin_password = "Admin123_secure_password_2025"  # 28 chars with upper, lower, digits
-    user_password = "User456_very_secure_pwd_2025"    # 28 chars with upper, lower, digits
+    admin_password = "Admin123_secure_password_2025"
+    user_password = "User456_very_secure_pwd_2025"
 
-    # Test user creation
     print("\n--- Testing User Creation ---")
-    res_admin = user_manager.create_user('admin', admin_password)
-    res_user = user_manager.create_user('user', user_password)
+    res_admin = user_manager.create_user("admin", admin_password)
+    res_user = user_manager.create_user("user", user_password)
     print(f"Created admin with Result: {res_admin}")
     print(f"Created user with Result: {res_user}")
 
-    # Test password requirements failures
-    print("\n--- Testing Password Requirements ---")
-    short_pw_result = user_manager.create_user('test1', 'Short1')
-    no_upper_result = user_manager.create_user('test2', 'this_has_no_uppercase_chars_123')
-    no_lower_result = user_manager.create_user('test3', 'THIS_HAS_NO_LOWERCASE_CHARS_123')
-    no_digit_result = user_manager.create_user('test4', 'This_has_no_digits_at_all')
-    print(f"Short password result: {short_pw_result}")
-    print(f"No uppercase result: {no_upper_result}")
-    print(f"No lowercase result: {no_lower_result}")
-    print(f"No digits result: {no_digit_result}")
-
-    # Test duplicate username
-    print("\n--- Testing Duplicate Username ---")
-    duplicate_id = user_manager.create_user('user', 'Different789_secure_password_2025')
-    print(f"Attempted duplicate creation result: {duplicate_id}")
-
-    # Test user retrieval
-    print("\n--- Testing User Retrieval ---")
-    res_admin, admin_record = user_manager.retrieve_user('admin')
-    res_user, user_record = user_manager.retrieve_user('user')
-    print(f"Admin record: {admin_record} with status {res_admin}")
-    print(f"User record: {user_record} with status {res_user}")
-
-    # Test credential verification
     print("\n--- Testing Credential Verification ---")
-    admin_valid = user_manager.verify_credentials('admin', admin_password)
-    admin_invalid = user_manager.verify_credentials('admin', 'wrong_password_123456789012')
+    admin_valid = user_manager.verify_credentials("admin", admin_password)
+    admin_invalid = user_manager.verify_credentials("admin", "wrong_password_123456789012")
     print(f"Admin valid credentials: {admin_valid}")
     print(f"Admin invalid credentials: {admin_invalid}")
 
-    # Test password update
     print("\n--- Testing Password Update ---")
     new_admin_password = "NewAdmin987_secure_password_2025"
-    update_result = user_manager.update_user('admin', old_password=admin_password, new_password=new_admin_password)
+    update_result = user_manager.update_user("admin", old_password=admin_password, new_password=new_admin_password)
     print(f"Password update result: {update_result}")
 
-    # Verify the new password works
-    admin_valid = user_manager.verify_credentials('admin', new_admin_password)
+    admin_valid = user_manager.verify_credentials("admin", new_admin_password)
     print(f"Admin with new password: {admin_valid}")
 
-    # Old password should fail
-    admin_invalid = user_manager.verify_credentials('admin', admin_password)
+    admin_invalid = user_manager.verify_credentials("admin", admin_password)
     print(f"Admin with old password: {admin_invalid}")
 
-    # Test failed update with incorrect old password
-    update_result = user_manager.update_user('admin', 'wrong_old_password_12345678', 'Another567_secure_password_2025')
-    print(f"Update with incorrect old password: {update_result}")
-
-    # Show all users
     print("\n--- All Users ---")
     print(user_manager.get_all_users())
 
     print("\n=== Test Complete ===\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     main()

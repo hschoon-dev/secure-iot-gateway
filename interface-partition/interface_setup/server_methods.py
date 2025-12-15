@@ -39,8 +39,8 @@ _logger = logging.getLogger(__name__)
 
 path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(path)
-credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
-_logger.error(f"Credentials DB path: {credentials_db_path}")
+#credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
+credentials_db_path = os.path.join(parent_path, "user_manager/credentials.json")
 _user_manager = UserManagerTinyDB(credentials_db_path, max_connections=10)
 
 """try:
