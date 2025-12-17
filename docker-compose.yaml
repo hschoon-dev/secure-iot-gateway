@@ -55,6 +55,7 @@ services:
     container_name: interface-partition
     build: interface-partition/
     volumes:
+      # Logging files
       - type: bind
         source: ./interface-partition/logs
         target: /app/logs
