@@ -16,7 +16,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.1
+        ipv4_address: 192.168.0.160
 
   ecotec-modbus-server:
     container_name: ecotec-modbus-server
@@ -27,7 +27,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.2
+        ipv4_address: 192.168.0.161
 
 
 # Gateway-Applications:
@@ -47,7 +47,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.8
+        ipv4_address: 192.168.0.151
 
 
   # Application of the gateway's Interface Partition
@@ -65,7 +65,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.7
+        ipv4_address: 192.168.0.121
 
 
   # Intermediate VoR Partition
@@ -87,7 +87,7 @@ services:
     attach: true
     networks:
       static-network:
-        ipv4_address: 172.20.128.9
+        ipv4_address: 192.168.0.124
 
   # Second Intermediate VoR Partition
   intermediate-vor-partition-cpc:
@@ -114,7 +114,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.5
+        ipv4_address: 192.168.0.125
 
   # Application of the gateway's psM+O Partition
   psmo-partition:
@@ -129,7 +129,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.6
+        ipv4_address: 192.168.0.123
 
   # Application of the gateway's CPC Partition
   cpc-partition:
@@ -153,11 +153,12 @@ services:
     attach: false
     networks:
       static-network:
-          ipv4_address: 172.20.128.4
+          ipv4_address: 192.168.0.122
 
 
 networks:
   static-network:
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.1

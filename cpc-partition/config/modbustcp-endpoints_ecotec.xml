@@ -2,7 +2,7 @@
 <modbus-servers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="modbustcp-endpoints.xsd">
   
   <server>
-    <ipaddr>172.20.128.2</ipaddr>
+    <ipaddr>192.168.0.161</ipaddr>
     <port>503</port>
     <serveralias>Ecotec</serveralias>
     <endpoints>

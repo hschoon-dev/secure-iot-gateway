@@ -17,4 +17,5 @@ keyUsage = digitalSignature, keyEncipherment
 DNS.1 = intermediate-vor-partition
 DNS.2 = localhost
 IP.1  = 127.0.0.1
-IP.2 = 172.20.128.9
+IP.2  = 172.20.128.9
+IP.3  = 192.168.0.124

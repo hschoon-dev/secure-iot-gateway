@@ -72,7 +72,7 @@ def setup_logging(
 
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.INFO)
+_logger = setup_logging(logging.DEBUG)
 
 async def submit_request(client: Client, in_args, params):
     """Submit the request to the server and log results"""
@@ -163,7 +163,7 @@ async def setup_client(max_retries=5, retry_delay=5):
     _logger.info(f"Central M+O Application started.")
 
     #url = "opc.tcp://interface-partition:4840/freeopcua/server/"  # Ensure this matches the server address
-    url = "opc.tcp://172.20.128.7:4840/freeopcua/server/"
+    url = "opc.tcp://192.168.0.121:4840/freeopcua/server/"
 
     cert_base = Path(__file__).parent
     client_cert = Path(cert_base / "certificates/python_client/mo_client_cert.der")

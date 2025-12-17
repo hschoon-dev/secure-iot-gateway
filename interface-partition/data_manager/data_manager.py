@@ -27,6 +27,7 @@ import logging
 import json
 from asyncua import ua, Node, Server
 from queue import Queue, Empty
+from typing import Optional
 
 _logger = logging.getLogger(__name__)
 
@@ -113,15 +114,15 @@ class DataManager:
             _logger.error(f"JSON parse error: {e}")
             return {}
 
-    async def create_population(self, queue: Queue, endpoint_label: str) -> list[tuple[str, Node | None]]:
-        """
-        Wait for first valid message from queue and create initial OPC UA population.
-        endpoint_label e.g. 'OPCUA_Endpoints' or 'ModbusTCP_Endpoints'
-        """
-        _logger.info(f"[{endpoint_label}] Waiting for first message...")
+    """async def create_population(self, queue: Queue, endpoint_label: str) -> list[tuple[str, Node | None]]:
+        
+        #Wait for first valid message from queue and create initial OPC UA population.
+        #endpoint_label e.g. 'OPCUA_Endpoints' or 'ModbusTCP_Endpoints'
+        
+        _logger.info(f"[{endpoint_label}] Waiting for first message...") # TODO: max waiting time!
         variables: list[tuple[str, Node | None]] = []
 
-        while not variables:
+        while not variables: # TODO: do not wait for an infinite amount of time!
             try:
                 message = await self._get_message_from_queue(queue, timeout_s=1.0)
                 _logger.info(f"[{endpoint_label}] Got message: type={type(message)}")
@@ -136,7 +137,63 @@ class DataManager:
             except Exception as e:
                 _logger.error(f"[{endpoint_label}] Error creating population from queue: {e}")
 
-        return variables
+        return variables"""
+    
+    async def create_population(
+        self,
+        queue: Queue,
+        endpoint_label: str,
+        max_wait_s: float = 20.0,
+    ) -> Optional[list[tuple[str, Node | None]]]:
+        """
+        Wait for first valid message from queue and create initial population.
+
+        Returns:
+        - list[...] on success
+        - None on timeout (after logging an error)
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + max_wait_s
+
+        _logger.info(f"[{endpoint_label}] Waiting for first message (max {max_wait_s}s)...")
+        variables: list[tuple[str, Node | None]] = []
+
+        try:
+            while not variables:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise asyncio.TimeoutError(
+                        f"[{endpoint_label}] Timed out after {max_wait_s}s waiting for first valid message."
+                    )
+
+                per_try_timeout = min(1.0, remaining)
+
+                try:
+                    message = await self._get_message_from_queue(queue, timeout_s=per_try_timeout)
+                    _logger.info(f"[{endpoint_label}] Got message: type={type(message)}")
+
+                    data = self._parse_payload(message.get("data"))
+                    if data:
+                        _logger.info(f"[{endpoint_label}] Creating initial population from {message.get('timestamp')}")
+                        variables = await self._create_opcua_objects(data, endpoint_label)
+                    else:
+                        await asyncio.sleep(0.1)
+
+                except Empty:
+                    await asyncio.sleep(0.1)
+
+                except asyncio.CancelledError:
+                    raise  # don't swallow cancellation
+
+                except Exception:
+                    _logger.exception(f"[{endpoint_label}] Error creating population from queue")
+                    await asyncio.sleep(0.1)
+
+            return variables
+
+        except asyncio.TimeoutError as e:
+            _logger.error(str(e))
+            return None
 
     async def update_population(
         self,
