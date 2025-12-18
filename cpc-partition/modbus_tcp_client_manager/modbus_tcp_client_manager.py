@@ -136,7 +136,6 @@ class ModbusClientManager:
                                                         "description": f"{client.endpoints[endpoint_name]['description']}"
                                                     }
             
-            # TODO: Test with gRPC: dann payload noch in die Funktion einfügen... plus IP:PORT
             try:
                 grpc_payload = json.dumps(modbus_values)
                 response = send_json_payload(grpc_payload, source="MODBUSTCP", dest="192.168.0.123:50051") # psmo-Partition

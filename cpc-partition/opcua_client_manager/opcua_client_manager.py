@@ -165,7 +165,6 @@ class OpcUaClientManager:
                                                             "description": f"{node['description']}"
                                                         }
                                 
-            # TODO: Test with gRPC: dann payload noch in die Funktion einfügen... plus IP:PORT
             try:
                 grpc_payload = json.dumps(opcua_values)
                 psmo_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.0.123:50051") # psmo-Partition

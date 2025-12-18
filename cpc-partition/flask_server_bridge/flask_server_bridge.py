@@ -172,7 +172,7 @@ class FlaskServerBridge:
         @self.app.route('/update_endpoints', methods=['POST'])
         def update_endpoints():
             # ------------------------------------------------------------
-            # 1) Request-JSON parsen → Variablenliste bauen # BUG: Wieso jetzt plötzlich JSON???
+            # 1) Request-JSON parsen → Variablenliste bauen # BUG: Wieso jetzt JSON???
             # ------------------------------------------------------------
             # BUG: Not implemented: Write the value back to the appropriate OPC UA or Modbus endpoint
             #instead_call_this = await vor_6_placeholder()

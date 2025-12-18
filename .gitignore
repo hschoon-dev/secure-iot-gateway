@@ -29,9 +29,10 @@ env/
 *.drawio
 *.bkp
 
-# Logs
-logs
-*.log
+# Logs (keep folder, ignore contents)
+logs/*
+!logs/.gitkeep
+*.log*
 npm-debug.log*
 
 # Runtime data

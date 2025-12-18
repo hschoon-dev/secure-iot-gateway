@@ -47,7 +47,7 @@ client_cert =           Path(cert_base / "certificates/trusted/cpc_client_cert.d
 
 
 async def start_secured_server():
-    server_app_uri = f"urn:freeopcua:brownfield_server" #TODO: this value MUST match the configured certificate subjectAltName!
+    server_app_uri = f"urn:freeopcua:brownfield_server" #NOTE: this value MUST match the configured certificate subjectAltName!
 
     cert_user_manager = CertificateUserManager()
     #await cert_user_manager.add_admin(client_cert, name='PythonClient')
