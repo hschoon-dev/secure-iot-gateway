@@ -138,7 +138,7 @@ class ModbusClientManager:
             
             try:
                 grpc_payload = json.dumps(modbus_values)
-                response = send_json_payload(grpc_payload, source="MODBUSTCP", dest="192.168.0.123:50051") # psmo-Partition
+                response = send_json_payload(grpc_payload, source="MODBUSTCP", dest="192.168.0.122:50051") # psmo-Partition
                 if response is None:
                     _logger.error(f"Error sending gRPC with JSON")
                 interface_response = send_json_payload(grpc_payload, source="MODBUSTCP", dest="192.168.0.121:50051") # Interface-Partition
