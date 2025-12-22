@@ -6,7 +6,6 @@ IP=$(ip -4 addr show eth0 | awk '/inet / {print $2}' | cut -d/ -f1)
 echo "Detected IP: $IP"
 
 ### Sub-Funktionen definieren ###
-
 vm121() {
     echo "Starte Konfiguration für die ELinOS-Partition Nr.1 - IP: 192.168.0.121"
     echo "Funktion: Gateway-Interface"
