@@ -2,7 +2,7 @@
 opcua:
   # interval: 1          # optional; defaults to 1
   files:
-    xml_config: config/opcua-endpoints_factory_and_docker.xml
+    xml_config: config/opcua-endpoints_demonstrator.xml
     xsd_schema:  config/opcua-endpoints.xsd
   shared_memory:
     name: opcua_shm
@@ -13,7 +13,7 @@ opcua:
 modbustcp:
   # interval: 1          # optional; defaults to 1
   files:
-    xml_config: config/modbustcp-endpoints_ecotec.xml
+    xml_config: config/modbustcp-endpoints_demonstrator.xml
     xsd_schema:  config/modbustcp-endpoints.xsd
   shared_memory:
     name: modbus_shm
