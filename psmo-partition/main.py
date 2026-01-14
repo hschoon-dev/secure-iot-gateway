@@ -39,7 +39,8 @@ import sys
 import os
 from logging.handlers import RotatingFileHandler
 
-from psmo_shm_handler import OPCUA_Thread, ModbusTCP_Thread
+#from psmo_shm_handler import OPCUA_Thread, ModbusTCP_Thread
+from grpc_json_handler import JSON_gRPC_Thread
 
 path = os.path.dirname(os.path.abspath(__file__))
 logging_path = os.path.join(path, "logs/app.log")
@@ -84,18 +85,12 @@ _logger = setup_logging(logging.INFO)
 
 def main():
     time.sleep(7)
-    opcua_shm_name = 'opcua_shm_psmo'
-    opcua_semaphore_name = 'opcua_semaphore_psmo'
+
     opcua_queue = queue.Queue(maxsize=5)
-    opcua_thread = OPCUA_Thread(opcua_semaphore_name, opcua_shm_name, opcua_queue)
+    modbustcp_queue = queue.Queue(maxsize=5)
 
-    modbus_shm_name = 'modbus_shm_psmo'
-    modbus_semaphore_name = 'modbus_semaphore_psmo'
-    modbus_queue = queue.Queue(maxsize=5)
-    modbus_thread = ModbusTCP_Thread(modbus_semaphore_name, modbus_shm_name, modbus_queue)
-
-    opcua_thread.start()
-    modbus_thread.start()
+    json_grpc_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
+    json_grpc_thread.start()
 
     try:
         _logger.info("psM+O partition is running.")
@@ -104,18 +99,24 @@ def main():
                 item = opcua_queue.get()
                 item_count = len(item.keys())
                 _logger.info(f"Retrieved {item_count} items from OPC UA queue. Waiting to process...")
-            if not modbus_queue.empty():
-                item = modbus_queue.get()
+                _logger.info(f"Timestamp: {item['timestamp']}")
+                _logger.info(f"Source: {item['source']}")
+                _logger.info(f"Data: {item['data']}")
+
+            if not modbustcp_queue.empty():
+                item = modbustcp_queue.get()
                 item_count = len(item.keys())
                 _logger.info(f"Retrieved {item_count} items from ModbusTCP queue. Waiting to process...")
-            #time.sleep(.05)
+                _logger.info(f"Timestamp: {item['timestamp']}")
+                _logger.info(f"Source: {item['source']}")
+                _logger.info(f"Data: {item['data']}")
+
     except Exception as e:
         _logger.error(f"Error handling main-process: {e}")
+
     except KeyboardInterrupt:
-        opcua_thread.stop()
-        modbus_thread.stop()
-        opcua_thread.join()
-        modbus_thread.join()
+        json_grpc_thread.stop()
+        json_grpc_thread.join()
 
 if __name__ == "__main__":
     main()

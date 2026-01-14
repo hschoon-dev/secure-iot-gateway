@@ -26,26 +26,22 @@
 import datetime
 import uuid
 import logging
-import posix_ipc
 import os
 from asyncua import uamethod
 from asyncua.ua import StatusCode, StatusCodes
 from typing import Any
-import json
 
-# Local imports
-#from user_manager_xml import UserManagerXML # Deprecated
-from user_manager import UserManager
+from user_manager import UserManagerTinyDB
 from authorization_handler import AuthorizationHandler
+from grpc_request_handler import send_request_as_grpc
 
 _logger = logging.getLogger(__name__)
 
 path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(path)
-credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
-_logger.error(f"Credentials DB path: {credentials_db_path}")
-_user_manager = UserManager(credentials_db_path, max_connections=10)
-
+#credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
+credentials_db_path = os.path.join(parent_path, "user_manager/credentials.json")
+_user_manager = UserManagerTinyDB(credentials_db_path, max_connections=10)
 
 """try:
     if not os.getenv("ADMIN_PASSWORD"):
@@ -67,13 +63,12 @@ _logger.debug(f"Casbin policy path: {casbin_policy_path_res}")
 _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), str(casbin_policy_path_res))
 
 
-_mq = posix_ipc.MessageQueue("/interface_partition_mq", posix_ipc.O_CREX)
-
 @uamethod 
 # TODO: Update method parameters according the project/NOA-standard requirements and yuanchens additional developments
 # TODO: Implement additional UserManagement 
 def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_characteristics: list[str], timestamp: str, 
-                  description: list[str], impact: list[str], parameters: str, 
+                  #description: list[str], impact: list[str], parameters: str,
+                  description: list[str], impact: str, parameters: str,
                   modification: str, priority: int) -> tuple[str, str, str]:
     """
     OPC UA method to handle a request submission.
@@ -128,14 +123,11 @@ def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_charact
     if not _rbac_authorization_handler.verify_authorization(issuer_id, parameter_name=parameters, action=f'"{impact}"'):
         _logger.error(f"Authorization failed for {issuer_id} with parameters {parameters} and action {impact}")
         return request_id, server_timestamp, f"Request authorization failed: {issuer_id}"
-
-    # Convert the dictionary to a proper JSON string
-    request = json.dumps(request_dict)
     
     # 3) Submit the request to the intermediate VoR partition
     # Setup POSIX message queue for ipc with the intermediate VoR partition
     try:
-        _mq.send(request.encode(), timeout=None, priority=priority)
+        send_request_as_grpc(request=request_dict)
         _logger.info(f"Request with priority {priority} at {server_timestamp} received and forwared.")
     except Exception as e:
         _logger.error(f"Error submit request method: {e}")

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package jsontransfer;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "example.com/yourproject/jsontransfer";
+
+// Service that receives JSON payloads (unidirectional)
+service JsonSender {
+  // Send a single JSON payload
+  rpc SendJson (JsonMessage) returns (google.protobuf.Empty);
+}
+
+// The JSON payload container
+message JsonMessage {
+  string id = 1;              // Optional metadata
+  string source = 2;          // e.g. "Ecotec"
+  string json_payload = 3;    // The raw JSON string (UTF-8)
+}

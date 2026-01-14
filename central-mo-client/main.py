@@ -72,7 +72,7 @@ def setup_logging(
 
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.INFO)
+_logger = setup_logging(logging.DEBUG)
 
 async def submit_request(client: Client, in_args, params):
     """Submit the request to the server and log results"""
@@ -162,14 +162,16 @@ async def setup_client(max_retries=5, retry_delay=5):
     """Setup and connect to OPC UA client with security"""
     _logger.info(f"Central M+O Application started.")
 
-    url = "opc.tcp://interface-partition:4840/freeopcua/server/"  # Ensure this matches the server address
+    #url = "opc.tcp://interface-partition:4840/freeopcua/server/"  # Ensure this matches the server address
+    url = "opc.tcp://192.168.0.121:4840/freeopcua/server/"
 
     cert_base = Path(__file__).parent
     client_cert = Path(cert_base / "certificates/python_client/mo_client_cert.der")
     client_private_key = Path(cert_base / "certificates/python_client/mo_client_key.pem")
-    server_cert = Path(cert_base / "certificates/trusted/server_cert.der")
+    server_cert = Path(cert_base / "certificates/trusted/interface_server_cert.der")
 
     client = Client(url)
+    client.application_uri = f"urn:freeopcua:client" #NOTE: this value MUST match the configured certificate subjectAltName!
     # Set a reasonable timeout for operations
     client.session_timeout = 30000  # 30 seconds in milliseconds
     
@@ -216,7 +218,7 @@ async def is_client_connected(client):
 
 async def main():
     """Main function to execute request submissions in a loop"""
-    await asyncio.sleep(5)  # Initial delay to ensure server is up
+    await asyncio.sleep(15)  # Initial delay to ensure server is up
     client = None
     try:
         client = await setup_client()

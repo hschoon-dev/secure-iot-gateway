@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modbus-servers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="modbustcp-endpoints.xsd">
+
+
+    <!-- Siemens LOGO! Server -->
+  <server>
+    <ipaddr>192.168.0.161</ipaddr>
+    <port>503</port>
+    <serveralias>HSEL-LOGO</serveralias>
+    <endpoints>
+    <endpoint>
+        <name>M3</name>
+        <function>Read Coils</function>
+        <address>8258</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M3 Bool Operating Hours</description>
+      </endpoint>
+      <endpoint>
+        <name>M4</name>
+        <function>Read Coils</function>
+        <address>8259</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M4 Internal Flag</description>
+      </endpoint>
+      <endpoint>
+        <name>M5</name>
+        <function>Read Coils</function>
+        <address>8260</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M5 Internal Flag</description>
+      </endpoint>
+
+      <endpoint>
+        <name>AM2</name>
+        <function>Read Holding Registers</function>
+        <address>529</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM2 Operating Hours</description>
+      </endpoint>
+
+    </endpoints>
+  </server>
+
+    <!-- Raspberry Pi 4B Testserver -->
+  <server>
+    <ipaddr>192.168.0.160</ipaddr>
+    <port>503</port>
+    <serveralias>Ecotec</serveralias>
+    <endpoints>
+    <endpoint>
+        <name>M7 Störung Kondensat</name>
+        <function>Read Coils</function>
+        <address>8262</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M7 Störung Kondensat</description>
+      </endpoint>
+      <endpoint>
+        <name>M8</name>
+        <function>Read Coils</function>
+        <address>8263</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M8</description>
+      </endpoint>
+      <endpoint>
+        <name>M9 Kompressor 4</name>
+        <function>Write Single Coil</function>
+        <address>8264</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M9 Kompressor 4</description>
+      </endpoint>
+      <endpoint>
+        <name>M10 Störung Kompressor 2</name>
+        <function>Read Coils</function>
+        <address>8265</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M10 Störung Kompressor 2</description>
+      </endpoint>
+      <endpoint>
+        <name>M11 Störung Kompressor 3</name>
+        <function>Read Coils</function>
+        <address>8266</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M11 Störung Kompressor 3</description>
+      </endpoint>
+      <endpoint>
+        <name>M12 Störung Kompressor 4</name>
+        <function>Read Coils</function>
+        <address>8267</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>M12 Störung Kompressor 4</description>
+      </endpoint>
+
+      <endpoint>
+        <name>AM2</name>
+        <function>Read Holding Registers</function>
+        <address>529</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM2</description>
+      </endpoint>
+      <endpoint>
+        <name>AM3</name>
+        <function>Read Holding Registers</function>
+        <address>530</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM3</description>
+      </endpoint>
+      <endpoint>
+        <name>AM4</name>
+        <function>Read Holding Registers</function>
+        <address>531</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM4</description>
+      </endpoint>
+      <endpoint>
+        <name>AM5</name>
+        <function>Read Holding Registers</function>
+        <address>532</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM5</description>
+      </endpoint>
+      <endpoint>
+        <name>AM6</name>
+        <function>Read Holding Registers</function>
+        <address>533</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM6</description>
+      </endpoint>
+      <endpoint>
+        <name>AM7</name>
+        <function>Read Holding Registers</function>
+        <address>534</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM7</description>
+      </endpoint>
+      <endpoint>
+        <name>AM8</name>
+        <function>Read Holding Registers</function>
+        <address>535</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM8</description>
+      </endpoint>
+      <endpoint>
+        <name>AM9</name>
+        <function>Read Holding Registers</function>
+        <address>536</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM9</description>
+      </endpoint>
+      <endpoint>
+        <name>AM10 Druck</name>
+        <function>Read Holding Registers</function>
+        <address>537</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM10 Druck</description>
+      </endpoint>
+      <endpoint>
+        <name>AM11 Taupunkt</name>
+        <function>Read Holding Registers</function>
+        <address>538</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM11 Taupunkt</description>
+      </endpoint>
+      <endpoint>
+        <name>AM12 Volumenstrom 1</name>
+        <function>Read Holding Registers</function>
+        <address>539</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM12 Volumenstrom 1</description>
+      </endpoint>
+      <endpoint>
+        <name>AM13 Volumenstrom 2</name>
+        <function>Read Holding Registers</function>
+        <address>540</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM13 Volumenstrom 2</description>
+      </endpoint>
+      <endpoint>
+        <name>AM14</name>
+        <function>Read Holding Registers</function>
+        <address>541</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM14</description>
+      </endpoint>
+      <endpoint>
+        <name>AM15</name>
+        <function>Read Holding Registers</function>
+        <address>542</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM15</description>
+      </endpoint>
+      <endpoint>
+        <name>AM16</name>
+        <function>Read Holding Registers</function>
+        <address>543</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM16</description>
+      </endpoint>
+      <endpoint>
+        <name>AM17</name>
+        <function>Read Holding Registers</function>
+        <address>544</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM17</description>
+      </endpoint>
+      <endpoint>
+        <name>AM18</name>
+        <function>Read Holding Registers</function>
+        <address>545</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM18</description>
+      </endpoint>
+      <endpoint>
+        <name>AM19</name>
+        <function>Read Holding Registers</function>
+        <address>546</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM19</description>
+      </endpoint>
+      <endpoint>
+        <name>AM20</name>
+        <function>Read Holding Registers</function>
+        <address>547</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>AM20</description>
+      </endpoint>
+
+      <endpoint>
+        <name>I2 Kompressor 2 Start über physischen Fernkontakt</name>
+        <function>Read Discrete Input</function>
+        <address>1</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Kompressor 2 Start über physischen Fernkontakt</description>
+      </endpoint>
+      <endpoint>
+        <name>I3 Kompressor 3 Start über physischen Fernkontakt</name>
+        <function>Read Discrete Input</function>
+        <address>2</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Kompressor 3 Start über physischen Fernkontakt</description>
+      </endpoint>
+      <endpoint>
+        <name>I4 Kompressor 4 Start über physischen Fernkontakt</name>
+        <function>Read Discrete Input</function>
+        <address>3</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Kompressor 4 Start über physischen Fernkontakt</description>
+      </endpoint>
+      <endpoint>
+        <name>I5</name>
+        <function>Read Discrete Input</function>
+        <address>4</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>I5 descr</description>
+      </endpoint>
+      <endpoint>
+        <name>I6</name>
+        <function>Read Discrete Input</function>
+        <address>5</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>I6 descr</description>
+      </endpoint>
+      <endpoint>
+        <name>I7</name>
+        <function>Read Discrete Input</function>
+        <address>6</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>I7 descr</description>
+      </endpoint>
+      <endpoint>
+        <name>I8</name>
+        <function>Read Discrete Input</function>
+        <address>7</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>I8 descr</description>
+      </endpoint>
+      <endpoint>
+        <name>I9 Störung Kondensat</name>
+        <function>Read Discrete Input</function>
+        <address>8</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Störung Kondensat</description>
+      </endpoint>
+      <endpoint>
+        <name>I10 Störung Kompressor 1</name>
+        <function>Read Discrete Input</function>
+        <address>9</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Störung Kompressor 1</description>
+      </endpoint>
+      <endpoint>
+        <name>I11 Störung Kompressor 2</name>
+        <function>Read Discrete Input</function>
+        <address>10</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Störung Kompressor 2</description>
+      </endpoint>
+      <endpoint>
+        <name>I12 Störung Kompressor 3</name>
+        <function>Read Discrete Input</function>
+        <address>11</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Störung Kompressor 3</description>
+      </endpoint>
+      <endpoint>
+        <name>I13 Störung Kompressor 4</name>
+        <function>Read Discrete Input</function>
+        <address>12</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Discrete Inputs</type>
+        <description>Störung Kompressor 4</description>
+      </endpoint>
+
+      <endpoint>
+        <name>Q5 Störung Trockner 1</name>
+        <function>Read Coil Status</function>
+        <address>8196</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coil Status</type>
+        <description>Störung Trockner 1</description>
+      </endpoint>
+      <endpoint>
+        <name>Q6 Störung Trockner 2</name>
+        <function>Read Coil Status</function>
+        <address>8197</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coil Status</type>
+        <description>Störung Trockner 2</description>
+      </endpoint>
+      <endpoint>
+        <name>Q7 Störung Trockner 3</name>
+        <function>Read Coil Status</function>
+        <address>8198</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coil Status</type>
+        <description>Störung Trockner 3</description>
+      </endpoint>
+      <endpoint>
+        <name>Q8 Störung Trockner 4</name>
+        <function>Read Coil Status</function>
+        <address>8199</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coil Status</type>
+        <description>Störung Trockner 4</description>
+      </endpoint>
+
+    </endpoints>
+  </server>
+
+</modbus-servers>

@@ -30,9 +30,10 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import sys
-import posix_ipc
-import random
 import argparse
+
+from queue import Queue
+from grpc_json_handler import JSON_gRPC_Thread
 
 # Own modules
 from interface_setup import setup_opcua_server
@@ -76,26 +77,24 @@ def setup_logging(
     )
     return logging.getLogger(__name__)
 
-#_logger = setup_logging(logging.INFO)
-_logger = logging.getLogger(__name__)
+_logger = setup_logging(logging.INFO)
 
 
-async def send_vor_request(mq:posix_ipc.MessageQueue, request:str):
-    # Initial filling of the message queue:
-    for i in range(10):
-        prio = random.randint(0, 31)
-        mq.send(request.encode(), timeout=None, priority=prio)
-        _logger.error(f"Filled mq with request: {request} with priority: {prio}")
+async def await_soft_timeout(task: asyncio.Task, label: str, timeout: float):
+    """
+    Wait up to `timeout` seconds.
+    - On success: return result
+    - On timeout: cancel the task and return None
+    """
+    try:
+        return await asyncio.wait_for(task, timeout=timeout)  # NOTE: no shield => timeout cancels task
+    except asyncio.TimeoutError:
+        _logger.error(f"Timed out waiting {timeout:.0f}s for {label}; cancelling task.")
+        task.cancel()
+        # ensure cancellation is processed (avoid "Task exception was never retrieved")
+        await asyncio.gather(task, return_exceptions=True)
+        return None
 
-    while True:
-        try:
-            prio = random.randint(0, 10)
-            mq.send(request.encode(), timeout=None, priority=prio)
-
-            _logger.error(f"Request sent: {request} with priority: {prio}")
-        except Exception as e:
-            _logger.error(f"Error sending request: {e}")
-        await asyncio.sleep(2)
     
 
 async def main():
@@ -111,42 +110,74 @@ async def main():
     log_level = getattr(logging, args.log_level.upper(), logging.WARNING)
     _logger = setup_logging(log_level)
 
+    opcua_queue = Queue()
+    modbustcp_queue = Queue()
+
+    grpc_server_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
+    grpc_server_thread.start()
+
     server = await setup_opcua_server()
     await asyncio.sleep(5)
 
-    opcua_shm_name = 'opcua_shm_interface'
-    opcua_sem_name = 'opcua_semaphore_interface'
-    modbus_shm_name = 'modbus_shm_interface'
-    modbus_sem_name = 'modbus_semaphore_interface'
 
     # Initial shared memory reading for OPC UA Server setup
     opcua_variables = []
-    data_manager = DataManager(server, opcua_shm_name, opcua_sem_name, modbus_shm_name, modbus_sem_name)
+    modbustcp_variables = []
+    #data_manager = DataManager(server, opcua_shm_name, opcua_sem_name, modbus_shm_name, modbus_sem_name)
+    data_manager = DataManager(server, opcua_queue, modbustcp_queue)
 
     _logger.info("OPC UA Server of the interface partition is running.")
     async with server:
         try:
-            # Initial population of OPC UA Server
-            opcua_variables = await asyncio.create_task(data_manager.create_opcua_population())
-            _logger.debug(f"OPC UA: {opcua_variables}")
-            modbus_variables = await asyncio.create_task(data_manager.create_modbus_population())
-            _logger.debug(f"ModbusTCP: {modbus_variables}")
+            _logger.info(f"Start populating...")
+            
+            # Create initial populations
+            """opcua_variables = await data_manager.create_population(opcua_queue, "OPCUA_Endpoints")
+            _logger.info("Initial OPC UA values created from OPC UA Queue.")
+            modbustcp_variables = await data_manager.create_population(modbustcp_queue, "ModbusTCP_Endpoints")
+            _logger.info("Initial OPC UA values created from ModbusTCP Queue.")"""
+            # Start both concurrently
+            opcua_task = asyncio.create_task(
+                data_manager.create_population(opcua_queue, "OPCUA_Endpoints", max_wait_s=20.0)
+            )
+            modbustcp_task = asyncio.create_task(
+                data_manager.create_population(modbustcp_queue, "ModbusTCP_Endpoints", max_wait_s=20.0)
+            )
+            # Wait for both concurrently
+            opcua_variables, modbustcp_variables = await asyncio.gather(opcua_task, modbustcp_task)
 
-            # Periodic update of OPC UA Server
-            periodic_update_opcua = asyncio.create_task(data_manager.update_population_from_opcua_shm(opcua_variables))
-            periodic_update_modbus_tcp = asyncio.create_task(data_manager.update_population_from_modbus_tcp_shm(modbus_variables))
-            await asyncio.gather(periodic_update_opcua, periodic_update_modbus_tcp)
+            # If both timed out -> raise error
+            if opcua_variables is None and modbustcp_variables is None:
+                raise asyncio.TimeoutError("Both OPC UA and ModbusTCP initial population timed out (20s).")
+
+            # Start only the successful periodic updates
+            update_tasks = []
+
+            if opcua_variables is not None:
+                update_tasks.append(asyncio.create_task(
+                    data_manager.update_population(opcua_queue, opcua_variables, "OPCUA_Endpoints")
+                ))
+
+            if modbustcp_variables is not None:
+                update_tasks.append(asyncio.create_task(
+                    data_manager.update_population(modbustcp_queue, modbustcp_variables, "ModbusTCP_Endpoints")
+                ))
+
+            # Run whatever updates were started
+            await asyncio.gather(*update_tasks)
 
 
-        except asyncio.CancelledError:
-            _logger.error("asyncio.CancelledError")
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            _logger.error("Stopping... cancelling update tasks.")
+            # Cancel only tasks that exist and are still running
+            for t in update_tasks:
+                if not t.done():
+                    t.cancel()
+            # Wait for cancellation to complete (swallow CancelledError/others)
+            await asyncio.gather(*update_tasks, return_exceptions=True)
 
-        except KeyboardInterrupt:
-            #periodic_update.cancel()
-            periodic_update_opcua.cancel()
-            periodic_update_modbus_tcp.cancel()
-            #periodic_vor_request.cancel()
-            _logger.error("KeyboardInterrupt")
+        except asyncio.TimeoutError as e:
+            _logger.error(f"Error: {e}")
 
         finally:
             _logger.info("Tasks stopped")

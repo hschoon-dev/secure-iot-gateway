@@ -100,18 +100,19 @@ class ModbusTCPClient:
         else:
             return None, None
 
-    # def write_coils(self, name, value):
-    #     endpoint = self.endpoints[name]
-    #     address = endpoint['address']
+    """
+    Implementierung der Schreibefunktionen für das Verification-of-Request
+    """
+    def write_coils(self, name, value):
+        endpoint = self.endpoints[name]
+        address = endpoint['address']
+        # Create a write coils request
+        response = self.client.write_single_coil(address, value)
+        return response
 
-    #     # Create a write coils request
-    #     response = self.client.write_single_coil(address, value)
-    #     return response
-
-    # def write_registers(self, name, value):
-    #     endpoint = self.endpoints[name]
-    #     address = endpoint['address']
-
-    #     # Create a write registers request
-    #     response = self.client.write_multiple_registers(address, value)
-    #     return response
+    def write_registers(self, name, value):
+        endpoint = self.endpoints[name]
+        address = endpoint['address']
+        # Create a write registers request
+        response = self.client.write_multiple_registers(address, value)
+        return response

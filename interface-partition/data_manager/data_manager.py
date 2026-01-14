@@ -25,289 +25,230 @@
 import asyncio
 import logging
 import json
-from multiprocessing import shared_memory
 from asyncua import ua, Node, Server
-import posix_ipc
-import hashlib
-from typing import Any
+from queue import Queue, Empty
+from typing import Optional
 
 _logger = logging.getLogger(__name__)
 
 
 class DataManager:
-    def __init__(self, opcua_server: Server, opcua_shared_mem: str, opcua_semaphore: str,
-                 modbus_shared_mem: str, modbus_semaphore: str):
+    def __init__(self, opcua_server: Server, 
+                 opcua_queue: Queue,
+                 modbustcp_queue: Queue):
         self._server = opcua_server
-        self._opcua_shm = opcua_shared_mem
-        self._opcua_sem = opcua_semaphore
-        self._modbus_shm = modbus_shared_mem
-        self._modbus_sem = modbus_semaphore
+        self._opcua_queue = opcua_queue
+        self._modbustcp_queue = modbustcp_queue
 
-    async def _create_opcua_objects(self, shared_memory_values: dict[str, dict[str, str | int | float | bool]],
-                                    opcua_object_name: str) -> list[tuple[str, Node | None]]:
+    async def _create_opcua_objects(self,
+        values: dict[str, dict[str, str | int | float | bool]],
+        opcua_object_name: str
+    ) -> list[tuple[str, Node | None]]:
         """
-        Create OPC UA objects and variables from shared memory values
-        :param shared_memory_values: Dictionary mapping variable names to their properties
-                                    Each value is a dict with 'value', 'varType', and 'description' keys
-        :param opcua_object_name: Name of the OPC UA object
-        :return: List of OPC UA variables
+        Create OPC UA objects and variables from shared memory values.
+        values: { "<group>: <varname>": {"value": ..., "varType": ..., "description": ...}, ... }
         """
-        opcua_variables = []
+        opcua_variables: list[tuple[str, Node | None]] = []
         _idx = await self._server.register_namespace(f"idx.{opcua_object_name}.ua")
-        obj = await self._server.nodes.objects.add_object(_idx, opcua_object_name)
+        root_obj = await self._server.nodes.objects.add_object(_idx, opcua_object_name)
 
-        for name, varData in shared_memory_values.items():
-            value = varData['value']
-            varType = varData['varType']
-            description = varData['description']
-            # inside the name there is the first word before ":" e.g., "Ecotec: AM13 Volumenstrom 2"
-            # depending on this word, create a new object and add the variable to it
-            # if the object already exists, add the variable to it
-            if ":" in name:
-                object_name = name.split(":", 1)[0]
-                object_name_rest = name.split(":", 1)[1]
-                try:
-                    new_obj = await obj.get_child(f"{_idx}:{object_name}")
-                except Exception as e:
-                    _logger.warning(f"Creating new object: {object_name}...")#
-                    new_obj = await obj.add_object(_idx, object_name)                
-                try:
-                    converted_value = self._convert_value(varType, value)
-                    var = await new_obj.add_variable(_idx, object_name_rest, converted_value)
-                    await var.write_attribute(ua.AttributeIds.Description, 
-                                              ua.DataValue(ua.Variant(ua.LocalizedText(description))))
-                    opcua_variables.append((str(name), var))
-                except ValueError as e:
-                    _logger.error(f"Error converting value for {name}: {e}")
-                    opcua_variables.append((str(name), None))
-            else:
+        for name, varData in values.items():
+            value = varData.get('value')
+            varType = varData.get('varType')
+            description = varData.get('description', "")
+
+            if ":" not in name:
                 _logger.error(f"Error creating object for {name}: No object name found.")
-        _logger.debug(f"Initial OPC UA Variables: {opcua_variables}")
+                continue
+
+            object_name, object_name_rest = name.split(":", 1)
+            object_name_rest = object_name_rest.strip()
+
+            try:
+                try:
+                    new_obj = await root_obj.get_child(f"{_idx}:{object_name}")
+                except Exception:
+                    _logger.warning(f"Creating new object: {object_name}...")
+                    new_obj = await root_obj.add_object(_idx, object_name)
+
+                converted_value = self._convert_value(varType, value)
+                var = await new_obj.add_variable(_idx, object_name_rest, converted_value)
+                await var.write_attribute(
+                    ua.AttributeIds.Description,
+                    ua.DataValue(ua.Variant(ua.LocalizedText(description)))
+                )
+                opcua_variables.append((str(name), var))
+            except ValueError as e:
+                _logger.error(f"Error converting value for {name}: {e}")
+                opcua_variables.append((str(name), None))
+
+        _logger.warning(f"Initial OPC UA Variables: {opcua_variables}")
         return opcua_variables
 
-
-    async def create_opcua_population(self) -> list[tuple[str, Node | None]]:
+    async def _get_message_from_queue(self, queue: Queue, timeout_s: float = 1.0) -> dict:
         """
-        Create the initial population of OPC UA variables from OPC UA shared memory
+        Non-blocking wrapper for stdlib Queue.get using a thread to keep the event loop responsive.
+        The event loop now always consumes queue.get() via asyncio.to_thread(...), so the blocking 
+        call happens in a worker thread, not in the event loop.
         """
-        opcua_variables = []
-        opcua_semaphore = None
+        try:
+            message = await asyncio.to_thread(queue.get, True, timeout_s)
+            return message
+        except Empty:
+            raise
+        except Exception as e:
+            _logger.error(f"Queue get error: {e}")
+            raise
 
-        while opcua_variables == []:
+    def _parse_payload(self, raw) -> dict:
+        """
+        Accepts either a JSON string or a pre-parsed dict and returns a dict.
+        """
+        if raw is None:
+            return {}
+        if isinstance(raw, (dict, list)):
+            return raw
+        try:
+            return json.loads(raw)
+        except Exception as e:
+            _logger.error(f"JSON parse error: {e}")
+            return {}
+
+    """async def create_population(self, queue: Queue, endpoint_label: str) -> list[tuple[str, Node | None]]:
+        
+        #Wait for first valid message from queue and create initial OPC UA population.
+        #endpoint_label e.g. 'OPCUA_Endpoints' or 'ModbusTCP_Endpoints'
+        
+        _logger.info(f"[{endpoint_label}] Waiting for first message...") # TODO: max waiting time!
+        variables: list[tuple[str, Node | None]] = []
+
+        while not variables: # TODO: do not wait for an infinite amount of time!
             try:
-                opcua_semaphore = posix_ipc.Semaphore(self._opcua_sem)
-                opcua_shm = shared_memory.SharedMemory(name=self._opcua_shm)
-                opcua_semaphore.acquire()
-                opcua_variables = await self._create_opcua_objects(json.loads(bytes(opcua_shm.buf[:]).decode('utf-8').rstrip('\x00')), "opcua_shm")
-                opcua_semaphore.release()
+                message = await self._get_message_from_queue(queue, timeout_s=1.0)
+                _logger.info(f"[{endpoint_label}] Got message: type={type(message)}")
+                data = self._parse_payload(message.get("data"))
+                if data:
+                    _logger.info(f"[{endpoint_label}] Creating initial population from {message.get('timestamp')}")
+                    variables = await self._create_opcua_objects(data, endpoint_label)
+                else:
+                    await asyncio.sleep(0.1)
+            except Empty:
+                await asyncio.sleep(0.1)
             except Exception as e:
-                _logger.error(f"OPC UA: Error initializing shared memory while populating server: {e}")
-                opcua_variables = []
-                opcua_semaphore.release()
-            await asyncio.sleep(0.1)
-        return opcua_variables
+                _logger.error(f"[{endpoint_label}] Error creating population from queue: {e}")
 
-    async def create_modbus_population(self) -> list[tuple[str, Node | None]]:
-        """
-        Create the initial population of OPC UA variables from Modbus TCP shared memory
-        """
-        modbus_variables = []
-        modbus_semaphore = None
-
-        while modbus_variables == []:
-            try:
-                modbus_semaphore = posix_ipc.Semaphore(self._modbus_sem)
-                modbus_shm = shared_memory.SharedMemory(name=self._modbus_shm)
-                modbus_semaphore.acquire()
-                modbus_variables = await self._create_opcua_objects(json.loads(bytes(modbus_shm.buf[:]).decode('utf-8').rstrip('\x00')), "modbus_shm")
-                modbus_semaphore.release()
-            except Exception as e:
-                _logger.error(f"ModbusTCP: Error initializing shared memory while populating server: {e}")
-                modbus_variables = []
-                modbus_semaphore.release()
-            await asyncio.sleep(0.1)
-        return modbus_variables
+        return variables"""
     
+    async def create_population(
+        self,
+        queue: Queue,
+        endpoint_label: str,
+        max_wait_s: float = 20.0,
+    ) -> Optional[list[tuple[str, Node | None]]]:
+        """
+        Wait for first valid message from queue and create initial population.
 
-    async def update_population_from_opcua_shm(self, opcua_variables: list[tuple[str, Node | None]]) -> None:
+        Returns:
+        - list[...] on success
+        - None on timeout (after logging an error)
         """
-        Update the population of OPC UA variables from OPC UA shared memory
-        :param opcua_variables: List of OPC UA variables
-        """
-        # Initialize values at the beginning
-        opcua_values: dict[str, dict[str, Any]] = {}
-        opcua_shm_response: str = ""
-        opcua_semaphore = None
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + max_wait_s
+
+        _logger.info(f"[{endpoint_label}] Waiting for first message (max {max_wait_s}s)...")
+        variables: list[tuple[str, Node | None]] = []
+
         try:
-            opcua_semaphore = posix_ipc.Semaphore(self._opcua_sem)
-            opcua_shm = shared_memory.SharedMemory(name=self._opcua_shm)
-            opcua_shm_size = opcua_shm.size
-            while True:
+            while not variables:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise asyncio.TimeoutError(
+                        f"[{endpoint_label}] Timed out after {max_wait_s}s waiting for first valid message."
+                    )
+
+                per_try_timeout = min(1.0, remaining)
+
                 try:
-                    # Read the content from shared memory
-                    if opcua_variables is not None:
-                        opcua_semaphore.acquire()
-                        opcua_values_json = bytes(opcua_shm.buf[:]).decode('utf-8').rstrip('\x00')
-                        if opcua_values_json:
+                    message = await self._get_message_from_queue(queue, timeout_s=per_try_timeout)
+                    _logger.info(f"[{endpoint_label}] Got message: type={type(message)}")
 
-                            while opcua_values_json == opcua_shm_response:
-                                opcua_semaphore.release()
-                                await asyncio.sleep(.01)
-                                opcua_semaphore.acquire()
-                                opcua_values_json = bytes(opcua_shm.buf[:]).decode('utf-8').rstrip('\x00')
-                            try:
-                                opcua_values = json.loads(opcua_values_json)
-                                _logger.debug(f"Shared Memory Content of {self._opcua_shm}: {json.dumps(opcua_values, indent=4)}")
-                            except json.JSONDecodeError as e:
-                                _logger.error(f"Error decoding JSON from shared memory: {e}")
-                            opcua_shm_response = hashlib.sha256(opcua_values_json.encode()).hexdigest()
-                            opcua_shm.buf[:opcua_shm_size] = b'\x00' * opcua_shm_size  # Clear the shared memory buffer
-                            opcua_shm.buf[:len(opcua_shm_response)] = opcua_shm_response.encode('utf-8')
-                        opcua_semaphore.release()
-                        
-                        if opcua_values:
-                            list_a = [name for name, varData in opcua_values.items()]
-                            list_b = [name for name, var_node in opcua_variables]
-                            intersection = list(set(list_a) & set(list_b))
-                            difference = list(set(list_a) - set(list_b))
-                            _logger.debug(f"Intersection: {intersection}")
-                            _logger.debug(f"Difference: {difference}")
+                    data = self._parse_payload(message.get("data"))
+                    if data:
+                        _logger.info(f"[{endpoint_label}] Creating initial population from {message.get('timestamp')}")
+                        variables = await self._create_opcua_objects(data, endpoint_label)
+                    else:
+                        await asyncio.sleep(0.1)
 
-                            for name, varData in opcua_values.items():
-                                if name in intersection:
-                                    value = varData['value']
-                                    varType = varData['varType']
-                                    for var_name, test_var in opcua_variables:
-                                        if var_name == name:
-                                            test_var: Node
-                                            await test_var.set_value(self._convert_value(varType, value))
+                except Empty:
+                    await asyncio.sleep(0.1)
 
-                                if name in difference:
-                                    _logger.info(f"Adding new variable: {name}...")
-                                    _idx = await self._server.register_namespace(f"idx.opcua_shm.ua")
-                                    obj = await self._server.nodes.objects.get_child(f"{_idx}:opcua_shm")
-                                    # inside the name there is the first word before ":" e.g., "Ecotec: AM13 Volumenstrom 2"
-                                    # depending on this word, create a new object and add the variable to it
-                                    # if the object already exists, add the variable to it
-                                    if ":" in name:
-                                        object_name = name.split(":", 1)[0]
-                                        object_name_rest = name.split(":", 1)[1]
-                                        try:
-                                            new_obj = await obj.get_child(f"{_idx}:{object_name}")
-                                        except Exception as e:
-                                            _logger.info(f"Creating new object: {object_name}...")
-                                            new_obj = await obj.add_object(_idx, object_name)
-                                        try:
-                                            converted_value = self._convert_value(varType, value)
-                                            var = await new_obj.add_variable(_idx, object_name_rest, converted_value)
-                                            opcua_variables.append((str(name), var))
-                                        except ValueError as e:
-                                            _logger.error(f"Error converting value for {name}: {e}")
-                                            opcua_variables.append((str(name), None))
-                                    else:
-                                        _logger.error(f"Error creating object for {name}: No object name found.")
+                except asyncio.CancelledError:
+                    raise  # don't swallow cancellation
 
-                    await asyncio.sleep(0.01)
-                except Exception as e:
-                    _logger.error(f"Error reading shared memory while updating server objects: {e}")
+                except Exception:
+                    _logger.exception(f"[{endpoint_label}] Error creating population from queue")
+                    await asyncio.sleep(0.1)
 
-        except FileNotFoundError as e:
-            _logger.error(f"Shared memory {e} not found.")
-        except Exception as e:
-            _logger.error(f"Error initializing shared memory while updating server objects: {e}")
-            if opcua_semaphore is not None:
-                opcua_semaphore.close()
+            return variables
 
+        except asyncio.TimeoutError as e:
+            _logger.error(str(e))
+            return None
 
-
-    async def update_population_from_modbus_tcp_shm(self, modbus_tcp_variables: list[tuple[str, Node | None]]) -> None:
+    async def update_population(
+        self,
+        queue: Queue,
+        variables: list[tuple[str, Node | None]],
+        endpoint_label: str
+    ) -> None:
         """
-        Update the population of OPC UA variables from Modbus TCP shared memory
-        :param modbus_tcp_variables: List of OPC UA variables
+        Periodically update OPC UA variables based on incoming queue messages.
+        `variables` is the live list returned by create_population (mutated on growth).
         """
-        # Initialize values at the beginning
-        modbus_values: dict[str, dict[str, Any]] = {}
-        modbus_shm_response: str = ""
-        modbus_semaphore = None
-        try:
-            modbus_semaphore = posix_ipc.Semaphore(self._modbus_sem)
-            modbus_shm = shared_memory.SharedMemory(name=self._modbus_shm)
-            modbus_shm_size = modbus_shm.size
-            while True:
-                try:
-                    # Read the content from shared memory
-                    if modbus_tcp_variables is not None:
-                        modbus_semaphore.acquire()
-                        modbus_values_json = bytes(modbus_shm.buf[:]).decode('utf-8').rstrip('\x00')
-                        if modbus_values_json:
-                            while modbus_values_json == modbus_shm_response:
-                                modbus_semaphore.release()
-                                await asyncio.sleep(.01)
-                                modbus_semaphore.acquire()
-                                modbus_values_json = bytes(modbus_shm.buf[:]).decode('utf-8').rstrip('\x00')
+        while True:
+            try:
+                message = await self._get_message_from_queue(queue, timeout_s=1.0)
+                data = self._parse_payload(message.get("data"))
+                if not isinstance(data, dict) or not data:
+                    continue
+
+                _logger.warning(f"[{endpoint_label}] Updating with message from {message.get('timestamp')}")
+
+                names_in_data = set(data.keys())
+                names_in_server = {name for name, _ in variables}
+
+                intersection = names_in_data & names_in_server
+                additions = names_in_data - names_in_server
+
+                # Update existing
+                if intersection:
+                    # Build a map once for faster lookup
+                    var_map = {name: node for name, node in variables}
+                    for name in intersection:
+                        entry = data[name]
+                        value = entry.get('value')
+                        varType = entry.get('varType')
+                        node = var_map.get(name)
+                        if node is not None:
                             try:
-                                modbus_values = json.loads(modbus_values_json)
-                                _logger.debug(f"Shared Memory Content of {self._modbus_shm}: {json.dumps(modbus_values, indent=4)}")
-                            except json.JSONDecodeError as e:
-                                _logger.error(f"Error decoding JSON from shared memory: {e}")
-                            modbus_shm_response = hashlib.sha256(modbus_values_json.encode()).hexdigest()
-                            modbus_shm.buf[:modbus_shm_size] = b'\x00' * modbus_shm_size  # Clear the shared memory buffer
-                            modbus_shm.buf[:len(modbus_shm_response)] = modbus_shm_response.encode('utf-8')
-                        modbus_semaphore.release()
-                        
-                        if modbus_values:
-                            list_a = [name for name, varData in modbus_values.items()]
-                            list_b = [name for name, var_node in modbus_tcp_variables]
-                            intersection = list(set(list_a) & set(list_b))
-                            difference = list(set(list_a) - set(list_b))
-                            _logger.debug(f"Intersection: {intersection}")
-                            _logger.debug(f"Difference: {difference}")
+                                await node.set_value(self._convert_value(varType, value))
+                            except Exception as e:
+                                _logger.error(f"[{endpoint_label}] Set value failed for {name}: {e}")
 
-                            for name, varData in modbus_values.items():
-                                if name in intersection:
-                                    value = varData['value']
-                                    varType = varData['varType']
-                                    for var_name, test_var in modbus_tcp_variables:
-                                        if var_name == name:
-                                            test_var: Node
-                                            await test_var.set_value(self._convert_value(varType, value))
-                                if name in difference:
-                                    _logger.info(f"Adding new variable: {name}...")
-                                    _idx = await self._server.register_namespace(f"idx.modbus_shm.ua")
-                                    obj = await self._server.nodes.objects.get_child(f"{_idx}:modbus_shm")
+                # Add new variables
+                for name in additions:
+                    _logger.info(f"[{endpoint_label}] Adding new variable {name}")
+                    try:
+                        new_vars = await self._create_opcua_objects({name: data[name]}, endpoint_label)
+                        variables.extend(new_vars)
+                    except Exception as e:
+                        _logger.error(f"[{endpoint_label}] Error adding {name}: {e}")
 
-                                    # inside the name there is the first word before ":" e.g., "Ecotec: AM13 Volumenstrom 2"
-                                    # depending on this word, create a new object and add the variable to it
-                                    # if the object already exists, add the variable to it
-                                    if ":" in name:
-                                        object_name = name.split(":", 1)[0]
-                                        object_name_rest = name.split(":", 1)[1]
-                                        try:
-                                            new_obj = await obj.get_child(f"{_idx}:{object_name}")
-                                        except Exception as e:
-                                            _logger.info(f"Creating new object: {object_name}...")
-                                            new_obj = await obj.add_object(_idx, object_name)
-
-                                        try:
-                                            converted_value = self._convert_value(varType, value)
-                                            var = await new_obj.add_variable(_idx, object_name_rest, converted_value)
-                                            modbus_tcp_variables.append((str(name), var))
-                                        except ValueError as e:
-                                            _logger.error(f"Error converting value for {name}: {e}")
-                                            modbus_tcp_variables.append((str(name), None))
-                                    else:
-                                        _logger.error(f"Error creating object for {name}: No object name found.")
-
-                    await asyncio.sleep(0.01)
-                except Exception as e:
-                    _logger.error(f"Error reading shared memory while updating server objects: {e}")
-
-        except FileNotFoundError as e:
-            _logger.error(f"Shared memory {e} not found.")
-        except Exception as e:
-            _logger.error(f"Error initializing shared memory while updating server objects: {e}")
-            if modbus_semaphore is not None:
-                modbus_semaphore.close()
+            except Empty:
+                await asyncio.sleep(0.1)
+            except Exception as e:
+                _logger.error(f"[{endpoint_label}] Error updating variables from queue: {e}")
+                await asyncio.sleep(0.5)
 
 
     def _convert_value(self, varType: str, value: str | int | float | bool) -> ua.Variant:

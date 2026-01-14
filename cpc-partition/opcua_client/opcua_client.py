@@ -25,7 +25,7 @@ from asyncua.crypto.security_policies import (
     SecurityPolicyBasic256,
     SecurityPolicyBasic256Sha256,
     SecurityPolicyAes128Sha256RsaOaep,
-SecurityPolicyAes256Sha256RsaPss
+    SecurityPolicyAes256Sha256RsaPss
 )
 from asyncua.crypto.validator import CertificateValidator, CertificateValidatorOptions
 from asyncua.crypto.truststore import TrustStore
@@ -140,7 +140,6 @@ class OpcUaClient:
             _logger.debug(f"Reading value from {node_id} on {self.server_app_uri}")
             node = self.client.get_node(node_id)
             qualified_name = await node.read_browse_name()
-            #display_name = await node.read_display_name()
             if qualified_name is None:
                 _logger.error(f"Could not read browse name from {node_id} on {self.server_app_uri}.")
                         

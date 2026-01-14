@@ -16,7 +16,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.1
+        ipv4_address: 192.168.0.160
 
   ecotec-modbus-server:
     container_name: ecotec-modbus-server
@@ -27,7 +27,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.2
+        ipv4_address: 192.168.0.161
 
 
 # Gateway-Applications:
@@ -45,14 +45,17 @@ services:
       interface-partition: 
         condition: service_started
     attach: false
+    networks:
+      static-network:
+        ipv4_address: 192.168.0.151
 
 
   # Application of the gateway's Interface Partition
   interface-partition:
     container_name: interface-partition
-    ipc: "service:cpc-partition"
     build: interface-partition/
     volumes:
+      # Logging files
       - type: bind
         source: ./interface-partition/logs
         target: /app/logs
@@ -60,17 +63,16 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - 4840:4840
-    depends_on:
-      cpc-partition: 
-        condition: service_started
     attach: false
+    networks:
+      static-network:
+        ipv4_address: 192.168.0.121
 
 
   # Intermediate VoR Partition
   intermediate-vor-partition:
     container_name: intermediate-vor-partition
     build: intermediate-vor-partition/
-    ipc: "service:interface-partition"
     volumes:
       # Database for mapped requests
       - type: bind
@@ -83,7 +85,10 @@ services:
     depends_on:
       interface-partition: 
         condition: service_started
-    attach: false
+    attach: true
+    networks:
+      static-network:
+        ipv4_address: 192.168.0.124
 
   # Second Intermediate VoR Partition
   intermediate-vor-partition-cpc:
@@ -107,25 +112,25 @@ services:
         condition: service_started
       cpc-partition:
         condition: service_started
-    attach: true
+    attach: false
     networks:
       static-network:
-        ipv4_address: 172.20.128.5
+        ipv4_address: 192.168.0.125
 
   # Application of the gateway's psM+O Partition
   psmo-partition:
     container_name: psmo-partition
-    ipc: "service:cpc-partition"
+    #ipc: "service:cpc-partition"
     build: psmo-partition/
     volumes:
       # Logging files
       - type: bind
         source: ./psmo-partition/logs
         target: /app/logs
-    depends_on:
-      cpc-partition: 
-        condition: service_started
     attach: false
+    networks:
+      static-network:
+        ipv4_address: 192.168.0.123
 
   # Application of the gateway's CPC Partition
   cpc-partition:
@@ -141,15 +146,20 @@ services:
        brownfield-opcua-server: 
          condition: service_started
        ecotec-modbus-server:
-        condition: service_started
-    attach: true
+         condition: service_started
+       psmo-partition:
+         condition: service_started
+       interface-partition:
+         condition: service_started
+    attach: false
     networks:
       static-network:
-          ipv4_address: 172.20.128.4
+          ipv4_address: 192.168.0.122
 
 
 networks:
   static-network:
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.1

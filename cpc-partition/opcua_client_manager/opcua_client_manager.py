@@ -22,18 +22,16 @@
 """
 
 import asyncio
-#import xml.etree.ElementTree as ET
 from defusedxml import ElementTree as ET
 from asyncua import  ua
 from pathlib import Path
-from multiprocessing import shared_memory
 import json
 import xmlschema
 import logging
 import os
-import posix_ipc
 
 from opcua_client import OpcUaClient
+from grpc_sender import send_json_payload
 
 
 _logger = logging.getLogger(__name__)
@@ -84,7 +82,7 @@ class OpcUaClientManager:
                 node_info = {}
                 # String-Identifier is used in the Siemens S7 OPC UA server (OMAG usecase)
                 if str(node.find('IdentifierType').text) == 'String':
-                    node_id = ua.NodeId.from_string(f'ns={int(node.find('NamespaceIndex').text)};s={str(node.find('Identifier').text)}')
+                    node_id = ua.NodeId.from_string(f"ns={int(node.find('NamespaceIndex').text)};s={str(node.find('Identifier').text)}")
                     node_info = {
                         'node_id': node_id,
                         'datatype': node.find('datatype').text,
@@ -117,9 +115,7 @@ class OpcUaClientManager:
         return future_list
 
 
-    async def periodic_read(self, interval: float,
-                            shm_list: list[shared_memory.SharedMemory],
-                            semaphore_list: list[posix_ipc.Semaphore]) -> None:
+    async def periodic_read(self, interval: float) -> None:
         """
         Periodically read values from OPC UA nodes and write them to shared memory
         :param interval: Time between reads in seconds
@@ -168,22 +164,18 @@ class OpcUaClientManager:
                                                             "varType": "String",
                                                             "description": f"{node['description']}"
                                                         }
-            # Write the opcua_values to shared memory with semaphore protection
-            for shm, sem in zip(shm_list, semaphore_list):
-                sem: posix_ipc.Semaphore
-                shm: shared_memory.SharedMemory
+                                
+            try:
+                grpc_payload = json.dumps(opcua_values)
+                psmo_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.0.122:50051") # psmo-Partition
+                if psmo_response is None:
+                    _logger.error(f"Error sending gRPC with JSON")
+                interface_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.0.121:50051") # Interface-Partition
+                if interface_response is None:
+                    _logger.error(f"Error sending gRPC with JSON")
+            except Exception as e:
+                _logger.error(f"Exception sending gRPC with JSON: {e}")
 
-                sem.release()
-                await asyncio.sleep(0.01)
-                sem.acquire()
-                shm_size = shm.size
-                opcua_values_json = json.dumps(opcua_values)
-                _logger.debug(f"Writing to shared memory {shm.name}: {opcua_values_json}")
-                shm.buf[:shm_size] = b'\x00' * shm_size  # Clear the shared memory buffer
-                shm.buf[:len(opcua_values_json)] = opcua_values_json.encode('utf-8')
-                if len(opcua_values_json)/shm_size > 0.9: # Log a warning if the shared memory is more than 90% full
-                    _logger.warning(f"ModbusTCP Shared Memory     {len(opcua_values_json)}/{shm_size} bytes used (more than 90% full).")
-                sem.release()
             await asyncio.sleep(interval)
 
     async def stop_clients(self) -> None:

@@ -27,7 +27,6 @@
 from threading import Thread, Event
 import time
 import json
-#import asyncio
 from multiprocessing import shared_memory
 import logging
 from queue import Queue
@@ -36,15 +35,23 @@ import posix_ipc
 import hashlib
 
 
+
 _logger = logging.getLogger(__name__)
+
+
 
 class OPCUA_Thread(Thread):
     def __init__(self, semaphore_name: str, shared_memory_name: str, message_queue: Queue = None):
+        super().__init__(name="OPCUA-Reader", daemon=True)
         self._sem_name = semaphore_name
         self._shm_name = shared_memory_name
         self._queue = message_queue
         Thread.__init__(self)
         self._stop_event = Event()
+
+        # Added deprecation warning:
+        _logger.warning(f"The module is deprecated! Use grpc_json_handler instead.")
+        raise DeprecationWarning
 
     def run(self):
         try:
@@ -99,6 +106,7 @@ class OPCUA_Thread(Thread):
 
 class ModbusTCP_Thread(Thread):
     def __init__(self, semaphore_name: str, shared_memory_name: str, message_queue: Queue = None):
+        super().__init__(name="MODBUSTCP-Reader", daemon=True)
         self._sem_name = semaphore_name
         self._shm_name = shared_memory_name
         self._queue = message_queue
