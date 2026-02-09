@@ -33,7 +33,8 @@ _logger = logging.getLogger(__name__)
 # Global dictionaries for test data
 USER_PASSWORD_MAP = {
     # authenticated users, partially authorized
-    "admin": os.getenv("ADMIN_PASSWORD"),    # pre-existing user with Admin-role
+    #"admin": os.getenv("ADMIN_PASSWORD"),    # pre-existing user with Admin-role
+    "admin": "SuperDuperRandomPassword2025",    # pre-existing user with Admin-role
     "sarah": "Sarah123_secure_password_2025",   # pre-existing user with PlantOperator-role
     "mike": "Mike123_secure_password_2025",     # this user does not exist by default in the user-manager, but in rbac as MaintenancePersonnel
     "david": "David123_secure_password_2025",   # this user does not exist by default in the user-manager, but in rbac as PlantOperator
