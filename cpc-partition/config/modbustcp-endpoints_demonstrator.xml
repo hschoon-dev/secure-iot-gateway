@@ -4,7 +4,7 @@
 
     <!-- Siemens LOGO! Server -->
   <server>
-    <ipaddr>192.168.0.161</ipaddr>
+    <ipaddr>192.168.156.20</ipaddr>
     <port>503</port>
     <serveralias>HSEL-LOGO</serveralias>
     <endpoints>
@@ -51,7 +51,7 @@
 
     <!-- Raspberry Pi 4B Testserver -->
   <server>
-    <ipaddr>192.168.0.160</ipaddr>
+    <ipaddr>192.168.156.18</ipaddr>
     <port>503</port>
     <serveralias>Ecotec</serveralias>
     <endpoints>

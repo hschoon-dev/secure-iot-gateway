@@ -167,10 +167,10 @@ class OpcUaClientManager:
                                 
             try:
                 grpc_payload = json.dumps(opcua_values)
-                psmo_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.0.122:50051") # psmo-Partition
+                psmo_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.156.13:50051") # psmo-Partition
                 if psmo_response is None:
                     _logger.error(f"Error sending gRPC with JSON")
-                interface_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.0.121:50051") # Interface-Partition
+                interface_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.156.12:50051") # Interface-Partition
                 if interface_response is None:
                     _logger.error(f"Error sending gRPC with JSON")
             except Exception as e:
