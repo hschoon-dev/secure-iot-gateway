@@ -13,7 +13,7 @@ vm12() {
     cd /src/interface-partition
 
     echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-11 12:00:00"
+    date -s "2026-02-12 12:00:00"
     echo "Setze Admin-Passwort... DEV!"
     export ADMIN_PASSWORD="SuperDuperRandomPassword2025"
 
@@ -31,7 +31,7 @@ vm13() {
     cd /src/psmo-partition
 
     echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-11 12:00:00"
+    date -s "2026-02-12 12:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_json_handler/proto --python_out=. --grpc_python_out=. ./grpc_json_handler/proto/*.proto
 
@@ -46,7 +46,7 @@ vm14() {
     cd /src/cpc-partition
 
     echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-11 12:00:00"
+    date -s "2026-02-12 12:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
 
@@ -62,7 +62,7 @@ vm15() {
     #cd /src/cpc-partition
 
     echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-11 12:00:00"
+    date -s "2026-02-12 12:00:00"
 
     #python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
 
@@ -78,7 +78,7 @@ vm16() {
     #cd /src/cpc-partition
 
     echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-11 12:00:00"
+    date -s "2026-02-12 12:00:00"
 
     #python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
 
