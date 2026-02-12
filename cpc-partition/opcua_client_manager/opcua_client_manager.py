@@ -31,7 +31,7 @@ import logging
 import os
 
 from opcua_client import OpcUaClient
-from grpc_sender import send_json_payload
+from grpc_sender import get_sender
 
 
 _logger = logging.getLogger(__name__)
@@ -42,6 +42,30 @@ class OpcUaClientManager:
         self.xml_config_path = str(xml_config_path)
         self.xsd_path = str(xsd_path)
         self.clients: list[OpcUaClient] = self.parse_clients()
+
+        # Reuse snapshot dicts to reduce allocations/GC pressure (full snapshot semantics kept).
+        self._snapshot: dict[str, dict] = {}
+        self._entry_pool: dict[str, dict] = {}
+
+        # Pre-create/reuse gRPC senders (lazy init inside get_sender).
+        self._psmo_sender = get_sender("192.168.156.13:50051")
+        self._interface_sender = get_sender("192.168.156.12:50051")
+
+        # Precompute connection status keys per client alias
+        self._conn_key: dict[str, str] = {}
+        for c in self.clients:
+            self._conn_key[c.alias] = f"OPC UA Connections:{c.alias}"
+
+    def _set_entry(self, key: str, value, varType: str, description: str) -> None:
+        """Reuse inner dict objects for each key."""
+        entry = self._entry_pool.get(key)
+        if entry is None:
+            entry = {}
+            self._entry_pool[key] = entry
+        entry["value"] = value
+        entry["varType"] = varType
+        entry["description"] = description
+        self._snapshot[key] = entry
 
     def parse_clients(self) -> list[OpcUaClient]:
         """
@@ -122,59 +146,69 @@ class OpcUaClientManager:
         :param shm_list: List of shared memory objects to write to
         :param semaphore_list: List of semaphores for synchronizing access to shared memory
         """
-        client: OpcUaClient
         while True:
-            opcua_values = {}
-            for client in self.clients:
+            # Dict reuse: keep full snapshot semantics but avoid allocating new dicts every tick.
+            snap = self._snapshot
+            snap.clear()
+
+            # Iterate over a copy to allow safe removal of stopped clients
+            new_clients: list[OpcUaClient] = []
+            for client in list(self.clients):
                 if not client.connected and not client._stopped_reconnection_attempts:
                     await client.retry_connection()
-                    if not client.connected:
-                        opcua_values[f"OPC UA Connections:{client.alias}"] = {
-                                                     "value": client.connected,
-                                                     "varType": "Boolean",
-                                                     "description": "Connection status to the OPC UA server"
-                                                 }
+
+                # Remove clients that have permanently stopped reconnecting
                 if client._stopped_reconnection_attempts:
-                    self.clients.remove(client)
-                    _logger.error(f"Removing OPC UA client for {client.server_app_uri} from the client list.")
+                    _logger.error("Removing OPC UA client for %s from the client list.", client.server_app_uri)
+                    continue
+
+                new_clients.append(client)
+
+                conn_key = self._conn_key.get(client.alias) or f"OPC UA Connections:{client.alias}"
+                self._set_entry(conn_key, bool(client.connected), "Boolean", "Connection status to the OPC UA server")
+
                 if client.connected:
-                    opcua_values[f"OPC UA Connections:{client.alias}"] = {
-                                                    "value": client.connected,
-                                                    "varType": "Boolean",
-                                                    "description": "Connection status to the OPC UA server"
-                                                }
                     for node in client.nodes:
-                        value = None
-                        browse_name = None
-                        if node['datatype'] != 'Object':
-                            browse_name, value, datatype = await client.read_value(node['node_id'])
-                            browse_name_with_namespace_alias = f"{node['namespace_alias']}:{browse_name}"
-                            if value is not None:
-                                #opcua_values[browse_name] = {
-                                opcua_values[browse_name_with_namespace_alias] = {    
-                                                            "value": value,
-                                                            "varType": str(datatype),
-                                                            "description": f"{node['description']}"
-                                                        }
-                            else:
-                                _logger.error(f"Error reading value from {node['node_id']}")
-                                #opcua_values[browse_name] = {
-                                opcua_values[browse_name_with_namespace_alias] = {
-                                                            "value": "Error reading value",
-                                                            "varType": "String",
-                                                            "description": f"{node['description']}"
-                                                        }
-                                
+                        if node.get('datatype') == 'Object':
+                            continue
+
+                        browse_name, value, datatype = await client.read_value(node['node_id'])
+                        browse_name_with_namespace_alias = f"{node['namespace_alias']}:{browse_name}"
+
+                        if value is not None:
+                            self._set_entry(
+                                browse_name_with_namespace_alias,
+                                value,
+                                str(datatype),
+                                f"{node['description']}",
+                            )
+                        else:
+                            _logger.error("Error reading value from %s", node['node_id'])
+                            self._set_entry(
+                                browse_name_with_namespace_alias,
+                                "Error reading value",
+                                "String",
+                                f"{node['description']}",
+                            )
+
+            # Replace client list with filtered list (safe)
+            self.clients = new_clients
+
             try:
-                grpc_payload = json.dumps(opcua_values)
-                psmo_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.156.13:50051") # psmo-Partition
-                if psmo_response is None:
-                    _logger.error(f"Error sending gRPC with JSON")
-                interface_response = send_json_payload(grpc_payload, source="OPCUA", dest="192.168.156.12:50051") # Interface-Partition
-                if interface_response is None:
-                    _logger.error(f"Error sending gRPC with JSON")
+                grpc_payload = json.dumps(snap, separators=(",", ":"), ensure_ascii=False)
+
+                # gRPC calls are blocking -> send in worker threads and in parallel
+                psmo_task = asyncio.to_thread(self._psmo_sender.send, grpc_payload, source="OPCUA")
+                iface_task = asyncio.to_thread(self._interface_sender.send, grpc_payload, source="OPCUA")
+                psmo_resp, iface_resp = await asyncio.gather(psmo_task, iface_task)
+                if psmo_resp is None or iface_resp is None:
+                    _logger.error("Error sending gRPC with JSON")
             except Exception as e:
-                _logger.error(f"Exception sending gRPC with JSON: {e}")
+                _logger.error("Exception sending gRPC with JSON: %s", e)
+
+            # Safety: keep entry pool from growing without bound in highly dynamic setups.
+            if len(self._entry_pool) > 50_000:
+                self._entry_pool.clear()
 
             await asyncio.sleep(interval)
 

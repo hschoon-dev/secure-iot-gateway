@@ -30,7 +30,7 @@ import logging
 import os
 
 from modbus_tcp_client import ModbusTCPClient
-from grpc_sender import send_json_payload
+from grpc_sender import get_sender
 
 _logger = logging.getLogger(__name__)
 
@@ -40,6 +40,30 @@ class ModbusClientManager:
         self.xsd_path = xsd_path
         self.endpoints = self.load_endpoints_from_xml()
         self.clients = self.create_clients()
+
+        # Reuse snapshot dicts to reduce allocations/GC pressure (full snapshot semantics kept).
+        self._snapshot: dict[str, dict] = {}
+        self._entry_pool: dict[str, dict] = {}
+
+        # Pre-create/reuse gRPC senders (lazy init inside get_sender).
+        self._psmo_sender = get_sender("192.168.156.13:50051")
+        self._interface_sender = get_sender("192.168.156.12:50051")
+
+        # Precompute constant connection status keys per client alias.
+        self._conn_key: dict[str, str] = {}
+        for c in self.clients:
+            self._conn_key[c.serveralias] = f"ModbusTCP Connections:{c.serveralias}: Connection status"
+
+    def _set_entry(self, key: str, value, varType: str, description: str) -> None:
+        """Reuse inner dict objects for each key."""
+        entry = self._entry_pool.get(key)
+        if entry is None:
+            entry = {}
+            self._entry_pool[key] = entry
+        entry["value"] = value
+        entry["varType"] = varType
+        entry["description"] = description
+        self._snapshot[key] = entry
 
     def create_clients(self) -> list[ModbusTCPClient]:
         """
@@ -84,68 +108,68 @@ class ModbusClientManager:
             return
 
         while True:
-            modbus_values = {}
+            # Dict reuse: keep full snapshot semantics but avoid allocating new dicts every tick.
+            snap = self._snapshot
+            snap.clear()
             client: ModbusTCPClient
             for client in self.clients:
                 if not client.client.is_open:
                     client.retry_connection()
-                if not client.client.is_open: # Check again if the connection was successful
-                    modbus_values[f"ModbusTCP Connections:{client.serveralias}: Connection status"] = {
-                                                    "value": False,
-                                                    "varType": "Boolean",
-                                                    "description": "Connection status to the Modbus server"
-                                                }
+                conn_key = self._conn_key.get(client.serveralias) or f"ModbusTCP Connections:{client.serveralias}: Connection status"
+                if not client.client.is_open:  # Check again if the connection was successful
+                    self._set_entry(
+                        conn_key,
+                        False,
+                        "Boolean",
+                        "Connection status to the Modbus server",
+                    )
                 if client.client.is_open:
-                    modbus_values[f"ModbusTCP Connections:{client.serveralias}: Connection status"] = {
-                                                    "value": True,
-                                                    "varType": "Boolean",
-                                                    "description": "Connection status to the Modbus server"
-                                                }
+                    self._set_entry(
+                        conn_key,
+                        True,
+                        "Boolean",
+                        "Connection status to the Modbus server",
+                    )
                     for endpoint_name in client.endpoints:      
                         # TODO: Test with different endpoints and Modbus-Functions, e.g., Write Coils, Write Single Register, Write Multiple Registers
                         try:
                             if client.endpoints[endpoint_name]['function'] == 'Read Holding Registers':
                                 register_values, datatype = client.fc03_read_holding_registers(endpoint_name)
                                 if register_values is not None and datatype is not None:
-                                    modbus_values[f"{client.serveralias}: {endpoint_name}"] = {
-                                                            "value": register_values,
-                                                            "varType": datatype,
-                                                            "description": f"{client.endpoints[endpoint_name]['description']}"
-                                                        }
+                                    key = f"{client.serveralias}: {endpoint_name}"
+                                    self._set_entry(key, register_values, datatype, f"{client.endpoints[endpoint_name]['description']}")
                             elif client.endpoints[endpoint_name]['function'] == 'Read Discrete Input':   
                                 discrete_input_values = client.fc02_read_discrete_inputs(endpoint_name)
                                 if discrete_input_values is not None:
-                                    modbus_values[f"{client.serveralias}: {endpoint_name}"] = {
-                                                            "value": discrete_input_values,
-                                                            "varType": "Boolean",
-                                                            "description": f"{client.endpoints[endpoint_name]['description']}"
-                                                        }
+                                    key = f"{client.serveralias}: {endpoint_name}"
+                                    self._set_entry(key, discrete_input_values, "Boolean", f"{client.endpoints[endpoint_name]['description']}")
                             elif client.endpoints[endpoint_name]['function'] == 'Read Coil Status' or client.endpoints[endpoint_name]['function'] == 'Read Coils':
                                 coil_status_values = client.fc01_read_coil_status(endpoint_name)
                                 if coil_status_values is not None:
-                                    modbus_values[f"{client.serveralias}: {endpoint_name}"] = {
-                                                            "value": coil_status_values,
-                                                            "varType": "Boolean",
-                                                            "description": f"{client.endpoints[endpoint_name]['description']}"
-                                                        }
+                                    key = f"{client.serveralias}: {endpoint_name}"
+                                    self._set_entry(key, coil_status_values, "Boolean", f"{client.endpoints[endpoint_name]['description']}")
                         except Exception as e:
                             _logger.error(f"Error reading {endpoint_name} from {client.ipaddr} with alias {client.serveralias}: {e}")
-                            modbus_values[f"{client.serveralias}: {endpoint_name}"] = {
-                                                        "value": "ERROR READING VALUE",
-                                                        "varType": "String",
-                                                        "description": f"{client.endpoints[endpoint_name]['description']}"
-                                                    }
+                            key = f"{client.serveralias}: {endpoint_name}"
+                            self._set_entry(key, "ERROR READING VALUE", "String", f"{client.endpoints[endpoint_name]['description']}")
             
             try:
-                grpc_payload = json.dumps(modbus_values)
-                response = send_json_payload(grpc_payload, source="MODBUSTCP", dest="192.168.156.13:50051") # psmo-Partition
-                if response is None:
-                    _logger.error(f"Error sending gRPC with JSON")
-                interface_response = send_json_payload(grpc_payload, source="MODBUSTCP", dest="192.168.156.12:50051") # Interface-Partition
-                if interface_response is None:
-                    _logger.error(f"Error sending gRPC with JSON")
+                # Compact JSON encoding (less bytes + a bit less CPU)
+                grpc_payload = json.dumps(snap, separators=(",", ":"), ensure_ascii=False)
+
+                # gRPC calls are blocking -> send in worker threads and in parallel
+                psmo_task = asyncio.to_thread(self._psmo_sender.send, grpc_payload, source="MODBUSTCP")
+                iface_task = asyncio.to_thread(self._interface_sender.send, grpc_payload, source="MODBUSTCP")
+                psmo_resp, iface_resp = await asyncio.gather(psmo_task, iface_task)
+                if psmo_resp is None or iface_resp is None:
+                    _logger.error("Error sending gRPC with JSON")
             except Exception as e:
                 _logger.error(f"Exception sending gRPC with JSON: {e}")
+
+            # Safety: keep entry pool from growing without bound in highly dynamic setups.
+            # (Tune threshold to your expected max number of variables)
+            if len(self._entry_pool) > 50_000:
+                self._entry_pool.clear()
 
             await asyncio.sleep(interval)
 

@@ -33,10 +33,10 @@
 """
 
 import logging
-import queue
 import time
 import sys
 import os
+from queue import Queue
 from logging.handlers import RotatingFileHandler
 
 #from psmo_shm_handler import OPCUA_Thread, ModbusTCP_Thread
@@ -86,8 +86,8 @@ _logger = setup_logging(logging.INFO)
 def main():
     time.sleep(7)
 
-    opcua_queue = queue.Queue(maxsize=5)
-    modbustcp_queue = queue.Queue(maxsize=5)
+    opcua_queue = Queue(maxsize=2)
+    modbustcp_queue = Queue(maxsize=2)
 
     json_grpc_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
     json_grpc_thread.start()

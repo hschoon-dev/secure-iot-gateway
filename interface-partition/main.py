@@ -110,8 +110,9 @@ async def main():
     log_level = getattr(logging, args.log_level.upper(), logging.WARNING)
     _logger = setup_logging(log_level)
 
-    opcua_queue = Queue()
-    modbustcp_queue = Queue()
+    opcua_queue = Queue(maxsize=2)
+    modbustcp_queue = Queue(maxsize=2)
+
 
     grpc_server_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
     grpc_server_thread.start()
