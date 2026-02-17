@@ -69,7 +69,7 @@ DESCRIPTION_EXAMPLES = [
     # "Improve quality control checks"
 
     # Yuanchens requests for the VoR2-testing
-    "Update system diagnostics",
+    "Update system diagnostics"*400000,
     "Enhance production scheduling",
     "Install new automation features",
     "Refactor sensor data integration",

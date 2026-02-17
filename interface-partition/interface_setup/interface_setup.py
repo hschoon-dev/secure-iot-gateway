@@ -24,6 +24,7 @@
 
 import logging
 import sys
+import math
 
 from asyncua import Server, ua
 from pathlib import Path
@@ -31,6 +32,7 @@ from asyncua.crypto.permission_rules import SimpleRoleRuleset
 from asyncua.server.user_managers import CertificateUserManager
 from asyncua.crypto.validator import CertificateValidator, CertificateValidatorOptions
 from asyncua.crypto.truststore import TrustStore
+from asyncua.common.connection import TransportLimits
 
 # Local imports
 from .server_methods import (
@@ -149,11 +151,27 @@ async def setup_opcua_server() -> Server:
     await cert_user_manager.add_user(ua_expert_cert, name='UA-Expert-Client')
     await cert_user_manager.add_user(ua_expert_cert_omag, name='UA-Expert-Client-OMAG')
 
+    buffer_sz = 16 * 1024            # 16 KB
+    max_msg_sz = 10 * 1024           # 10 KB
+
     server = Server(user_manager=cert_user_manager)
     await server.init()
+
+    #server.limits.max_recv_buffer = buffer_sz
+    #server.limits.max_send_buffer = buffer_sz
+    #server.limits.max_message_size = max_msg_sz
+
     server_app_uri =   f"urn:freeopcua:interface_server" #TODO: this value MUST match the configured certificate subjectAltName!
     await server.set_application_uri(server_app_uri)
     server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
+
+    server.limits = TransportLimits(
+        max_recv_buffer=buffer_sz,
+        max_send_buffer=buffer_sz,
+        # how many chunks we allow per message (round up)
+        max_chunk_count=math.ceil(max_msg_sz / buffer_sz),
+        max_message_size=max_msg_sz,
+    )
 
     server.set_security_policy([ua.SecurityPolicyType.Aes256Sha256RsaPss_SignAndEncrypt],
                             permission_ruleset=SimpleRoleRuleset())
