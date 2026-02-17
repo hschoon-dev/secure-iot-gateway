@@ -59,31 +59,29 @@ vm15() {
     echo "Funktion: Verification of Request"
     echo "Code-Verzeichnis: /src/intermediate-vor-partition"
     echo "TODO: Yuanchen"
-    #cd /src/cpc-partition
+    cd /src/intermediate-vor-partition
 
     echo "Setze Systemzeit... WORKAROUND!"
     date -s "2026-02-12 12:00:00"
 
-    #python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
+    python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
 
-    #ls
-    #python3 main.py
+    ls
+    python3 main.py
 }
 
 vm16() {
-    echo "Starte Konfiguration für die VoR-3-Partition - IP: 192.168.156.16"
+    echo "Starte Konfiguration für die VoR-2-Partition - IP: 192.168.156.16"
     echo "Funktion: Verification of Request Part 2"
     echo "Code-Verzeichnis: /src/intermediate-vor-partition-cpc"
     echo "TODO: Yuanchen"
-    #cd /src/cpc-partition
+    cd /src/intermediate-vor-partition-cpc
 
     echo "Setze Systemzeit... WORKAROUND!"
     date -s "2026-02-12 12:00:00"
 
-    #python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
-
-    #ls
-    #python3 main.py
+    ls
+    python3 main.py
 }
 
 default_vm() {
