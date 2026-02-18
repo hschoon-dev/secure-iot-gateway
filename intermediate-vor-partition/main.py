@@ -42,7 +42,8 @@ from request_message_handler import RequestMessageHandler
 path = os.path.dirname(os.path.abspath(__file__))
 verfication_ruleset_path = os.path.join(path, "config/Request_Verification_Ruleset.xml")
 mapping_ruleset_path = os.path.join(path, "config/Mapping_Rulesets.xml")
-mapped_rq_db_path = os.path.join(path, "config/mapped_requests.db")
+#mapped_rq_db_path = os.path.join(path, "config/mapped_requests.db")
+mapped_rq_db_path = os.path.join(path, "mnt/mapped_requests.json")
 logging_path = os.path.join(path, "logs/app.log")
 
 

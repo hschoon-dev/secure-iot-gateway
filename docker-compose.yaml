@@ -76,8 +76,10 @@ services:
     volumes:
       # Database for mapped requests
       - type: bind
-        source: ./intermediate-vor-partition/config/mapped_requests.db
-        target: /app/config/mapped_requests.db
+        #source: ./intermediate-vor-partition/config/mapped_requests.db
+        source: ./vor-database/mapped_requests.json
+        #target: /app/config/mapped_requests.db
+        target: /app/mnt/mapped_requests.json
       # Logging files
       - type: bind
         source: ./intermediate-vor-partition/logs
@@ -97,8 +99,10 @@ services:
     volumes:
       # Database for mapped requests
       - type: bind
-        source: ./intermediate-vor-partition/config/mapped_requests.db
-        target: /app/config/mapped_requests.db
+        #source: ./intermediate-vor-partition/config/mapped_requests.db
+        source: ./vor-database/mapped_requests.json
+        #target: /app/config/mapped_requests.db
+        target: /app/mnt/mapped_requests.json
       # Configuration file for modified acceptance ruleset
       - type: bind
         source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
