@@ -2,3 +2,4 @@ defusedxml==0.7.1
 grpcio==1.75.1
 grpcio-tools==1.75.1
 protobuf==6.32.1
+tinydb==4.8.2
