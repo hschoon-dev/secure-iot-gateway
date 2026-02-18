@@ -64,7 +64,7 @@ vm15() {
     echo "Setze Systemzeit... WORKAROUND!"
     date -s "2026-02-12 12:00:00"
 
-    python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
+    python3 -m grpc_tools.protoc -I ./grpc_request_handler/proto --python_out=. --grpc_python_out=. ./grpc_request_handler/proto/*.proto
 
     ls
     python3 main.py
