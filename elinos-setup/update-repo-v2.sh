@@ -9,6 +9,11 @@ BRANCH="active-dev"
 
 REPO_DIR="$NFS_BASE/$REPO_NAME"
 
+# One-time extra copy destination
+VOR_DB_DEST_BASE="/nfs/data"
+VOR_DB_NAME="vor-database"
+VOR_DB_DEST="$VOR_DB_DEST_BASE/$VOR_DB_NAME"
+
 UPDATED=false
 
 # Clone or update repo
@@ -74,6 +79,22 @@ if [ "$UPDATED" = true ]; then
       fi
     done
   done
+
+  # Copy vor-database ONCE to /nfs/data (only if not already present)
+  SRC_VOR_DB="$REPO_DIR/$VOR_DB_NAME"
+  if [ ! -d "$SRC_VOR_DB" ]; then
+    echo "ERROR: Source not found (expected directory): $SRC_VOR_DB" >&2
+    exit 1
+  fi
+
+  mkdir -p "$VOR_DB_DEST_BASE"
+
+  if [ -e "$VOR_DB_DEST" ]; then
+    echo "vor-database already exists at $VOR_DB_DEST. Skipping one-time copy."
+  else
+    echo "One-time copy: installing vor-database to $VOR_DB_DEST"
+    cp -r "$SRC_VOR_DB" "$VOR_DB_DEST"
+  fi
 else
   echo "No changes detected. Skipping copy step."
 fi
