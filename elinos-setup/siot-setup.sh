@@ -59,6 +59,13 @@ vm15() {
     echo "Funktion: Verification of Request"
     echo "Code-Verzeichnis: /src/intermediate-vor-partition"
     echo "TODO: Yuanchen"
+
+    mkdir mnt
+    mount -t nfs 192.168.156.17:/data/nfs/secure-iot-gateway/vor-database /mnt/
+    cd mnt
+    ls
+
+
     cd /src/intermediate-vor-partition
 
     echo "Setze Systemzeit... WORKAROUND!"
@@ -75,6 +82,12 @@ vm16() {
     echo "Funktion: Verification of Request Part 2"
     echo "Code-Verzeichnis: /src/intermediate-vor-partition-cpc"
     echo "TODO: Yuanchen"
+
+    mkdir mnt
+    mount -t nfs 192.168.156.17:/data/nfs/secure-iot-gateway/vor-database /mnt/
+    cd mnt
+    ls
+
     cd /src/intermediate-vor-partition-cpc
 
     echo "Setze Systemzeit... WORKAROUND!"
