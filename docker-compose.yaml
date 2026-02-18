@@ -79,7 +79,7 @@ services:
         #source: ./intermediate-vor-partition/config/mapped_requests.db
         source: ./vor-database/mapped_requests.json
         #target: /app/config/mapped_requests.db
-        target: /app/mnt/mapped_requests.json
+        target: /mnt/mapped_requests.json
       # Logging files
       - type: bind
         source: ./intermediate-vor-partition/logs
@@ -102,7 +102,7 @@ services:
         #source: ./intermediate-vor-partition/config/mapped_requests.db
         source: ./vor-database/mapped_requests.json
         #target: /app/config/mapped_requests.db
-        target: /app/mnt/mapped_requests.json
+        target: /mnt/mapped_requests.json
       # Configuration file for modified acceptance ruleset
       - type: bind
         source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
@@ -116,7 +116,7 @@ services:
         condition: service_started
       cpc-partition:
         condition: service_started
-    attach: false
+    attach: true
     networks:
       static-network:
         ipv4_address: 192.168.156.16

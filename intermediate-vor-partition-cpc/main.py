@@ -51,7 +51,8 @@ acceptance_ruleset_path = os.path.join(path, "config/Acceptance_Ruleset.xml")
 acceptance_ruleset_path_modified = os.path.join(path, "config/Acceptance_Ruleset_modified.xml")
 
 # NOTE: keep variable name for compatibility, but now it points to a TinyDB JSON file
-mapped_rq_database_path = os.path.join(path, "mnt/mapped_requests.json")
+#mapped_rq_database_path = os.path.join(path, "mnt/mapped_requests.json")
+mapped_rq_database_path = "/mnt/mapped_requests.json"
 
 logging_path = os.path.join(path, "logs/app.log")
 
