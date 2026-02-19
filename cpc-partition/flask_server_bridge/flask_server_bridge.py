@@ -3,6 +3,19 @@
  Modul:    cpc-partition/flask_server_bridge/flask_server_bridge.py
  Projekt:  Secure IoT Gateway
 ------------------------------------------------------------
+ Beschreibung:
+    Client implementations for communication with the CPC in
+    the context of the VoR framework (OPC UA + Modbus).
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
 """
 
 from __future__ import annotations
