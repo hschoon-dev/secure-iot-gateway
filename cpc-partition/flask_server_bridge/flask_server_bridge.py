@@ -1,202 +1,216 @@
 """
 ------------------------------------------------------------
- Modul:    cpc-partition/flask_server_bridge.py
+ Modul:    cpc-partition/flask_server_bridge/flask_server_bridge.py
  Projekt:  Secure IoT Gateway
-------------------------------------------------------------
- Beschreibung:
-    This module contains a Flask server that acts as a bridge
-    between the VoR framework and the cpc-partition.
-
- Autor(en):
-    - Yuanchen Zhao (basic implementation of the Flask server)
-    - Heiko Schoon (integration in Docker and modularization
-      of the code)
-
- Maintainer:
-    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
-
- Hinweis:
-    Ongoing development. Not all functions are fully implemented.
-    Flask server is for development and testing purposes only.
-    Security aspects (e.g., authentication, encryption) are not
-    fully addressed. Will be replaced by a gRPC server with mTLS.
 ------------------------------------------------------------
 """
 
-from flask import Flask, app, request, Response, jsonify
-from defusedxml import ElementTree as ET
-import logging
-import os
+from __future__ import annotations
+
 import asyncio
+import logging
 from pathlib import Path
 
-# local import
+from flask import Flask, request, Response, jsonify
+from defusedxml import ElementTree as ET
+
 from .cpc_clients_for_vor import OnDemandOpcUaRegistry
-from .cpc_clients_for_vor import vor_5_placeholder, vor_6_placeholder, read_list_of_vars_from_opcua, placeholder_opcua_client
 
 _logger = logging.getLogger(__name__)
 
-BASE_DIR = Path(__file__).resolve().parents[1]  # .../cpc-partition
-XML_PATH = BASE_DIR / "config" / "opcua-endpoints_demonstrator.xml"
-XSD_PATH = BASE_DIR / "config" / "opcua-endpoints.xsd"
 
-opcua_registry = OnDemandOpcUaRegistry(XML_PATH, XSD_PATH)
+def to_vor_text(value) -> str:
+    if value is None:
+        return "N/A"
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    if isinstance(value, str):
+        s = value.strip()
+        return s if s else "N/A"
+    return str(value)
+
+
+def resolve_config_paths() -> tuple[Path, Path | None]:
+    candidates = [
+        Path("/app/config"),
+        Path("/app/flask_server_bridge/config"),
+        Path("/app/cpc-partition/config"),
+        Path(__file__).resolve().parent / "config",
+        Path(__file__).resolve().parents[1] / "config",
+        Path(__file__).resolve().parents[2] / "config",
+    ]
+
+    xml_name = "opcua-endpoints_demonstrator.xml"
+    xsd_name = "opcua-endpoints.xsd"
+
+    xml_path = None
+    xsd_path = None
+
+    for base in candidates:
+        if xml_path is None and (base / xml_name).exists():
+            xml_path = base / xml_name
+        if xsd_path is None and (base / xsd_name).exists():
+            xsd_path = base / xsd_name
+
+    if xml_path is None:
+        raise FileNotFoundError(
+            f"Could not find {xml_name} in any of: {', '.join(str(c) for c in candidates)}"
+        )
+
+    if xsd_path is None:
+        _logger.warning("XSD not found; will skip XSD validation for OPC UA XML.")
+
+    _logger.warning("Using OPC UA XML: %s", xml_path)
+    if xsd_path:
+        _logger.warning("Using OPC UA XSD: %s", xsd_path)
+
+    return xml_path, xsd_path
+
 
 class FlaskServerBridge:
     def __init__(self):
-        self.app = Flask(__name__) #BUG: WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.           
+        self.app = Flask(__name__)
 
-        @self.app.route('/read_values_xml', methods=['POST'])
+        xml_path, xsd_path = resolve_config_paths()
+        self.opcua_registry = OnDemandOpcUaRegistry(xml_path, xsd_path)
+
+        @self.app.route("/read_values_xml", methods=["POST"])
         def read_values_xml():
-            # ------------------------------------------------------------
-            # 1) Request-XML parsen → Variablenliste bauen
-            # ------------------------------------------------------------
             try:
-                xml_data = request.data.decode('utf-8', errors='replace')
-                root = ET.fromstring(xml_data)  # <ruleset>…</ruleset>
+                xml_data = request.data.decode("utf-8", errors="replace")
+                root = ET.fromstring(xml_data)
 
-                list_of_vars = []
+                requested_names: list[str] = []
 
-                # feste Variablen nach deiner Logik/Benennung
-                # Mapping: XML → OPC-UA-Variablenname
+                # fixed map: keep VoR XML paths, but resolve to registry keys
                 fixed_map = [
-                    # (<XPath auf current_value>, <OPC-UA-Var>)
-                    ("key_personnel_present/current_value", "KeyPersonnelPresent"),
-                    ("technical_system/availability/current_value", "SystemAvailable"),
-                    ("technical_system/operation_mode/current_value", "OperationMode"),
-                    ("technical_system/warning/current_value", "Warning"),
+                    ("key_personnel_present/current_value", "TestObject:KeyPersonnelPresent"),
+                    ("technical_system/availability/current_value", "TestObject:SystemAvailable"),
+                    ("technical_system/operation_mode/current_value", "TestObject:OperationMode"),
+                    ("technical_system/warning/current_value", "TestObject:Warning"),
                 ]
-                for xpath, var in fixed_map:
+                for xpath, key in fixed_map:
                     elem = root.find(xpath)
                     if elem is not None:
-                        list_of_vars.append(var)
+                        requested_names.append(key)
 
-                # dynamische Endpunkte
+                # affected endpoints: VoR may send plain DisplayName (e.g., MotorSpeed_SP)
                 affected = root.find("affected_endpoints")
                 if affected is not None:
                     for ae in affected.findall("affected_endpoint"):
                         name_elem = ae.find("name")
                         if name_elem is not None and name_elem.text:
-                            var_name = name_elem.text.strip()
-                            if var_name:
-                                list_of_vars.append(var_name)
+                            n = name_elem.text.strip()
+                            if n:
+                                requested_names.append(n)
 
-                # deduplizieren, Reihenfolge egal
-                list_of_vars = sorted(set(list_of_vars))
-                _logger.warning(f"Vars to fetch: {list_of_vars}")
+                requested_names = sorted(set(requested_names))
+                _logger.warning("Vars requested (raw): %s", requested_names)
 
-                if not list_of_vars:
-                    return Response("<error>no variables requested</error>",
-                                    mimetype="application/xml", status=400)
+                # resolve any plain DisplayName to unique qualified key
+                resolved_keys, errors = self.opcua_registry.resolve_many(requested_names)
+
+                if errors:
+                    # If VoR requests unknown/ambiguous, answer 400 (better than silently N/A)
+                    _logger.error("Name resolution errors: %s", errors)
+                    return Response(
+                        "<error>unknown_or_ambiguous_endpoint</error>",
+                        mimetype="application/xml",
+                        status=400,
+                    )
+
+                _logger.warning("Vars to fetch (resolved): %s", resolved_keys)
+
+                if not resolved_keys:
+                    return Response("<error>no variables requested</error>", mimetype="application/xml", status=400)
 
             except ET.ParseError as e:
-                _logger.error(f"XML parse error: {e}")
+                _logger.error("XML parse error: %s", e)
                 return Response("<error>invalid xml</error>", mimetype="application/xml", status=400)
             except Exception as e:
-                _logger.exception(f"Error parsing XML request: {e}")
+                _logger.exception("Error parsing XML request: %s", e)
                 return Response("<error>internal parse error</error>", mimetype="application/xml", status=500)
 
-            # ------------------------------------------------------------
-            # 2) Werte EINMALIG von OPC UA holen (hier: nur OPC UA; Modbus optional)
-            #    – mit einfachem Timeout-Schutz
-            # ------------------------------------------------------------
             try:
-            # On-demand OPC UA read
-                dict_of_fetched_values = asyncio.run(opcua_registry.fetch(list_of_vars, timeout_s=3.0))
+                fetched = asyncio.run(self.opcua_registry.fetch(resolved_keys, timeout_s=3.0))
             except Exception as e:
-                _logger.exception(f"Error fetching values: {e}")
-                dict_of_fetched_values = {}
+                _logger.exception("Error fetching values: %s", e)
+                fetched = {}
 
-
-            if not dict_of_fetched_values:
-                # Wir antworten konsistent mit N/A, statt komplett abzubrechen
-                _logger.warning("No values fetched; returning N/A placeholders.")
-
-            # ------------------------------------------------------------
-            # 3) Antwort-XML befüllen (eingehendes XML wird überschrieben)
-            #    - feste Felder
-            #    - affected_endpoints
-            #    Fehlende Werte → "N/A"
-            # ------------------------------------------------------------
+            # --- fill fixed values (these are already qualified keys) ---
             try:
-                # feste Variablen füllen
-                fill_pairs = [
-                    ("key_personnel_present/current_value", "KeyPersonnelPresent"),
-                    ("technical_system/availability/current_value", "SystemAvailable"),
-                    ("technical_system/operation_mode/current_value", "OperationMode"),
-                    ("technical_system/warning/current_value", "Warning"),
-                ]
-                for xpath, var in fill_pairs:
+                for xpath, key in fixed_map:
                     elem = root.find(xpath)
                     if elem is not None:
-                        val = dict_of_fetched_values.get(var, "N/A")
-                        elem.text = str(val)
+                        elem.text = to_vor_text(fetched.get(key))
 
-                # dynamische Endpunkte füllen
-                affected = root.find("affected_endpoints")
+                # --- fill affected endpoints ---
                 if affected is not None:
                     for ae in affected.findall("affected_endpoint"):
                         name_elem = ae.find("name")
                         value_elem = ae.find("value")
                         if name_elem is None or value_elem is None:
                             continue
-                        var_name = (name_elem.text or "").strip()
-                        if not var_name:
+                        raw_name = (name_elem.text or "").strip()
+                        if not raw_name:
                             continue
-                        value_elem.text = str(dict_of_fetched_values.get(var_name, "N/A"))
 
-                filled_xml_bytes = ET.tostring(root, encoding='utf-8', method='xml')
+                        resolved = self.opcua_registry.resolve(raw_name)
+                        if not resolved:
+                            # keep stable behavior: N/A if unknown
+                            value_elem.text = "N/A"
+                            continue
+
+                        value_elem.text = to_vor_text(fetched.get(resolved))
+
+                filled_xml_bytes = ET.tostring(root, encoding="utf-8", method="xml")
 
             except Exception as e:
-                _logger.exception(f"Error filling XML: {e}")
-                return Response("<error>failed to build response</error>",
-                                mimetype='application/xml', status=500)
+                _logger.exception("Error filling XML: %s", e)
+                return Response("<error>failed to build response</error>", mimetype="application/xml", status=500)
 
-            # ------------------------------------------------------------
-            # 4) Response zurückgeben
-            # ------------------------------------------------------------
-            return Response(filled_xml_bytes, mimetype='application/xml', status=200)
+            return Response(filled_xml_bytes, mimetype="application/xml", status=200)
 
-
-        @self.app.route('/update_endpoints', methods=['POST'])
+        @self.app.route("/update_endpoints", methods=["POST"])
         def update_endpoints():
-            # ------------------------------------------------------------
-            # 1) Request-JSON parsen → Variablenliste bauen # BUG: Wieso jetzt JSON???
-            # ------------------------------------------------------------
-            # BUG: Not implemented: Write the value back to the appropriate OPC UA or Modbus endpoint
-            #instead_call_this = await vor_6_placeholder()
-            #_logger.error(f"Called placeholder function: {instead_call_this}")
-            data = request.get_json(force=True)
-            _logger.error(f"update_endpoints called with data: {data}")
+            data = request.get_json(force=True) or {}
+            _logger.error("update_endpoints called with data: %s", data)
 
-            # ------------------------------------------------------------
-            # 2) Werte EINMALIG schreiben
-            # ------------------------------------------------------------
-            # BUG: Here the endpoints for OPC UA or Modbus should be determined from data
-            opc_ua_endpoints = []
-            modbus_endpoints = []
-            # ... 
-            results = {}
-            # results = _write_values_to_opcua_and_modbus(opc_ua_endpoints, modbus_endpoints)
+            # resolve incoming keys (VoR may send plain DisplayName)
+            resolved_payload: dict[str, object] = {}
+            errors: dict[str, dict] = {}
 
+            for raw_key, val in data.items():
+                rk = (raw_key or "").strip()
+                resolved = self.opcua_registry.resolve(rk)
+                if not resolved:
+                    if ":" not in rk:
+                        candidates = self.opcua_registry.display_to_keys.get(rk, [])
+                        if len(candidates) > 1:
+                            errors[rk] = {"reason": "ambiguous_endpoint", "candidates": candidates}
+                        else:
+                            errors[rk] = {"reason": "unknown_endpoint"}
+                    else:
+                        errors[rk] = {"reason": "unknown_endpoint"}
+                    continue
 
-            # ------------------------------------------------------------
-            # 4) Response zurückgeben
-            # ------------------------------------------------------------
-            # BUG: For now, we just echo back the received values with a dummy "ok" status
-            results = {var_name: {"status": "ok", "value": value} for var_name, value in data.items()}
-            return jsonify(results), 200
+                resolved_payload[resolved] = val
 
-            
+            if errors:
+                _logger.error("update_endpoints resolution errors: %s", errors)
+                return jsonify({"status": "error", "reason": "bad_endpoints", "details": errors}), 400
+
+            try:
+                results = asyncio.run(self.opcua_registry.write(resolved_payload, timeout_s=3.0))
+                return jsonify(results), 200
+            except Exception as e:
+                _logger.exception("update_endpoints internal error: %s", e)
+                return jsonify({"status": "error", "reason": "internal_error"}), 500
+
     def run(self, debug=False, threaded=True):
         self.app.run(debug=debug, host="0.0.0.0", port=5000, threaded=threaded)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     bridge = FlaskServerBridge()
     bridge.run()
-
-# TODO: run OPC UA client and Flask server simultaneously by using mutithreading
-# TODO: Inform the propagation frontend via the OPC UA client and Flask server that the next request can be pulled.
-# frontend => request acceptance-variables from flask-server => grab values from OPC UA Clients => send to frontend
-# frontend => send modifications => send to flask-server => implement in CPC => send feedback to frontend

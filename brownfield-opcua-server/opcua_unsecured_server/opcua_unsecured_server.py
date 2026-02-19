@@ -55,10 +55,10 @@ async def start_unsecured_server():
         int_var = await myobj.add_variable(idx, f"ProductionStep", ua.Int32(0))
         string_var = await myobj.add_variable(idx, f"OperationMode", ua.String("Normal Operation"))
         
-        await bool_var.set_read_only()
-        await float_var.set_read_only()
-        await int_var.set_read_only()
-        await string_var.set_read_only()
+        await bool_var.set_writable()
+        await float_var.set_writable()
+        await int_var.set_writable()
+        await string_var.set_writable()
         
         variables.append((bool_var, float_var, int_var, string_var))
 
@@ -74,9 +74,9 @@ async def start_unsecured_server():
             await asyncio.sleep(1)
             for bool_var, float_var, int_var, string_var in variables:
                 await bool_var.write_value((random.choice([True, False])))
-                await float_var.write_value(ua.Float(random.uniform(80.0, 100.0)))
+                #await float_var.write_value(ua.Float(random.uniform(80.0, 100.0)))
                 await int_var.write_value(ua.Int32(random.randint(0, 10)))
-                await string_var.write_value(ua.String(random.choice(["Idle"])))#, "Emergency Stop", "Maintenance"])))
-
-if __name__ == "__main__":
-    asyncio.run(start_unsecured_server())
+                await string_var.write_value(ua.String(random.choice(["Idle", "Emergency Stop", "Maintenance"])))
+            
+            get_val_Motor_Speed = await float_var.read_value()
+            _logger.error(f"MotorSpeed_SP: {get_val_Motor_Speed}")

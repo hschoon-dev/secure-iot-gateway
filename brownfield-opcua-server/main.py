@@ -69,7 +69,7 @@ def setup_logging(
 
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.INFO)
+_logger = setup_logging(logging.WARNING)
 
 def run_unsecured_server():
     asyncio.run(start_unsecured_server())

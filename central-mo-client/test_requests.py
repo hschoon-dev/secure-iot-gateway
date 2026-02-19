@@ -114,7 +114,7 @@ PARAMETER_MODIFICATION_EXAMPLES_RBAC = {
     #"Q5:StoerungTrockner": ["turn_on", "turn_off"],
 
     # Yuanchens requests for the VoR2-testing
-    "MotorSpeed_SP": ["750", "900"],
+    "MotorSpeed_SP": ["750", "900", "863.23487552", "42.00000000000002", "203.45"],
     "Mixer_SP": ["5", "7"],
     #"Pump_A_Power": ["9.4", "10.5"],
     #"Pump_B_Power": ["9.4", "15.5"],

@@ -95,7 +95,7 @@ async def start_secured_server():
     
     # 3. Operation mode System 1 (String - with predefined values)
     operation_modes = ["idle", "stop", "busy", "emergency", "maintenance"]
-    operation_mode_var = await system1_obj.add_variable(idx, "OperationMode", ua.String("idle"))
+    operation_mode_var = await system1_obj.add_variable(idx, "OperationMode", ua.String("Idle"))
     await operation_mode_var.set_read_only()
     _logger.info(f"Operation Mode: {operation_mode_var}")
     
