@@ -1,1 +1,1 @@
-{"mapped_requests": {}}
+{"mapped_requests": {"1": {"request_id": "9131c5d7-b506-4fca-a251-4338966181e4", "generation_timestamp": "2026-02-19 15:10:36.537404+00:00", "description": ["description_0", "description_1", "description_2"], "impact": "flow rate adjustment", "priority": 23, "tags": null, "affected_endpoint_list": [["Pump_B_Power", "absolute, 15.5", "unitless", ">= 0"], ["Pump_B_Power", "absolute, 15.5", "kw", "< 12"], ["Pump_B_Power", "absolute, 15.5", "kw", "< 16"], ["Pump_B_Power", "absolute, 15.5", "kw", "< 18"]]}}}

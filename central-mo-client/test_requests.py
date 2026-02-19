@@ -96,7 +96,8 @@ IMPACT_EXAMPLES = [
     # "Improved resource utilization",
     # "Enhanced system reliability",
 
-    "Motor Speed Configuration",
+    "mixing adjustment",
+    #"Motor Speed Configuration",
     "flow rate adjustment",
 ]
 
@@ -114,11 +115,11 @@ PARAMETER_MODIFICATION_EXAMPLES_RBAC = {
     #"Q5:StoerungTrockner": ["turn_on", "turn_off"],
 
     # Yuanchens requests for the VoR2-testing
-    "MotorSpeed_SP": ["750", "900", "863.23487552", "42.00000000000002", "203.45"],
+    #"MotorSpeed_SP": ["750", "900", "863.23487552", "42.00000000000002", "203.45"],
     "Mixer_SP": ["5", "7"],
     #"Pump_A_Power": ["9.4", "10.5"],
-    #"Pump_B_Power": ["9.4", "15.5"],
-    "Heater_Power": ["17.5", "20.0"],
+    "Pump_B_Power": ["9", "15", "7", "6", "4"],
+    #"Heater_Power": ["17.5", "20.0"],
 }
 
 PARAMETER_EXAMPLES_RBAC = [
@@ -135,11 +136,11 @@ PARAMETER_EXAMPLES_RBAC = [
     # "Q5:StoerungTrockner",
 
     # Yuanchens requests for the VoR2-testing
-    "MotorSpeed_SP",
+    #"MotorSpeed_SP",
     "Mixer_SP",
     #"Pump_A_Power",
-    #"Pump_B_Power",
-    "Heater_Power",
+    "Pump_B_Power",
+    #"Heater_Power",
 ]
 
 def add_users_to_user_manager():

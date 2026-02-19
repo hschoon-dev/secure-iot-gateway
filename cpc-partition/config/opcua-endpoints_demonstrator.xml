@@ -110,6 +110,24 @@
         <description>Haifischfuetterung</description>
       </node>
       <node>
+        <DisplayName>Pump_A_Power</DisplayName>
+        <NamespaceIndex>2</NamespaceIndex>
+        <NamespaceAlias>SimStation1</NamespaceAlias>
+        <IdentifierType>Numeric</IdentifierType>
+        <Identifier>4</Identifier>
+        <datatype>Float</datatype>
+        <description>Haifischfuetterung</description>
+      </node>
+      <node>
+        <DisplayName>Pump_C_Power</DisplayName>
+        <NamespaceIndex>2</NamespaceIndex>
+        <NamespaceAlias>SimStation1</NamespaceAlias>
+        <IdentifierType>Numeric</IdentifierType>
+        <Identifier>5</Identifier>
+        <datatype>Float</datatype>
+        <description>Haifischfuetterung</description>
+      </node>
+      <node>
         <DisplayName>ProductionStep</DisplayName>
         <NamespaceIndex>2</NamespaceIndex>
         <NamespaceAlias>SimStation1</NamespaceAlias>

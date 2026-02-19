@@ -14,7 +14,7 @@ from pathlib import Path
 from flask import Flask, request, Response, jsonify
 from defusedxml import ElementTree as ET
 
-from .cpc_clients_for_vor import OnDemandOpcUaRegistry
+from .cpc_clients_for_vor import OnDemandOpcUaRegistry, OnDemandModbusTCPRegistry
 
 _logger = logging.getLogger(__name__)
 
@@ -30,49 +30,89 @@ def to_vor_text(value) -> str:
     return str(value)
 
 
-def resolve_config_paths() -> tuple[Path, Path | None]:
+def resolve_config_paths() -> tuple[Path, Path | None, Path, Path | None]:
+    """
+    Resolve paths for BOTH OPC UA and Modbus TCP configs.
+
+    Searches typical container/project config locations and selects the first match.
+    XSDs are optional; if missing, validation is skipped.
+    """
     candidates = [
-        Path("/app/config"),
-        Path("/app/flask_server_bridge/config"),
-        Path("/app/cpc-partition/config"),
-        Path(__file__).resolve().parent / "config",
-        Path(__file__).resolve().parents[1] / "config",
-        Path(__file__).resolve().parents[2] / "config",
+        Path(__file__).parent.parent / "config"
     ]
 
-    xml_name = "opcua-endpoints_demonstrator.xml"
-    xsd_name = "opcua-endpoints.xsd"
+    # --- OPC UA ---
+    opc_xml_name = "opcua-endpoints_demonstrator.xml"
+    opc_xsd_name = "opcua-endpoints.xsd"
 
-    xml_path = None
-    xsd_path = None
+    # --- Modbus TCP ---
+    mb_xml_name = "modbustcp-endpoints_demonstrator.xml"
+    mb_xsd_name = "modbustcp-endpoints.xsd"
+
+    opc_xml_path: Path | None = None
+    opc_xsd_path: Path | None = None
+    mb_xml_path: Path | None = None
+    mb_xsd_path: Path | None = None
 
     for base in candidates:
-        if xml_path is None and (base / xml_name).exists():
-            xml_path = base / xml_name
-        if xsd_path is None and (base / xsd_name).exists():
-            xsd_path = base / xsd_name
+        if opc_xml_path is None and (base / opc_xml_name).exists():
+            opc_xml_path = base / opc_xml_name
+        if opc_xsd_path is None and (base / opc_xsd_name).exists():
+            opc_xsd_path = base / opc_xsd_name
 
-    if xml_path is None:
+        if mb_xml_path is None and (base / mb_xml_name).exists():
+            mb_xml_path = base / mb_xml_name
+        if mb_xsd_path is None and (base / mb_xsd_name).exists():
+            mb_xsd_path = base / mb_xsd_name
+
+    if opc_xml_path is None:
         raise FileNotFoundError(
-            f"Could not find {xml_name} in any of: {', '.join(str(c) for c in candidates)}"
+            f"Could not find {opc_xml_name} in any of: {', '.join(str(c) for c in candidates)}"
         )
 
-    if xsd_path is None:
-        _logger.warning("XSD not found; will skip XSD validation for OPC UA XML.")
+    if mb_xml_path is None:
+        raise FileNotFoundError(
+            f"Could not find {mb_xml_name} in any of: {', '.join(str(c) for c in candidates)}"
+        )
 
-    _logger.warning("Using OPC UA XML: %s", xml_path)
-    if xsd_path:
-        _logger.warning("Using OPC UA XSD: %s", xsd_path)
+    if opc_xsd_path is None:
+        _logger.warning("OPC UA XSD not found; will skip XSD validation for OPC UA XML.")
+    if mb_xsd_path is None:
+        _logger.warning("Modbus XSD not found; will skip XSD validation for Modbus XML.")
 
-    return xml_path, xsd_path
+    _logger.warning("Using OPC UA XML: %s", opc_xml_path)
+    if opc_xsd_path:
+        _logger.warning("Using OPC UA XSD: %s", opc_xsd_path)
+
+    _logger.warning("Using Modbus XML: %s", mb_xml_path)
+    if mb_xsd_path:
+        _logger.warning("Using Modbus XSD: %s", mb_xsd_path)
+
+    return opc_xml_path, opc_xsd_path, mb_xml_path, mb_xsd_path
 
 
 class FlaskServerBridge:
     def __init__(self):
         self.app = Flask(__name__)
 
-        xml_path, xsd_path = resolve_config_paths()
-        self.opcua_registry = OnDemandOpcUaRegistry(xml_path, xsd_path)
+        opc_xml_path, opc_xsd_path, mb_xml_path, mb_xsd_path = resolve_config_paths()
+        self.opcua_registry = OnDemandOpcUaRegistry(opc_xml_path, opc_xsd_path)
+        self.modbus_registry = OnDemandModbusTCPRegistry(mb_xml_path, mb_xsd_path)
+
+        def resolve_any(name: str) -> tuple[str | None, str | None]:
+            """
+            Resolve a VoR name to either OPC UA or Modbus.
+
+            Returns (protocol, resolved_key)
+              protocol in {"opcua", "modbus"} or (None, None) if not resolvable.
+            """
+            k1 = self.opcua_registry.resolve(name)
+            if k1:
+                return "opcua", k1
+            k2 = self.modbus_registry.resolve(name)
+            if k2:
+                return "modbus", k2
+            return None, None
 
         @self.app.route("/read_values_xml", methods=["POST"])
         def read_values_xml():
@@ -82,7 +122,7 @@ class FlaskServerBridge:
 
                 requested_names: list[str] = []
 
-                # fixed map: keep VoR XML paths, but resolve to registry keys
+                # fixed map: keep VoR XML paths, but resolve to registry keys (OPC UA in your current design)
                 fixed_map = [
                     ("key_personnel_present/current_value", "TestObject:KeyPersonnelPresent"),
                     ("technical_system/availability/current_value", "TestObject:SystemAvailable"),
@@ -94,7 +134,7 @@ class FlaskServerBridge:
                     if elem is not None:
                         requested_names.append(key)
 
-                # affected endpoints: VoR may send plain DisplayName (e.g., MotorSpeed_SP)
+                # affected endpoints: VoR may send plain DisplayName (OPC) or plain endpoint name (Modbus)
                 affected = root.find("affected_endpoints")
                 if affected is not None:
                     for ae in affected.findall("affected_endpoint"):
@@ -107,11 +147,38 @@ class FlaskServerBridge:
                 requested_names = sorted(set(requested_names))
                 _logger.warning("Vars requested (raw): %s", requested_names)
 
-                # resolve any plain DisplayName to unique qualified key
-                resolved_keys, errors = self.opcua_registry.resolve_many(requested_names)
+                # --- resolve requested names across OPC UA + Modbus ---
+                opcua_req: list[str] = []
+                modbus_req: list[str] = []
+                errors: dict[str, dict] = {}
+
+                for raw in requested_names:
+                    proto, resolved = resolve_any(raw)
+                    if resolved and proto == "opcua":
+                        opcua_req.append(resolved)
+                    elif resolved and proto == "modbus":
+                        modbus_req.append(resolved)
+                    else:
+                        # Provide ambiguity info across BOTH registries
+                        if ":" not in raw:
+                            opc_candidates = self.opcua_registry.display_to_keys.get(raw, [])
+                            mb_candidates = self.modbus_registry.name_to_keys.get(raw, [])
+                            candidates = sorted(set(opc_candidates + mb_candidates))
+                            if len(candidates) > 1:
+                                errors[raw] = {
+                                    "status": "error",
+                                    "reason": "ambiguous_endpoint",
+                                    "candidates": candidates,
+                                }
+                            else:
+                                errors[raw] = {"status": "error", "reason": "unknown_endpoint"}
+                        else:
+                            errors[raw] = {"status": "error", "reason": "unknown_endpoint"}
+
+                opcua_req = sorted(set(opcua_req))
+                modbus_req = sorted(set(modbus_req))
 
                 if errors:
-                    # If VoR requests unknown/ambiguous, answer 400 (better than silently N/A)
                     _logger.error("Name resolution errors: %s", errors)
                     return Response(
                         "<error>unknown_or_ambiguous_endpoint</error>",
@@ -119,9 +186,10 @@ class FlaskServerBridge:
                         status=400,
                     )
 
-                _logger.warning("Vars to fetch (resolved): %s", resolved_keys)
+                _logger.warning("Vars to fetch (resolved) OPC UA: %s", opcua_req)
+                _logger.warning("Vars to fetch (resolved) Modbus: %s", modbus_req)
 
-                if not resolved_keys:
+                if not opcua_req and not modbus_req:
                     return Response("<error>no variables requested</error>", mimetype="application/xml", status=400)
 
             except ET.ParseError as e:
@@ -131,33 +199,46 @@ class FlaskServerBridge:
                 _logger.exception("Error parsing XML request: %s", e)
                 return Response("<error>internal parse error</error>", mimetype="application/xml", status=500)
 
-            try:
-                fetched = asyncio.run(self.opcua_registry.fetch(resolved_keys, timeout_s=3.0))
-            except Exception as e:
-                _logger.exception("Error fetching values: %s", e)
-                fetched = {}
+            # --- fetch values from OPC UA (async) + Modbus (sync) ---
+            fetched: dict[str, object] = {}
 
-            # --- fill fixed values (these are already qualified keys) ---
+            if opcua_req:
+                try:
+                    fetched.update(asyncio.run(self.opcua_registry.fetch(opcua_req, timeout_s=3.0)))
+                except Exception as e:
+                    _logger.exception("Error fetching OPC UA values: %s", e)
+
+            if modbus_req:
+                try:
+                    fetched.update(self.modbus_registry.fetch(modbus_req))
+                except Exception as e:
+                    _logger.exception("Error fetching Modbus values: %s", e)
+
+            # --- fill XML response ---
             try:
+                # fixed values (typically OPC UA qualified keys)
                 for xpath, key in fixed_map:
                     elem = root.find(xpath)
                     if elem is not None:
-                        elem.text = to_vor_text(fetched.get(key))
+                        # If someday fixed_map contains a plain name, resolve it too:
+                        _proto, resolved = resolve_any(key)
+                        elem.text = to_vor_text(fetched.get(resolved or key))
 
-                # --- fill affected endpoints ---
+                # affected endpoints
                 if affected is not None:
                     for ae in affected.findall("affected_endpoint"):
                         name_elem = ae.find("name")
                         value_elem = ae.find("value")
                         if name_elem is None or value_elem is None:
                             continue
+
                         raw_name = (name_elem.text or "").strip()
                         if not raw_name:
                             continue
 
-                        resolved = self.opcua_registry.resolve(raw_name)
+                        _proto, resolved = resolve_any(raw_name)
                         if not resolved:
-                            # keep stable behavior: N/A if unknown
+                            # stable behavior: N/A if unknown
                             value_elem.text = "N/A"
                             continue
 
@@ -176,16 +257,19 @@ class FlaskServerBridge:
             data = request.get_json(force=True) or {}
             _logger.error("update_endpoints called with data: %s", data)
 
-            # resolve incoming keys (VoR may send plain DisplayName)
-            resolved_payload: dict[str, object] = {}
+            opcua_payload: dict[str, object] = {}
+            modbus_payload: dict[str, object] = {}
             errors: dict[str, dict] = {}
 
-            for raw_key, val in data.items():
+            for raw_key, val in (data or {}).items():
                 rk = (raw_key or "").strip()
-                resolved = self.opcua_registry.resolve(rk)
-                if not resolved:
+                proto, resolved = resolve_any(rk)
+
+                if not resolved or not proto:
                     if ":" not in rk:
-                        candidates = self.opcua_registry.display_to_keys.get(rk, [])
+                        opc_candidates = self.opcua_registry.display_to_keys.get(rk, [])
+                        mb_candidates = self.modbus_registry.name_to_keys.get(rk, [])
+                        candidates = sorted(set(opc_candidates + mb_candidates))
                         if len(candidates) > 1:
                             errors[rk] = {"reason": "ambiguous_endpoint", "candidates": candidates}
                         else:
@@ -194,20 +278,36 @@ class FlaskServerBridge:
                         errors[rk] = {"reason": "unknown_endpoint"}
                     continue
 
-                resolved_payload[resolved] = val
+                if proto == "opcua":
+                    opcua_payload[resolved] = val
+                elif proto == "modbus":
+                    modbus_payload[resolved] = val
 
             if errors:
                 _logger.error("update_endpoints resolution errors: %s", errors)
                 return jsonify({"status": "error", "reason": "bad_endpoints", "details": errors}), 400
 
-            try:
-                results = asyncio.run(self.opcua_registry.write(resolved_payload, timeout_s=3.0))
-                return jsonify(results), 200
-            except Exception as e:
-                _logger.exception("update_endpoints internal error: %s", e)
-                return jsonify({"status": "error", "reason": "internal_error"}), 500
+            results: dict[str, dict] = {}
 
-    def run(self, debug=False, threaded=True):
+            # OPC UA writes (async)
+            if opcua_payload:
+                try:
+                    results.update(asyncio.run(self.opcua_registry.write(opcua_payload, timeout_s=3.0)))
+                except Exception as e:
+                    _logger.exception("update_endpoints OPC UA internal error: %s", e)
+                    return jsonify({"status": "error", "reason": "internal_error"}), 500
+
+            # Modbus writes (sync)
+            if modbus_payload:
+                try:
+                    results.update(self.modbus_registry.write(modbus_payload, verify_readback=True))
+                except Exception as e:
+                    _logger.exception("update_endpoints Modbus internal error: %s", e)
+                    return jsonify({"status": "error", "reason": "internal_error"}), 500
+
+            return jsonify(results), 200
+
+    def run(self, debug: bool = False, threaded: bool = True):
         self.app.run(debug=debug, host="0.0.0.0", port=5000, threaded=threaded)
 
 

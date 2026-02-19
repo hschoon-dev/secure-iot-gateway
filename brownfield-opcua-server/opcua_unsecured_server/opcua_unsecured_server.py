@@ -52,6 +52,9 @@ async def start_unsecured_server():
         #test_nodeid = ua.NodeId.from_string(f"ns={idx};s=Temperature")
         #float_var = await myobj.add_variable(test_nodeid, f"Temperature", ua.Float(0.0))
         float_var = await myobj.add_variable(idx, f"MotorSpeed_SP", ua.Float(0.0))
+        pumpA = await myobj.add_variable(idx, f"Pump_A_Power", ua.Float(31.0))
+        pumpB = await myobj.add_variable(idx, f"Pump_B_Power", ua.Float(25.0))
+
         int_var = await myobj.add_variable(idx, f"ProductionStep", ua.Int32(0))
         string_var = await myobj.add_variable(idx, f"OperationMode", ua.String("Normal Operation"))
         
@@ -59,6 +62,8 @@ async def start_unsecured_server():
         await float_var.set_writable()
         await int_var.set_writable()
         await string_var.set_writable()
+        await pumpA.set_writable()
+        await pumpB.set_writable()
         
         variables.append((bool_var, float_var, int_var, string_var))
 

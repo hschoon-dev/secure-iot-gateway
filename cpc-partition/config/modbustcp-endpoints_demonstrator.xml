@@ -51,7 +51,7 @@
 
     <!-- Raspberry Pi 4B Testserver -->
   <server>
-    <ipaddr>192.168.156.18</ipaddr>
+    <ipaddr>192.168.156.181</ipaddr>
     <port>503</port>
     <serveralias>Ecotec</serveralias>
     <endpoints>
@@ -219,13 +219,13 @@
         <description>AM13 Volumenstrom 2</description>
       </endpoint>
       <endpoint>
-        <name>AM14</name>
+        <name>Pump_B_Power</name>
         <function>Read Holding Registers</function>
         <address>541</address>
         <quantity>1</quantity>
         <offset>-1</offset>
         <type>Holding Registers</type>
-        <description>AM14</description>
+        <description>Pump_B_Power</description>
       </endpoint>
       <endpoint>
         <name>AM15</name>

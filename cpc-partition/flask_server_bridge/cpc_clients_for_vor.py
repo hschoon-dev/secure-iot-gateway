@@ -20,8 +20,363 @@ from asyncua import ua
 
 # local imports:
 from opcua_client import OpcUaClient
+from modbus_tcp_client import ModbusTCPClient
+
+
 
 _logger = logging.getLogger(__name__)
+
+class OnDemandModbusTCPRegistry:
+    """
+    Builds Modbus TCP clients + endpoint lookup from xml config.
+
+    Lookup keys:
+      - Preferred:  "ServerAlias:Name"
+      - Else (only if globally unique): "Name"
+
+    Builds reverse index:
+      Name -> [qualified keys]
+
+    Stores:
+      key -> (client, endpoint_meta)
+    where endpoint_meta includes address/quantity/offset/function/type for dispatch.
+
+    XSD validation is OPTIONAL: if XSD missing/unreadable, we log and continue.
+    """
+
+    def __init__(self, xml_config_path: str | Path, xsd_path: str | Path | None = None):
+        self.xml_config_path = str(xml_config_path)
+        self.xsd_path = str(xsd_path) if xsd_path else None
+
+        self.clients: list[ModbusTCPClient] = []
+
+        # key -> (client, endpoint_meta)
+        self.endpoint_lookup: dict[str, tuple[ModbusTCPClient, dict[str, object]]] = {}
+
+        # Name -> list of qualified keys
+        self.name_to_keys: dict[str, list[str]] = {}
+
+        self.duplicate_keys: set[str] = set()
+
+        self._build()
+
+    # compatibility: some older code expects .endpoints
+    @property
+    def endpoints(self) -> dict[str, tuple[ModbusTCPClient, dict[str, object]]]:
+        return self.endpoint_lookup
+
+    def _build(self) -> None:
+        # Optional XSD validation
+        if self.xsd_path:
+            try:
+                schema = xmlschema.XMLSchema(self.xsd_path)
+                if not schema.is_valid(self.xml_config_path):
+                    _logger.error("Modbus XML does not conform to XSD: %s", self.xml_config_path)
+            except Exception as e:
+                _logger.warning("Skipping Modbus XSD validation (XSD not accessible): %s", e)
+
+        tree = ET.parse(self.xml_config_path)
+        root = tree.getroot()
+
+        seen_keys: set[str] = set()
+
+        for server in root.findall("server"):
+            ipaddr = (server.findtext("ipaddr") or "").strip()
+            port_txt = (server.findtext("port") or "").strip()
+            serveralias = (server.findtext("serveralias") or "").strip()
+
+            if not ipaddr or not port_txt or not serveralias:
+                continue
+
+            port = int(port_txt)
+
+            # Build per-server endpoints dict for ModbusTCPClient
+            per_server_endpoints: dict[str, dict[str, str | int | bool]] = {}
+
+            endpoints_elem = server.find("endpoints")
+            if endpoints_elem is None:
+                continue
+
+            for ep in endpoints_elem.findall("endpoint"):
+                name = (ep.findtext("name") or "").strip()
+                function = (ep.findtext("function") or "").strip()
+                address_txt = (ep.findtext("address") or "").strip()
+                quantity_txt = (ep.findtext("quantity") or "").strip()
+                offset_txt = (ep.findtext("offset") or "-1").strip()
+                typ = (ep.findtext("type") or "").strip()
+                desc = (ep.findtext("description") or "").strip()
+
+                if not name or not address_txt or not quantity_txt:
+                    continue
+
+                address = int(address_txt)
+                quantity = int(quantity_txt)
+                offset = int(offset_txt) if offset_txt else -1
+
+                per_server_endpoints[name] = {
+                    "address": address,
+                    "quantity": quantity,
+                    "offset": offset,
+                    "function": function,
+                    "type": typ,
+                    "description": desc,
+                    "serveralias": serveralias,
+                }
+
+            client = ModbusTCPClient(ipaddr=ipaddr, port=port, serveralias=serveralias, endpoints=per_server_endpoints)
+            self.clients.append(client)
+
+            # Register endpoints into global lookup with qualified keys
+            for name, meta in per_server_endpoints.items():
+                key = f"{serveralias}:{name}"
+
+                if key in seen_keys:
+                    self.duplicate_keys.add(key)
+                    _logger.warning("Duplicate Modbus registry key '%s'. Keeping first, skipping later.", key)
+                    continue
+
+                seen_keys.add(key)
+                self.endpoint_lookup[key] = (client, meta)
+
+                self.name_to_keys.setdefault(name, []).append(key)
+
+        # normalize reverse index
+        for n in list(self.name_to_keys.keys()):
+            self.name_to_keys[n] = sorted(set(self.name_to_keys[n]))
+
+        if self.duplicate_keys:
+            _logger.warning("Duplicate keys detected in Modbus registry: %s", sorted(self.duplicate_keys))
+
+        _logger.warning(
+            "OnDemandModbusTCPRegistry built: %d clients, %d endpoints (lookup keys)",
+            len(self.clients),
+            len(self.endpoint_lookup),
+        )
+
+    # ---- resolving helpers -------------------------------------------------
+
+    def resolve(self, name: str) -> str | None:
+        """
+        Resolve an incoming name to a registry key.
+
+        Rules:
+          1) if name exists as-is in endpoint_lookup -> return it
+          2) if name looks like "Alias:Name" but not found -> None
+          3) else treat as plain Name:
+                - if exactly 1 key exists -> return it
+                - if 0 or >1 keys -> None
+        """
+        if not name:
+            return None
+
+        if name in self.endpoint_lookup:
+            return name
+
+        if ":" in name:
+            return None
+
+        keys = self.name_to_keys.get(name, [])
+        if len(keys) == 1:
+            return keys[0]
+
+        return None
+
+    def resolve_many(self, names: list[str]) -> tuple[list[str], dict[str, dict]]:
+        """
+        Returns:
+          (resolved_keys, errors)
+
+        errors[name] includes:
+          - unknown_endpoint
+          - ambiguous_endpoint + candidates
+        """
+        resolved: list[str] = []
+        errors: dict[str, dict] = {}
+
+        for n in names:
+            n = (n or "").strip()
+            if not n:
+                continue
+
+            hit = self.resolve(n)
+            if hit:
+                resolved.append(hit)
+                continue
+
+            if ":" not in n:
+                candidates = self.name_to_keys.get(n, [])
+                if len(candidates) > 1:
+                    errors[n] = {"status": "error", "reason": "ambiguous_endpoint", "candidates": candidates}
+                else:
+                    errors[n] = {"status": "error", "reason": "unknown_endpoint"}
+            else:
+                errors[n] = {"status": "error", "reason": "unknown_endpoint"}
+
+        return sorted(set(resolved)), errors
+
+    # ---- Modbus dispatch ---------------------------------------------------
+
+    def _read_one(self, key: str) -> object | None:
+        hit = self.endpoint_lookup.get(key)
+        if hit is None:
+            return None
+
+        client, meta = hit
+        fn = (meta.get("function") or "").strip().lower()
+        # normalize common naming variants
+        # (your XML has mixed: "Read Coils", "Read Coil Status", "Read Discrete Input", etc.)
+        try:
+            if "read coils" in fn or "read coil status" in fn:
+                # FC01
+                # meta stored under unqualified endpoint name in client.endpoints
+                local_name = key.split(":", 1)[1]
+                return client.fc01_read_coil_status(local_name)
+
+            if "read discrete" in fn:
+                # FC02
+                local_name = key.split(":", 1)[1]
+                return client.fc02_read_discrete_inputs(local_name)
+
+            if "read holding" in fn:
+                # FC03
+                local_name = key.split(":", 1)[1]
+                v, _dt = client.fc03_read_holding_registers(local_name)
+                return v
+
+            _logger.error("Unsupported Modbus read function for %s: %s", key, fn)
+            return None
+        except Exception as e:
+            _logger.exception("Modbus read failed for %s: %s", key, e)
+            # attempt reconnect throttled
+            try:
+                client.retry_connection()
+            except Exception:
+                pass
+            return None
+
+    def fetch(self, keys: list[str]) -> dict[str, object]:
+        """
+        Synchronous fetch. Returns dict[key] = value
+        """
+        results: dict[str, object] = {}
+        for k in keys or []:
+            results[k] = self._read_one(k)
+        return results
+
+    def write(self, values: dict[str, object], verify_readback: bool = True) -> dict[str, dict]:
+        """
+        Synchronous write with optional read-back verification.
+
+        Returns per-key result dict, aligned with OPC UA style:
+        {"status": "ok", ...} or {"status": "error", "reason": "...", ...}
+
+        NOTE:
+        We allow writing holding registers even if the XML "function" says
+        "Read Holding Registers" (common in configs that don't model access mode).
+        Decision is based on either:
+            - function containing "write ... registers", OR
+            - endpoint type containing "holding" (Holding Registers), OR
+            - function containing "holding" (read holding registers)
+        """
+        results: dict[str, dict] = {}
+
+        for key, raw_val in (values or {}).items():
+            hit = self.endpoint_lookup.get(key)
+            if hit is None:
+                results[key] = {"status": "error", "reason": "unknown_endpoint", "value": raw_val}
+                continue
+
+            client, meta = hit
+            fn = (meta.get("function") or "").strip().lower()
+            typ = (meta.get("type") or "").strip().lower()
+            local_name = key.split(":", 1)[1]
+
+            try:
+                # --- COILS -------------------------------------------------------
+                if "write single coil" in fn:
+                    # force boolean-ish
+                    if isinstance(raw_val, bool):
+                        v = raw_val
+                    else:
+                        s = str(raw_val).strip().lower()
+                        v = s in ("1", "true", "yes", "y", "on")
+
+                    ok = client.write_coils(local_name, v)
+                    if not ok:
+                        results[key] = {"status": "error", "reason": "write_failed", "value": v}
+                        continue
+
+                    if verify_readback:
+                        rb = client.fc01_read_coil_status(local_name)
+                        if rb == v:
+                            results[key] = {"status": "ok", "value": rb}
+                        else:
+                            results[key] = {
+                                "status": "error",
+                                "reason": "verification_failed",
+                                "written": v,
+                                "read_back": rb,
+                            }
+                    else:
+                        results[key] = {"status": "ok", "value": v}
+                    continue
+
+                # --- HOLDING REGISTERS ------------------------------------------
+                is_write_regs = (
+                    ("write multiple registers" in fn)
+                    or ("write registers" in fn)
+                    or ("write register" in fn)
+                )
+                is_holding = ("holding" in fn) or ("holding" in typ)
+
+                # allow writing if explicitly write-regs OR if endpoint is holding-regs
+                if is_write_regs or is_holding:
+                    # Modbus holding registers are 16-bit; client.write_multiple_registers expects list[int]
+                    if isinstance(raw_val, list):
+                        regs = [int(x) for x in raw_val]
+                    else:
+                        # IMPORTANT: this will truncate floats (e.g. 9.4 -> 9).
+                        # If you need float32 packing or scaling, handle that before calling write().
+                        regs = [int(raw_val)]
+
+                    ok = client.write_registers(local_name, regs)
+                    if not ok:
+                        results[key] = {"status": "error", "reason": "write_failed", "value": regs}
+                        continue
+
+                    if verify_readback:
+                        rb, _dt = client.fc03_read_holding_registers(local_name)
+                        expected = regs[0] if regs else None
+                        if rb == expected:
+                            results[key] = {"status": "ok", "value": rb}
+                        else:
+                            results[key] = {
+                                "status": "error",
+                                "reason": "verification_failed",
+                                "written": expected,
+                                "read_back": rb,
+                            }
+                    else:
+                        results[key] = {"status": "ok", "value": regs}
+                    continue
+
+                # --- UNSUPPORTED -------------------------------------------------
+                results[key] = {
+                    "status": "error",
+                    "reason": f"unsupported_write_function({fn})",
+                    "value": raw_val,
+                }
+
+            except Exception as e:
+                _logger.exception("Modbus write failed for %s: %s", key, e)
+                try:
+                    client.retry_connection()
+                except Exception:
+                    pass
+                results[key] = {"status": "error", "reason": "write_failed", "error": str(e), "value": raw_val}
+
+        return results
+
 
 
 class OnDemandOpcUaRegistry:
