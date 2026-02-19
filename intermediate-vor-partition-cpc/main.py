@@ -58,7 +58,7 @@ logging_path = os.path.join(path, "logs/app.log")
 
 
 def setup_logging(
-    log_level=logging.WARNING,
+    log_level=logging.DEBUG,
     log_file=logging_path,
     max_bytes=1 * 1024 * 1024,  # 1 MB
     backup_count=3,

@@ -1,20 +1,20 @@
 <ruleset>
     <key_personnel_present>
-        <current_value>true</current_value>
-        <required_value>true</required_value>
+        <current_value>True</current_value>
+        <required_value>True</required_value>
     </key_personnel_present>
     <technical_system id="System_1">
         <availability>
-            <current_value>available</current_value>
-            <required_value>available</required_value>
+            <current_value>True</current_value>
+            <required_value>True</required_value>
         </availability>
         <operation_mode>
-            <current_value>idle</current_value>
-            <required_value>idle</required_value>
+            <current_value>Idle</current_value>
+            <required_value>Idle</required_value>
         </operation_mode>
         <warning>
             <current_value>none</current_value>
             <required_value>none</required_value>
         </warning>
     </technical_system>
-<affected_endpoints><affected_endpoint><name>Mixer_SP_Pump_A_Power</name><value>0</value></affected_endpoint><affected_endpoint><name>Pump_A_Power_Pump_A_Power</name><value>0</value></affected_endpoint><affected_endpoint><name>Pump_B_Power_Pump_A_Power</name><value>0</value></affected_endpoint><affected_endpoint><name>Heater_Power_Pump_A_Power</name><value>0</value></affected_endpoint></affected_endpoints></ruleset>
+<affected_endpoints><affected_endpoint><name>MotorSpeed_SP</name><value>0</value></affected_endpoint></affected_endpoints></ruleset>

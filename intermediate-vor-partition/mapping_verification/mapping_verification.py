@@ -242,7 +242,8 @@ class RequestMapper:
             if mapping_rule_set is not None:
                 # Map the list of affected endpoints according to the rule set
                 for mapping_rule in mapping_rule_set:
-                    endpoint_id = mapping_rule.endpoint_identifier + "_" + request.parameters
+                    #endpoint_id = mapping_rule.endpoint_identifier + "_" + request.parameters
+                    endpoint_id = request.parameters # in the request it is already the real endpoint name
 
                     # Endpoint change description: relative/absolute (determined based on request.modification)
                     if request.modification.endswith("%"):

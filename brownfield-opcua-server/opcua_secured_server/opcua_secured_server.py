@@ -84,7 +84,7 @@ async def start_secured_server():
     _logger.info(f"System 1: {system1_obj}")
     
     # 1. Key Personnel present (Boolean)
-    key_personnel_var = await system1_obj.add_variable(idx, "KeyPersonnelPresent", False)
+    key_personnel_var = await system1_obj.add_variable(idx, "KeyPersonnelPresent", True)
     await key_personnel_var.set_read_only()
     _logger.info(f"Key Personnel Present: {key_personnel_var}")
     
@@ -115,7 +115,7 @@ async def start_secured_server():
             await myvar.write_value(ua.Float(count))
             _logger.info(f"Current value of MyVariable: {count}")
 
-            # Update the new variables with random values
+            """# Update the new variables with random values
             # 1. Key Personnel present - randomly change with 10% probability
             if random.random() < 0.1:
                 new_personnel_state = not await key_personnel_var.get_value()
@@ -138,7 +138,7 @@ async def start_secured_server():
             if random.random() < 0.08:
                 new_warning_state = random.choice(warning_states)
                 await warning_var.write_value(ua.String(new_warning_state))
-                _logger.info(f"Warning state changed to: {new_warning_state}")
+                _logger.info(f"Warning state changed to: {new_warning_state}")"""
 
 
 

@@ -51,7 +51,7 @@ async def start_unsecured_server():
         bool_var = await myobj.add_variable(idx, f"PieceProduced", False)
         #test_nodeid = ua.NodeId.from_string(f"ns={idx};s=Temperature")
         #float_var = await myobj.add_variable(test_nodeid, f"Temperature", ua.Float(0.0))
-        float_var = await myobj.add_variable(idx, f"Temperature", ua.Float(0.0))
+        float_var = await myobj.add_variable(idx, f"MotorSpeed_SP", ua.Float(0.0))
         int_var = await myobj.add_variable(idx, f"ProductionStep", ua.Int32(0))
         string_var = await myobj.add_variable(idx, f"OperationMode", ua.String("Normal Operation"))
         
@@ -76,7 +76,7 @@ async def start_unsecured_server():
                 await bool_var.write_value((random.choice([True, False])))
                 await float_var.write_value(ua.Float(random.uniform(80.0, 100.0)))
                 await int_var.write_value(ua.Int32(random.randint(0, 10)))
-                await string_var.write_value(ua.String(random.choice(["Normal Operation", "Emergency Stop", "Maintenance"])))
+                await string_var.write_value(ua.String(random.choice(["Idle"])))#, "Emergency Stop", "Maintenance"])))
 
 if __name__ == "__main__":
     asyncio.run(start_unsecured_server())

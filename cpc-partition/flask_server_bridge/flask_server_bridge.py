@@ -26,11 +26,21 @@
 from flask import Flask, app, request, Response, jsonify
 from defusedxml import ElementTree as ET
 import logging
+import os
+import asyncio
+from pathlib import Path
 
-# local import 
+# local import
+from .cpc_clients_for_vor import OnDemandOpcUaRegistry
 from .cpc_clients_for_vor import vor_5_placeholder, vor_6_placeholder, read_list_of_vars_from_opcua, placeholder_opcua_client
 
 _logger = logging.getLogger(__name__)
+
+BASE_DIR = Path(__file__).resolve().parents[1]  # .../cpc-partition
+XML_PATH = BASE_DIR / "config" / "opcua-endpoints_demonstrator.xml"
+XSD_PATH = BASE_DIR / "config" / "opcua-endpoints.xsd"
+
+opcua_registry = OnDemandOpcUaRegistry(XML_PATH, XSD_PATH)
 
 class FlaskServerBridge:
     def __init__(self):
@@ -73,7 +83,7 @@ class FlaskServerBridge:
 
                 # deduplizieren, Reihenfolge egal
                 list_of_vars = sorted(set(list_of_vars))
-                _logger.debug(f"Vars to fetch: {list_of_vars}")
+                _logger.warning(f"Vars to fetch: {list_of_vars}")
 
                 if not list_of_vars:
                     return Response("<error>no variables requested</error>",
@@ -90,34 +100,13 @@ class FlaskServerBridge:
             # 2) Werte EINMALIG von OPC UA holen (hier: nur OPC UA; Modbus optional)
             #    – mit einfachem Timeout-Schutz
             # ------------------------------------------------------------
-            DUMMY = {
-                # feste Variablen
-                "KeyPersonnelPresent": "true",          # aus OPC UA Bool oder string? capitalization? BUG: YYeesssssss!
-                "SystemAvailable": "available",       # String/Enum
-                "OperationMode": "idle",              # String/Enum
-                "Warning": "none",                    # String/Enum
-
-                # affected_endpoints (aus <name>)
-                "Mixer_SP_Pump_A_Power": 8.0,           # int/float je nach Knoten-Typ
-                "Pump_A_Power_Pump_A_Power": 8.0,
-                "Pump_B_Power_Pump_A_Power": 8.0,
-                "Heater_Power_Pump_A_Power": 8.0,
-            }
             try:
-                #client = placeholder_opcua_client()
-
-                #async def _fetch():
-                #    return await read_list_of_vars_from_opcua(client, list_of_vars)
-
-                dict_of_fetched_values = DUMMY
-                #try: #BUG: Flask does not support asyncio natively, so this might not work as intended.
-                #    dict_of_fetched_values = await asyncio.wait_for(_fetch(), timeout=3.0)
-                #except asyncio.TimeoutError:
-                #    _logger.error("OPC UA fetch timed out")
-                #    dict_of_fetched_values = {}
+            # On-demand OPC UA read
+                dict_of_fetched_values = asyncio.run(opcua_registry.fetch(list_of_vars, timeout_s=3.0))
             except Exception as e:
                 _logger.exception(f"Error fetching values: {e}")
                 dict_of_fetched_values = {}
+
 
             if not dict_of_fetched_values:
                 # Wir antworten konsistent mit N/A, statt komplett abzubrechen

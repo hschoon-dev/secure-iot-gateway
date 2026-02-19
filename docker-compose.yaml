@@ -87,7 +87,7 @@ services:
     depends_on:
       interface-partition: 
         condition: service_started
-    attach: true
+    attach: false
     networks:
       static-network:
         ipv4_address: 192.168.156.15
@@ -155,7 +155,7 @@ services:
          condition: service_started
        interface-partition:
          condition: service_started
-    attach: false
+    attach: true
     networks:
       static-network:
           ipv4_address: 192.168.156.14

@@ -36,8 +36,8 @@ USER_PASSWORD_MAP = {
     #"admin": os.getenv("ADMIN_PASSWORD"),    # pre-existing user with Admin-role
     "admin": "SuperDuperRandomPassword2025",    # pre-existing user with Admin-role
     "sarah": "Sarah123_secure_password_2025",   # pre-existing user with PlantOperator-role
-    "mike": "Mike123_secure_password_2025",     # this user does not exist by default in the user-manager, but in rbac as MaintenancePersonnel
-    "david": "David123_secure_password_2025",   # this user does not exist by default in the user-manager, but in rbac as PlantOperator
+    #"mike": "Mike123_secure_password_2025",     # this user does not exist by default in the user-manager, but in rbac as MaintenancePersonnel
+    #"david": "David123_secure_password_2025",   # this user does not exist by default in the user-manager, but in rbac as PlantOperator
     #"lisa": "Lisa123_secure_password_2025",     # this user does not exist by default in the user-manager, but in rbac as MaintenancePersonnel
     #"horst": "WSkjcrv73&$bde",                  # this user does not exist in the rbac
     # unauthenticated and unauthorized users
@@ -90,7 +90,7 @@ IMPACT_EXAMPLES = [
 
     # Yuanchens requests for the VoR2-testing
     #"Lower operational costs",
-    "Improved product quality",
+    #"Improved product quality",
     # "Higher yield rates",
     # "Faster production cycles",
     # "Improved resource utilization",
@@ -116,8 +116,8 @@ PARAMETER_MODIFICATION_EXAMPLES_RBAC = {
     # Yuanchens requests for the VoR2-testing
     "MotorSpeed_SP": ["750", "900"],
     "Mixer_SP": ["5", "7"],
-    "Pump_A_Power": ["9.4", "10.5"],
-    "Pump_B_Power": ["9.4", "15.5"],
+    #"Pump_A_Power": ["9.4", "10.5"],
+    #"Pump_B_Power": ["9.4", "15.5"],
     "Heater_Power": ["17.5", "20.0"],
 }
 
@@ -137,8 +137,8 @@ PARAMETER_EXAMPLES_RBAC = [
     # Yuanchens requests for the VoR2-testing
     "MotorSpeed_SP",
     "Mixer_SP",
-    "Pump_A_Power",
-    "Pump_B_Power",
+    #"Pump_A_Power",
+    #"Pump_B_Power",
     "Heater_Power",
 ]
 

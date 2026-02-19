@@ -101,7 +101,7 @@
         <description>Haifischfuetterung</description>
       </node>
       <node>
-        <DisplayName>Temperature</DisplayName>
+        <DisplayName>MotorSpeed_SP</DisplayName>
         <NamespaceIndex>2</NamespaceIndex>
         <NamespaceAlias>SimStation1</NamespaceAlias>
         <IdentifierType>Numeric</IdentifierType>
