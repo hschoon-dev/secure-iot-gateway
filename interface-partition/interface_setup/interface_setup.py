@@ -154,7 +154,8 @@ async def setup_opcua_server() -> Server:
     buffer_sz = 16 * 1024            # 16 KB
     max_msg_sz = 10 * 1024           # 10 KB
 
-    server = Server(user_manager=cert_user_manager)
+    # server = Server(user_manager=cert_user_manager)
+    server = Server()
     await server.init()
 
     #server.limits.max_recv_buffer = buffer_sz
@@ -173,8 +174,10 @@ async def setup_opcua_server() -> Server:
         max_message_size=max_msg_sz,
     )
 
-    server.set_security_policy([ua.SecurityPolicyType.Aes256Sha256RsaPss_SignAndEncrypt],
-                            permission_ruleset=SimpleRoleRuleset())
+    # server.set_security_policy([ua.SecurityPolicyType.Aes256Sha256RsaPss_SignAndEncrypt],
+    #                         permission_ruleset=SimpleRoleRuleset())
+    server.set_security_policy([ua.SecurityPolicyType.NoSecurity],
+                               permission_ruleset=SimpleRoleRuleset())
 
     # load server certificate and private key. This enables endpoints with signing and encryption.
     await server.load_certificate(str(server_cert))
