@@ -1,0 +1,4 @@
+[submodule "opcua_network_fuzzer"]
+	path = opcua_network_fuzzer
+	url = https://github.com/timobeer73/opcua_network_fuzzer.git
+	branch = feature/asyncua-extension
