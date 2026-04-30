@@ -41,33 +41,10 @@ services:
         target: /app/logs
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-    depends_on:
-      interface-partition: 
-        condition: service_started
     attach: false
     networks:
       static-network:
         ipv4_address: 192.168.156.30
-
-
-  # Application of the gateway's Interface Partition
-  interface-partition:
-    container_name: interface-partition
-    build: interface-partition/
-    volumes:
-      # Logging files
-      - type: bind
-        source: ./interface-partition/logs
-        target: /app/logs
-    environment:
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-    ports:
-      - 4840:4840
-    attach: false
-    networks:
-      static-network:
-        ipv4_address: 192.168.156.12
-
 
   # Intermediate VoR Partition
   intermediate-vor-partition:
@@ -84,9 +61,6 @@ services:
       - type: bind
         source: ./intermediate-vor-partition/logs
         target: /app/logs
-    depends_on:
-      interface-partition: 
-        condition: service_started
     attach: false
     networks:
       static-network:
@@ -152,8 +126,6 @@ services:
        ecotec-modbus-server:
          condition: service_started
        psmo-partition:
-         condition: service_started
-       interface-partition:
          condition: service_started
     attach: true
     networks:

@@ -31,6 +31,7 @@ from logging.handlers import RotatingFileHandler
 import os
 import sys
 import argparse
+import tracemalloc
 
 from queue import Queue
 from grpc_json_handler import JSON_gRPC_Thread
@@ -128,6 +129,10 @@ async def main():
     data_manager = DataManager(server, opcua_queue, modbustcp_queue)
 
     _logger.info("OPC UA Server of the interface partition is running.")
+
+    _logger.info("Starting tracemalloc")
+    tracemalloc.start()
+
     async with server:
         try:
             _logger.info(f"Start populating...")
