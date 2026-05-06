@@ -7,13 +7,13 @@ echo "Detected IP: $IP"
 
 ### Sub-Funktionen definieren ###
 vm12() {
-    echo "Starte Konfiguration für die ELinOS-Partition Nr.1 - IP: 192.168.156.12"
+    echo "Starte Konfiguration für die ELinOS-Partition Nr.1 - IP: 192.168.178.112"
     echo "Funktion: Gateway-Interface"
     echo "Code-Verzeichnis: /src/interface-partition"
     cd /src/interface-partition
 
-    echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-12 12:00:00"
+    #cho "Setze Systemzeit... WORKAROUND!"
+    #date -s "2026-02-12 12:00:00"
     echo "Setze Admin-Passwort... DEV!"
     export ADMIN_PASSWORD="SuperDuperRandomPassword2025"
 
@@ -25,13 +25,13 @@ vm12() {
 }
 
 vm13() {
-    echo "Starte Konfiguration für die ELinOS-Partition Nr.2 - IP: 192.168.156.13"
+    echo "Starte Konfiguration für die ELinOS-Partition Nr.2 - IP: 192.168.178.113"
     echo "Funktion: psM+O-Partition"
     echo "Code-Verzeichnis: /src/psmo-partition"
     cd /src/psmo-partition
 
-    echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-12 12:00:00"
+    #echo "Setze Systemzeit... WORKAROUND!"
+    #date -s "2026-02-12 12:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_json_handler/proto --python_out=. --grpc_python_out=. ./grpc_json_handler/proto/*.proto
 
@@ -40,13 +40,13 @@ vm13() {
 }
 
 vm14() {
-    echo "Starte Konfiguration für die ELinOS-Partition Nr.3 - IP: 192.168.156.14"
+    echo "Starte Konfiguration für die ELinOS-Partition Nr.3 - IP: 192.168.178.114"
     echo "Funktion: CPC-Interface, Datenaggregator"
     echo "Code-Verzeichnis: /src/cpc-partition"
     cd /src/cpc-partition
 
-    echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-12 12:00:00"
+    #echo "Setze Systemzeit... WORKAROUND!"
+    #date -s "2026-02-12 12:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
 
@@ -55,21 +55,19 @@ vm14() {
 }
 
 vm15() {
-    echo "Starte Konfiguration für die VoR-1-Partition - IP: 192.168.156.15"
+    echo "Starte Konfiguration für die VoR-1-Partition - IP: 192.168.178.115"
     echo "Funktion: Verification of Request"
     echo "Code-Verzeichnis: /src/intermediate-vor-partition"
-    echo "TODO: Yuanchen"
-
+    
     #mkdir mnt
-    mount -t nfs 192.168.156.17:/data/nfs/secure-iot-gateway/vor-database /mnt/
+    mount -t nfs 192.168.178.117:/data/nfs/secure-iot-gateway/vor-database /mnt/
     cd mnt
     ls
 
-
     cd /src/intermediate-vor-partition
 
-    echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-12 12:00:00"
+    #echo "Setze Systemzeit... WORKAROUND!"
+    #date -s "2026-02-12 12:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_request_handler/proto --python_out=. --grpc_python_out=. ./grpc_request_handler/proto/*.proto
 
@@ -78,20 +76,19 @@ vm15() {
 }
 
 vm16() {
-    echo "Starte Konfiguration für die VoR-2-Partition - IP: 192.168.156.16"
+    echo "Starte Konfiguration für die VoR-2-Partition - IP: 192.168.178.116"
     echo "Funktion: Verification of Request Part 2"
     echo "Code-Verzeichnis: /src/intermediate-vor-partition-cpc"
-    echo "TODO: Yuanchen"
-
+    
     #mkdir mnt
-    mount -t nfs 192.168.156.17:/data/nfs/secure-iot-gateway/vor-database /mnt/
+    mount -t nfs 192.168.178.117:/data/nfs/secure-iot-gateway/vor-database /mnt/
     cd mnt
     ls
 
     cd /src/intermediate-vor-partition-cpc
 
-    echo "Setze Systemzeit... WORKAROUND!"
-    date -s "2026-02-12 12:00:00"
+    #echo "Setze Systemzeit... WORKAROUND!"
+    #date -s "2026-02-12 12:00:00"
 
     ls
     python3 main.py
@@ -103,19 +100,19 @@ default_vm() {
 
 ### Auswahl basierend auf IP ###
 case "$IP" in
-    192.168.156.12)
+    192.168.178.112)
         vm12
         ;;
-    192.168.156.13)
+    192.168.178.113)
         vm13
         ;;
-    192.168.156.14)
+    192.168.178.114)
         vm14
         ;;
-    192.168.156.15)
+    192.168.178.115)
         vm15
         ;;
-    192.168.156.16)
+    192.168.178.116)
         vm16
         ;;
     *)
