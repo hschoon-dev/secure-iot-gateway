@@ -92,8 +92,10 @@ async def opcua_service() -> None:
     xml_config_file_opcua   = opcua_config.files.xml_config
     xsd_file_opcua          = opcua_config.files.xsd_schema
     opcua_interval          = opcua_config.interval
+    opcua_grpc_target_interface    = opcua_config.grpc_targets.interface_partition
+    opcua_grpc_target_psmo         = opcua_config.grpc_targets.psmo_partition
 
-    opcua_manager = OpcUaClientManager(xml_config_file_opcua, xsd_file_opcua)
+    opcua_manager = OpcUaClientManager(xml_config_file_opcua, xsd_file_opcua, opcua_grpc_target_interface, opcua_grpc_target_psmo)
     if await opcua_manager.start_clients() == []:
         _logger.error(f"Start clients returned empty list.")
         return
@@ -116,8 +118,10 @@ async def modbus_tcp_service() -> None:
     xml_config_file_modbustcp   = modbustcp_config.files.xml_config
     xsd_file_modbustcp          = modbustcp_config.files.xsd_schema
     modbus_interval             = modbustcp_config.interval
+    modbus_grpc_target_interface    = modbustcp_config.grpc_targets.interface_partition
+    modbus_grpc_target_psmo         = modbustcp_config.grpc_targets.psmo_partition
 
-    modbus_manager = ModbusClientManager(xml_config_file_modbustcp, xsd_file_modbustcp)
+    modbus_manager = ModbusClientManager(xml_config_file_modbustcp, xsd_file_modbustcp, modbus_grpc_target_interface, modbus_grpc_target_psmo)
     await modbus_manager.start_clients()
     await modbus_manager.periodic_read(modbus_interval)
 

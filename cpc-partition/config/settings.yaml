@@ -1,6 +1,6 @@
 # config/settings.yaml
 opcua:
-  # interval: 1          # optional; defaults to 1
+  interval: 1          # optional; defaults to 1
   files:
     xml_config: config/opcua-endpoints_demonstrator.xml
     xsd_schema:  config/opcua-endpoints.xsd
@@ -9,9 +9,12 @@ opcua:
     size: 10240          # bytes; default 1024*10
   semaphore:
     name: opcua_semaphore
+  grpc_targets:
+    interface-partition: 192.168.178.112:50051
+    psmo-partition: 192.168.178.113:50051
 
 modbustcp:
-  # interval: 1          # optional; defaults to 1
+  interval: 1          # optional; defaults to 1
   files:
     xml_config: config/modbustcp-endpoints_demonstrator.xml
     xsd_schema:  config/modbustcp-endpoints.xsd
@@ -20,3 +23,6 @@ modbustcp:
     size: 12288          # bytes; default 1024*12
   semaphore:
     name: modbus_semaphore
+  grpc_targets:
+    interface-partition: 192.168.178.112:50051
+    psmo-partition: 192.168.178.113:50051

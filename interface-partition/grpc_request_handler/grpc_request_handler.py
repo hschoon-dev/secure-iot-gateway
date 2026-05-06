@@ -9,7 +9,7 @@ _logger = logging.getLogger(__name__)
 
 # Target set via docker-compose (service DNS name on the default network)
 #TARGET_HOST = "intermediate-vor-partition"
-TARGET_HOST = "192.168.156.15"
+TARGET_HOST = "192.168.178.115"
 TARGET_PORT = 50051
 SERVER_NAME = "grpc-server"  # must match server cert SAN/CN # TODO: Change!
 

@@ -1,12 +1,34 @@
-# config_loader.py
+"""
+------------------------------------------------------------
+ Modul:    cpc-partition/config_loader.py
+ Projekt:  Secure IoT Gateway
+------------------------------------------------------------
+ Beschreibung:
+    This module provides configuration loading and validation
+    for the CPC partition services (OPC UA and Modbus TCP).
+    It reads YAML or JSON config files, resolves relative
+    file paths, validates the structure via Pydantic models,
+    and applies optional environment variable overrides.
+
+ Autor(en):
+    - Heiko Schoon
+
+ Maintainer:
+    - Heiko Schoon <heiko.schoon@hs-emden-leer.de>
+
+ Hinweis:
+    Ongoing development.
+------------------------------------------------------------
+"""
+
 from __future__ import annotations
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import json
 import os
 
 try:
-    import yaml 
+    import yaml
 except ImportError:
     yaml = None
 
@@ -25,11 +47,18 @@ class SharedMemory(BaseModel):
 class Semaphore(BaseModel):
     name: str
 
+class GrpcTargets(BaseModel):                          # NEW
+    model_config = {"extra": "allow"}                 # beliebige Partition-Namen erlaubt
+
+    interface_partition: Optional[str] = Field(None, alias="interface-partition")
+    psmo_partition: Optional[str] = Field(None, alias="psmo-partition")
+
 class ServiceConfig(BaseModel):
-    interval: PositiveInt = Field(..., description="Polling interval in seconds")
+    interval: PositiveInt = Field(1, description="Polling interval in seconds")  # default=1
     files: EndpointFiles
     shared_memory: SharedMemory
     semaphore: Semaphore
+    grpc_targets: Optional[GrpcTargets] = None         # NEW
 
 # ---------- App-level schema ----------
 
@@ -51,9 +80,6 @@ def _read_raw_config(path: Path) -> Dict[str, Any]:
     raise ValueError(f"Unsupported config extension: {ext}")
 
 def _resolve_service_paths(service_dict: Dict[str, Any], base_dir: Path) -> None:
-    """
-    Mutates service_dict: resolves files.xml_config and files.xsd_schema relative to base_dir.
-    """
     files = service_dict.get("files", {})
     for key in ("xml_config", "xsd_schema"):
         if key in files:
@@ -61,7 +87,7 @@ def _resolve_service_paths(service_dict: Dict[str, Any], base_dir: Path) -> None
             files[key] = str(p if p.is_absolute() else (base_dir / p))
 
 def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
-    data = dict(raw)  # shallow copy
+    data = dict(raw)
     for svc_key in ("opcua", "modbustcp"):
         if svc_key in data and isinstance(data[svc_key], dict):
             _resolve_service_paths(data[svc_key], base_dir)
@@ -74,27 +100,25 @@ def _apply_env_overrides(conf: AppConfig) -> AppConfig:
     Modbus vars: MODBUSTCP_INTERVAL, MODBUSTCP_SHM_NAME, MODBUSTCP_SHM_SIZE, MODBUSTCP_SEMAPHORE_NAME
     """
     env = os.environ
-    # deep copies
-    opcua = conf.opcua.copy(deep=True) # TODO: pydantic v2: .model_copy()
-    modbustcp = conf.modbustcp.copy(deep=True)
+    opcua = conf.opcua.model_copy(deep=True)
+    modbustcp = conf.modbustcp.model_copy(deep=True)
 
-    # Helper
-    def apply(service, prefix: str):
-        iv = env.get(f"{prefix}_INTERVAL")
-        shm_n = env.get(f"{prefix}_SHM_NAME")
-        shm_s = env.get(f"{prefix}_SHM_SIZE")
-        sem_n = env.get(f"{prefix}_SEMAPHORE_NAME")
-        if iv:    service.interval = int(iv)
-        if shm_n: service.shared_memory.name = shm_n
-        if shm_s: service.shared_memory.size = int(shm_s)
-        if sem_n: service.semaphore.name = sem_n
+    def apply(service: ServiceConfig, prefix: str) -> None:
+        if iv := env.get(f"{prefix}_INTERVAL"):
+            service.interval = int(iv)
+        if shm_n := env.get(f"{prefix}_SHM_NAME"):
+            service.shared_memory.name = shm_n
+        if shm_s := env.get(f"{prefix}_SHM_SIZE"):
+            service.shared_memory.size = int(shm_s)
+        if sem_n := env.get(f"{prefix}_SEMAPHORE_NAME"):
+            service.semaphore.name = sem_n
 
     apply(opcua, "OPCUA")
     apply(modbustcp, "MODBUSTCP")
 
     return AppConfig(opcua=opcua, modbustcp=modbustcp)
 
-def load_config(path: str | Path, base_dir: Path | None = None, allow_env=True) -> AppConfig:
+def load_config(path: str | Path, base_dir: Path | None = None, allow_env: bool = True) -> AppConfig:
     """
     Load YAML/JSON, resolve relative paths, validate, and apply optional env overrides.
     Also verifies that referenced files exist (fail-fast).
@@ -104,11 +128,9 @@ def load_config(path: str | Path, base_dir: Path | None = None, allow_env=True) 
 
     raw = _read_raw_config(cfg_path)
 
-    # Set sane defaults if user omits sections.
     raw.setdefault("opcua", {})
     raw.setdefault("modbustcp", {})
 
-    # Fill defaults only if missing.
     raw["opcua"] = {
         "interval": 1,
         "files": {
@@ -117,6 +139,7 @@ def load_config(path: str | Path, base_dir: Path | None = None, allow_env=True) 
         },
         "shared_memory": {"name": "opcua_shm", "size": 1024 * 10},
         "semaphore": {"name": "opcua_semaphore"},
+        "grpc_targets": {},                            # NEW default
         **raw["opcua"],
     }
     raw["modbustcp"] = {
@@ -127,16 +150,14 @@ def load_config(path: str | Path, base_dir: Path | None = None, allow_env=True) 
         },
         "shared_memory": {"name": "modbus_shm", "size": 1024 * 12},
         "semaphore": {"name": "modbus_semaphore"},
+        "grpc_targets": {},                            # NEW default
         **raw["modbustcp"],
     }
 
-    # Resolve relative paths
     raw = _resolve_paths(raw, base_dir)
 
-    # Validate
-    conf = AppConfig.model_validate(raw) if hasattr(AppConfig, "model_validate") else AppConfig.parse_obj(raw) # TODO: pydantic v2 
+    conf = AppConfig.model_validate(raw)
 
-    # Ensure files exist (comment out if you prefer lazy checks)
     conf.opcua.files.xml_config.resolve(strict=True)
     conf.opcua.files.xsd_schema.resolve(strict=True)
     conf.modbustcp.files.xml_config.resolve(strict=True)

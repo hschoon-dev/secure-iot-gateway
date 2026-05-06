@@ -35,19 +35,21 @@ from grpc_sender import get_sender
 _logger = logging.getLogger(__name__)
 
 class ModbusClientManager:
-    def __init__(self, xml_config_path: str, xsd_path: str):
+    def __init__(self, xml_config_path: str, xsd_path: str, grpc_interface_ip_address: str, grpc_psmo_ip_address: str):
         self.xml_config_path = xml_config_path
         self.xsd_path = xsd_path
         self.endpoints = self.load_endpoints_from_xml()
         self.clients = self.create_clients()
+        self.grpc_interface_ip_address = grpc_interface_ip_address
+        self.grpc_psmo_ip_address = grpc_psmo_ip_address
 
         # Reuse snapshot dicts to reduce allocations/GC pressure (full snapshot semantics kept).
         self._snapshot: dict[str, dict] = {}
         self._entry_pool: dict[str, dict] = {}
 
         # Pre-create/reuse gRPC senders (lazy init inside get_sender).
-        self._psmo_sender = get_sender("192.168.156.13:50051")
-        self._interface_sender = get_sender("192.168.156.12:50051")
+        self._psmo_sender = get_sender(grpc_psmo_ip_address)
+        self._interface_sender = get_sender(grpc_interface_ip_address)
 
         # Precompute constant connection status keys per client alias.
         self._conn_key: dict[str, str] = {}
