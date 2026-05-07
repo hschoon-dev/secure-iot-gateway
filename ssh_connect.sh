@@ -1,5 +1,5 @@
 #!/bin/bash
- 
+
 # SSH-Hosts in Bootreihenfolge
 HOSTS=(
     "root@192.168.178.114"
@@ -8,32 +8,37 @@ HOSTS=(
     "root@192.168.178.115"
     "root@192.168.178.116"
 )
- 
-RETRY_INTERVAL=5  # Sekunden zwischen den Versuchen
-SSH_OPTS="-o ConnectTimeout=3 -o StrictHostKeyChecking=no -o BatchMode=yes"
- 
-probe_and_connect() {
-    local host="$1"
-    local index="$2"
- 
+
+RETRY_INTERVAL=5
+SSH_OPTS="-o ConnectTimeout=3 -o StrictHostKeyChecking=no"
+
+# Wird dieses Skript als "worker" für einen einzelnen Host aufgerufen?
+if [[ "$1" == "--probe" ]]; then
+    host="$2"
+    index="$3"
     echo "[$index/5] Warte auf $host ..."
- 
     while true; do
-        if ssh $SSH_OPTS "$host" exit 2>/dev/null; then
-            echo "[$index/5] $host ist erreichbar — verbinde..."
- 
-            # Neuen Tab im GNOME Terminal öffnen und SSH starten
-            gnome-terminal --tab --title="$host" -- bash -c "ssh $SSH_OPTS -o BatchMode=no $host; exec bash"
-            return 0
+        if ssh $SSH_OPTS -o BatchMode=yes "$host" exit 2>/dev/null; then
+            echo "[$index/5] $host erreichbar — verbinde..."
+            ssh $SSH_OPTS "$host"
+            echo "--- Verbindung zu $host getrennt ---"
+            break
         fi
         sleep $RETRY_INTERVAL
     done
-}
- 
-# Jeden Host in einem eigenen Hintergrundprozess proben
+    # Tab offen lassen nach Verbindungsende
+    exec bash
+    exit 0
+fi
+
+# Hauptaufruf: ein gnome-terminal mit einem Tab pro Host öffnen
+SCRIPT=$(realpath "$0")
+
+TAB_ARGS=()
 for i in "${!HOSTS[@]}"; do
     index=$((i + 1))
-    probe_and_connect "${HOSTS[$i]}" "$index" &
+    host="${HOSTS[$i]}"
+    TAB_ARGS+=(--tab --title="$host" -- bash -c "\"$SCRIPT\" --probe \"$host\" $index")
 done
- 
-wait
+
+gnome-terminal "${TAB_ARGS[@]}"
