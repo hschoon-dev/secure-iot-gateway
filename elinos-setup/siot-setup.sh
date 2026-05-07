@@ -12,8 +12,9 @@ vm12() {
     echo "Code-Verzeichnis: /src/interface-partition"
     cd /src/interface-partition
 
-    #cho "Setze Systemzeit... WORKAROUND!"
-    #date -s "2026-02-12 12:00:00"
+    #echo "Setze Systemzeit... WORKAROUND!"
+    timedatectl set-ntp false
+    timedatectl set-time "2026-05-07 13:00:00"
     echo "Setze Admin-Passwort... DEV!"
     export ADMIN_PASSWORD="SuperDuperRandomPassword2025"
 
@@ -31,7 +32,8 @@ vm13() {
     cd /src/psmo-partition
 
     #echo "Setze Systemzeit... WORKAROUND!"
-    #date -s "2026-02-12 12:00:00"
+    timedatectl set-ntp false
+    timedatectl set-time "2026-05-07 13:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_json_handler/proto --python_out=. --grpc_python_out=. ./grpc_json_handler/proto/*.proto
 
@@ -46,7 +48,8 @@ vm14() {
     cd /src/cpc-partition
 
     #echo "Setze Systemzeit... WORKAROUND!"
-    #date -s "2026-02-12 12:00:00"
+    timedatectl set-ntp false
+    timedatectl set-time "2026-05-07 13:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_sender/proto --python_out=. --grpc_python_out=. ./grpc_sender/proto/*.proto
 
@@ -67,7 +70,8 @@ vm15() {
     cd /src/intermediate-vor-partition
 
     #echo "Setze Systemzeit... WORKAROUND!"
-    #date -s "2026-02-12 12:00:00"
+    timedatectl set-ntp false
+    timedatectl set-time "2026-05-07 13:00:00"
 
     python3 -m grpc_tools.protoc -I ./grpc_request_handler/proto --python_out=. --grpc_python_out=. ./grpc_request_handler/proto/*.proto
 
@@ -88,7 +92,8 @@ vm16() {
     cd /src/intermediate-vor-partition-cpc
 
     #echo "Setze Systemzeit... WORKAROUND!"
-    #date -s "2026-02-12 12:00:00"
+    timedatectl set-ntp false
+    timedatectl set-time "2026-05-07 13:00:00"
 
     ls
     python3 main.py
