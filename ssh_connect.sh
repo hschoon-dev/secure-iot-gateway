@@ -12,7 +12,7 @@ HOSTS=(
 RETRY_INTERVAL=5
 SSH_OPTS="-o ConnectTimeout=3 -o StrictHostKeyChecking=no"
 
-# Wird dieses Skript als "worker" für einen einzelnen Host aufgerufen?
+# Worker-Modus für einen einzelnen SSH-Host
 if [[ "$1" == "--probe" ]]; then
     host="$2"
     index="$3"
@@ -26,15 +26,19 @@ if [[ "$1" == "--probe" ]]; then
         fi
         sleep $RETRY_INTERVAL
     done
-    # Tab offen lassen nach Verbindungsende
     exec bash
     exit 0
 fi
 
-# Hauptaufruf: ein gnome-terminal mit einem Tab pro Host öffnen
+# Hauptaufruf: gnome-terminal mit minicom-Tab zuerst, dann ein Tab pro SSH-Host
 SCRIPT=$(realpath "$0")
 
 TAB_ARGS=()
+
+# Erster Tab: minicom
+TAB_ARGS+=(--tab --title="minicom /dev/ttyUSB0" -- bash -c "sudo minicom -b 115200 -o -D /dev/ttyUSB0; exec bash")
+
+# Weitere Tabs: ein Tab pro SSH-Host
 for i in "${!HOSTS[@]}"; do
     index=$((i + 1))
     host="${HOSTS[$i]}"
