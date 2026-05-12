@@ -217,7 +217,7 @@ def add_affected_endpoints_to_xml(xml_data, affected_endpoints):
 
 
 def send_request(xml_data) -> str | None:
-    url = "http://192.168.156.14:5000/read_values_xml"
+    url = "http://192.168.178.114:5000/read_values_xml"
 
     headers = {"Content-Type": "application/xml"}
     response = requests.post(url, data=xml_data, headers=headers)
@@ -366,7 +366,7 @@ def mapping_verification(request, xml_data):
 def send_back_results(affected_endpoints_dict):
     try:
         _logger.info(f"Sending back to Flask server: {affected_endpoints_dict}")
-        url = "http://192.168.156.14:5000/update_endpoints"
+        url = "http://192.168.178.114:5000/update_endpoints"
         headers = {"Content-Type": "application/json"}
         response = requests.post(
             url, json=affected_endpoints_dict, headers=headers, timeout=5
