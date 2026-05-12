@@ -398,7 +398,7 @@ def send_back_results(affected_endpoints_dict):
     bridge.run(debug=False, threaded=True)  # Start the Flask server in a separate thread"""
 
 
-def pull_request_and_process():
+def pull_request_and_process(): #TODO: switch to MariaDB e.g. to avoid corrupting the database file.
     time.sleep(2)
 
     while True:
@@ -439,7 +439,7 @@ def pull_request_and_process():
                             _logger.error(f"Error sending back results to Flask server: {e}")
 
             if request is None:
-                time.sleep(0.01)  # Sleep for a short duration to avoid busy waiting
+                time.sleep(0.5)  # Sleep for a short duration to avoid busy waiting
         except Exception as e:
             _logger.error(f"An error occurred: {e}")
 
