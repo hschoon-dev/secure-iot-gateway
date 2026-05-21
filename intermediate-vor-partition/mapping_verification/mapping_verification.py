@@ -1,6 +1,6 @@
 """
 ------------------------------------------------------------
- Modul:    interface-partition/mapping_verification.py
+ Modul:    intermediate-vor-partition/mapping_verification.py
  Projekt:  Secure IoT Gateway
 ------------------------------------------------------------
  Beschreibung:
@@ -33,6 +33,13 @@ from tinydb.middlewares import CachingMiddleware
 # local imports
 from request import Request
 from feedback_system import FeedbackSystem
+
+# TODO: should be in .env
+DB_HOST="192.168.178.117"
+DB_PORT=3306
+DB_USER="iot_gateway"
+DB_PASSWORD="your_secure_password"
+DB_NAME="secure_iot_gateway"
 
 _logger = logging.getLogger(__name__)
 

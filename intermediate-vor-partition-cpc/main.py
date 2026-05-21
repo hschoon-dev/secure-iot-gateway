@@ -1,6 +1,6 @@
 """
 ------------------------------------------------------------
- Modul:    interface-partition/main.py
+ Modul:    intermediate-vor-partition-cpc/main.py
  Projekt:  Secure IoT Gateway
 ------------------------------------------------------------
  Beschreibung:
@@ -45,6 +45,13 @@ from tinydb.middlewares import CachingMiddleware
 
 # local imports
 # from flask_server_bridge.flask_server_bridge import FlaskServerBridge
+
+# TODO: should be in .env
+DB_HOST="192.168.178.117"
+DB_PORT=3306
+DB_USER="iot_gateway"
+DB_PASSWORD="your_secure_password"
+DB_NAME="secure_iot_gateway"
 
 path = os.path.dirname(os.path.abspath(__file__))
 acceptance_ruleset_path = os.path.join(path, "config/Acceptance_Ruleset.xml")
