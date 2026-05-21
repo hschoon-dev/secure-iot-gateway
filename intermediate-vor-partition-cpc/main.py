@@ -6,29 +6,26 @@
  Beschreibung:
     This script serves as the main entry point for the
     intermediate VoR partition of the Secure IoT Gateway.
-    It handles pulling requests from a TinyDB database,
+    It handles pulling requests from a MariaDB database,
     processing them through acceptance and mapping verification,
-    and providing feedback (not implemented yet) to the
-    interface partition.
-    The communication with the cpc-partition is temporarily
-    handled via HTTP requests to a Flask server bridge.
+    and providing feedback to the interface partition.
+    
+    MIGRATION: Replaced TinyDB (JSON on NFS) with MariaDB for
+    safe concurrent access from multiple virtualized systems.
 
  Autor(en):
     - Yuanchen Zhao (developer for the VoR framework)
     - Heiko Schoon (edited monolithic code into this module
-      and prepared it for use in a containerized environment)
+      and prepared it for containerized environment)
 
  Maintainer:
     - tbd
 
  Hinweis:
-    Ongoing development. Flask server bridge is a temporary solution.
-    Future work will focus on implementing a more robust communication
-    mechanism between the partitions using gRPC with mTLS.
+    Ongoing development. Now uses MariaDB for safer concurrent access.
 ------------------------------------------------------------
 """
 
-#import json
 from datetime import datetime
 import requests
 import xml.etree.ElementTree as ET
@@ -39,12 +36,8 @@ import time
 import logging
 from logging.handlers import RotatingFileHandler
 
-from tinydb import TinyDB, Query
-from tinydb.storages import JSONStorage
-from tinydb.middlewares import CachingMiddleware
-
 # local imports
-# from flask_server_bridge.flask_server_bridge import FlaskServerBridge
+from db_manager import DatabaseManager
 
 # TODO: should be in .env
 DB_HOST="192.168.178.117"
@@ -57,11 +50,16 @@ path = os.path.dirname(os.path.abspath(__file__))
 acceptance_ruleset_path = os.path.join(path, "config/Acceptance_Ruleset.xml")
 acceptance_ruleset_path_modified = os.path.join(path, "config/Acceptance_Ruleset_modified.xml")
 
-# NOTE: keep variable name for compatibility, but now it points to a TinyDB JSON file
-#mapped_rq_database_path = os.path.join(path, "mnt/mapped_requests.json")
-mapped_rq_database_path = "/mnt/mapped_requests.json"
-
 logging_path = os.path.join(path, "logs/app.log")
+
+# ============================================================================
+# Database Configuration (update with your actual MariaDB credentials)
+# ============================================================================
+DB_HOST = os.getenv("DB_HOST", "192.168.1.100")  # Pi with MariaDB
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_USER = os.getenv("DB_USER", "iot_gateway")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "your_secure_password")
+DB_NAME = os.getenv("DB_NAME", "secure_iot_gateway")
 
 
 def setup_logging(
@@ -70,7 +68,9 @@ def setup_logging(
     max_bytes=1 * 1024 * 1024,  # 1 MB
     backup_count=3,
 ) -> logging.Logger:
-    # Common log format
+    """
+    Configure logging with console and rotating file handler.
+    """
     log_format = (
         "[%(asctime)s] [%(levelname)-8s] "
         "[%(name)s:%(lineno)d] - %(message)s"
@@ -102,102 +102,79 @@ def setup_logging(
 _logger = setup_logging(logging.INFO)
 
 
-def _open_tinydb():
+def initialize_database() -> DatabaseManager:
     """
-    Open TinyDB with caching enabled to reduce I/O.
-    Caller must close() the returned db.
+    Initialize the database manager with MariaDB connection pool.
+    
+    Returns:
+        DatabaseManager instance
+        
+    Raises:
+        Exception if database connection fails
     """
-    return TinyDB(mapped_rq_database_path, storage=CachingMiddleware(JSONStorage))
-
-
-def _safe_datetime_from_any(value):
-    """
-    Best-effort conversion to datetime, matching the old sqlite workflow:
-    - if ISO string -> datetime.fromisoformat
-    - else return as-is if already datetime
-    - else raise ValueError
-    """
-    if isinstance(value, datetime):
-        return value
-    if isinstance(value, str):
-        return datetime.fromisoformat(value)
-    raise ValueError(f"Unsupported timestamp type: {type(value)!r}")
-
-
-# Pull the highest priority request from the database, and when there are multiple with the same highest priority,
-# pull them in chronological order.
-# TODO: change database method to a gRPC approach
-def pull_request() -> dict | None:
-    """
-    TinyDB equivalent of:
-        SELECT * FROM mapped_requests ORDER BY priority, generation_timestamp LIMIT 1
-        DELETE FROM mapped_requests WHERE request_id = ?
-    """
-    db = None
     try:
-        db = _open_tinydb()
-        table = db.table("mapped_requests")
-
-        rows = table.all()
-        if not rows:
-            _logger.debug("No records found in the database.")
-            return None
-
-        # Sort by priority (ascending) then generation_timestamp (ascending)
-        # generation_timestamp can be stored as datetime, ISO string, or something else.
-        def sort_key(doc):
-            prio = doc.get("priority", 0)
-            ts_raw = doc.get("generation_timestamp")
-            try:
-                ts = _safe_datetime_from_any(ts_raw)
-            except Exception:
-                # Put unparsable timestamps at the end deterministically
-                ts = datetime.max
-            return (prio, ts)
-
-        rows.sort(key=sort_key)
-        doc = rows[0]
-
-        # Reformat the request into a dictionary for easier processing later
-        # Keep behavior compatible with old sqlite-based code.
-        request_dict = {
-            "request_id": doc.get("request_id"),
-            "generation_timestamp": _safe_datetime_from_any(doc.get("generation_timestamp")),
-            "description": doc.get("description"),
-            "impact": doc.get("impact"),
-            "priority": doc.get("priority"),
-            "tags": doc.get("tags"),
-            # stored as list already (or list of lists); convert inner items to tuples
-            "affected_endpoint_list": [tuple(item) for item in (doc.get("affected_endpoint_list") or [])],
-        }
-        _logger.debug(f"The current request being pulled is:\n{request_dict}")
-
-        # After pulling the request from the database, remove it.
-        R = Query()
-        table.remove(R.request_id == request_dict["request_id"])
-
-        # Persist changes (CachingMiddleware flushes on close)
-        db.close()
-        db = None
-
-        return request_dict
+        db_manager = DatabaseManager(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            pool_size=5,
+        )
+        _logger.info("Database manager initialized successfully")
+        return db_manager
     except Exception as e:
-        _logger.error(f"Error pulling request from TinyDB: {e}")
-        try:
-            if db is not None:
-                db.close()
-        except Exception:
-            pass
+        _logger.critical(f"Failed to initialize database: {e}")
+        raise
+
+
+def pull_request(db_manager: DatabaseManager) -> dict | None:
+    """
+    Pull the highest priority request from MariaDB database.
+    
+    The stored procedure `get_next_request()` ensures atomic retrieval
+    and deletion, preventing data corruption under concurrent access.
+    
+    Args:
+        db_manager: DatabaseManager instance
+        
+    Returns:
+        Request dictionary or None if no requests exist
+    """
+    try:
+        request_dict = db_manager.pull_next_request()
+        
+        if request_dict:
+            _logger.debug(f"Pulled request: {request_dict['request_id']}")
+            
+            # Ensure affected_endpoint_list is a list of tuples
+            if isinstance(request_dict.get("affected_endpoint_list"), list):
+                request_dict["affected_endpoint_list"] = [
+                    tuple(item) if isinstance(item, (list, tuple)) else item
+                    for item in request_dict["affected_endpoint_list"]
+                ]
+        else:
+            _logger.debug("No requests found in database")
+            
+        return request_dict
+        
+    except Exception as e:
+        _logger.error(f"Error pulling request from database: {e}")
         return None
 
 
 def read_xml_file(filename: str) -> str:
+    """
+    Read XML file from disk.
+    """
     with open(filename, "r", encoding="utf-8") as file:
         return file.read()
 
 
-# Add the affected_endpoint to the XML
 def add_affected_endpoints_to_xml(xml_data, affected_endpoints):
+    """
+    Add affected endpoint information to XML structure.
+    """
     root = ET.fromstring(xml_data)
 
     # Create the 'affected_endpoints' node if not exists
@@ -224,22 +201,33 @@ def add_affected_endpoints_to_xml(xml_data, affected_endpoints):
 
 
 def send_request(xml_data) -> str | None:
+    """
+    Send request to Flask server bridge (CPC partition).
+    """
     url = "http://192.168.178.114:5000/read_values_xml"
 
     headers = {"Content-Type": "application/xml"}
-    response = requests.post(url, data=xml_data, headers=headers)
+    try:
+        response = requests.post(url, data=xml_data, headers=headers, timeout=10)
 
-    if response.status_code == 200:  # 200 is the default normal value
-        _logger.debug(f"Response status code: {response.status_code}")
-        _logger.debug(f"Response content: {response.text}")
-        return response.text  # type: str
-    else:
-        _logger.error(f"Error: {response.status_code} - {response.text}")
+        if response.status_code == 200:
+            _logger.debug(f"Response status code: {response.status_code}")
+            _logger.debug(f"Response content: {response.text}")
+            return response.text  # type: str
+        else:
+            _logger.error(f"Error: {response.status_code} - {response.text}")
+            return None
+    except requests.RequestException as e:
+        _logger.error(f"Request failed: {e}")
         return None
 
 
-# TODO: Check for perfomance issues with large XML files and recursive functions
 def acceptance_verification(xml_data):
+    """
+    Verify that request acceptance criteria are met.
+    
+    Checks that current values match required values in the XML structure.
+    """
     # Generate an Element object, which is the root node of the XML tree
     root = ET.fromstring(xml_data)
 
@@ -293,6 +281,9 @@ def acceptance_verification(xml_data):
 
 
 def mapping_verification(request, xml_data):
+    """
+    Verify mapping constraints and calculate effective endpoint values.
+    """
     # request.affected_endpoint_list
     root = ET.fromstring(xml_data)
 
@@ -371,6 +362,9 @@ def mapping_verification(request, xml_data):
 
 
 def send_back_results(affected_endpoints_dict):
+    """
+    Send results back to Flask server bridge for CPC system.
+    """
     try:
         _logger.info(f"Sending back to Flask server: {affected_endpoints_dict}")
         url = "http://192.168.178.114:5000/update_endpoints"
@@ -399,23 +393,16 @@ def send_back_results(affected_endpoints_dict):
         )
 
 
-"""def run_bridge():
-    # Initialize the Flask server bridge
-    bridge = FlaskServerBridge()
-    bridge.run(debug=False, threaded=True)  # Start the Flask server in a separate thread"""
-
-
-def pull_request_and_process(): #TODO: switch to MariaDB e.g. to avoid corrupting the database file.
+def pull_request_and_process(db_manager: DatabaseManager):
+    """
+    Main processing loop: pull requests from MariaDB and process them.
+    """
     time.sleep(2)
 
     while True:
         try:
             # Pull the highest priority request from the database
-            try:
-                request = pull_request()
-            except Exception as e:
-                _logger.error(f"Error pulling request from database: {e}")
-                request = None
+            request = pull_request(db_manager)
 
             if request is not None:
                 xml_data = read_xml_file(acceptance_ruleset_path)
@@ -453,23 +440,33 @@ def pull_request_and_process(): #TODO: switch to MariaDB e.g. to avoid corruptin
 
 def main():
     """
-    Main entry point that starts the Flask server bridge in the main thread
-    and the request processor in a separate thread.
+    Main entry point that initializes the database and starts the request processor.
     """
+    try:
+        # Initialize database connection pool
+        db_manager = initialize_database()
+        _logger.info("Database connection pool initialized")
+    except Exception as e:
+        _logger.critical(f"Failed to initialize database: {e}")
+        sys.exit(1)
+
     # Start the request processing in a separate thread
-    processor_thread = threading.Thread(target=pull_request_and_process, daemon=True)
+    processor_thread = threading.Thread(
+        target=pull_request_and_process, 
+        args=(db_manager,), 
+        daemon=True
+    )
     processor_thread.start()
     _logger.info("Request processor started in background thread")
 
-    # Run the Flask server in the main thread
-    # _logger.info("Starting Flask server bridge in the main thread")
-    # run_bridge()  # This will block until the server terminates
-    while True:
-        time.sleep(1)
+    # Keep the main thread alive
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        _logger.info("Shutting down gracefully...")
+        sys.exit(0)
 
-
-# TODO: send the to be implemented affected endpoint changes to OPC UA client in data_aggregation_server
-# TODO: log the printed feedbacks.
 
 if __name__ == "__main__":
     main()
