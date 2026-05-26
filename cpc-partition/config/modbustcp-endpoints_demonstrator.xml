@@ -51,7 +51,7 @@
 
     <!-- Raspberry Pi 4B Testserver -->
   <server>
-    <ipaddr>192.168.156.181</ipaddr>
+    <ipaddr>192.168.178.118</ipaddr>
     <port>503</port>
     <serveralias>Ecotec</serveralias>
     <endpoints>

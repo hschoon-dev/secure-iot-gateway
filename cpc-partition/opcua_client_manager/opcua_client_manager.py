@@ -38,7 +38,7 @@ _logger = logging.getLogger(__name__)
 
 
 class OpcUaClientManager:
-    def __init__(self, xml_config_path: str | Path, xsd_path: str | Path):
+    def __init__(self, xml_config_path: str | Path, xsd_path: str | Path, grpc_interface_ip_address: str, grpc_psmo_ip_address: str):
         self.xml_config_path = str(xml_config_path)
         self.xsd_path = str(xsd_path)
         self.clients: list[OpcUaClient] = self.parse_clients()
@@ -48,8 +48,8 @@ class OpcUaClientManager:
         self._entry_pool: dict[str, dict] = {}
 
         # Pre-create/reuse gRPC senders (lazy init inside get_sender).
-        self._psmo_sender = get_sender("192.168.156.13:50051")
-        self._interface_sender = get_sender("192.168.156.12:50051")
+        self._psmo_sender = get_sender(grpc_psmo_ip_address)
+        self._interface_sender = get_sender(grpc_interface_ip_address)
 
         # Precompute connection status keys per client alias
         self._conn_key: dict[str, str] = {}

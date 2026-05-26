@@ -10,6 +10,9 @@ opcua:
     size: 10240        # 1024 * 10 bytes
   semaphore:
     name: opcua_semaphore
+  grpc_targets:
+    interface-partition: 192.168.178.112:50051
+    psmo-partition: 192.168.178.113:50051
 
 modbustcp:
   interval: 1

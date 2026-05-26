@@ -25,6 +25,7 @@ from typing import Any, Dict
 
 try:
     import yaml
+    import yaml
 except ImportError:
     yaml = None
 

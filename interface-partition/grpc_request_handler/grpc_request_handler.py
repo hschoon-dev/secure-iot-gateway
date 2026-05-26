@@ -9,21 +9,28 @@ from config_loader import GrpcClientConfig  # only sub-model needed
 
 _logger = logging.getLogger(__name__)
 
+# Target set via docker-compose (service DNS name on the default network)
+#TARGET_HOST = "intermediate-vor-partition"
+TARGET_HOST = "192.168.178.115"
+TARGET_PORT = 50051
+SERVER_NAME = "grpc-server"  # must match server cert SAN/CN # TODO: Change!
 
-def send_request_as_grpc(request: dict[str, Any], config: GrpcClientConfig):
-    """
-    Send a VoR request to the intermediate-vor-partition via mTLS gRPC.
+# Prefer project-relative certs; fallback to an absolute mount location.
+project_root = Path(__file__).resolve().parents[1]
+rel_base = project_root / "certificates" / "grpc"
+abs_base = Path("/certificates/grpc")
 
-    Args:
-        request: The request dictionary to send.
-        config:  GrpcServerConfig sub-model from InterfaceConfig,
-                 providing port, server_name, and cert paths.
-    """
-    certs = config.certs
+cert_base = rel_base if rel_base.exists() else abs_base
+
+CLIENT_CERT = cert_base / "client" / "client.crt"
+CLIENT_KEY  = cert_base / "client" / "client.key"
+CA_CERT     = cert_base / "ca"     / "ca.crt"
+
+def send_request_as_grpc(request: dict[str, Any]):
     try:
-        client_key  = Path(certs.client_key).read_bytes()
-        client_cert = Path(certs.client_cert).read_bytes()
-        ca_cert     = Path(certs.ca_cert).read_bytes()
+        with open(CLIENT_KEY,"rb") as f: client_key = f.read()
+        with open(CLIENT_CERT,"rb") as f: client_cert = f.read()
+        with open(CA_CERT,"rb") as f: ca_cert = f.read()
     except Exception as e:
         _logger.error(f"Error reading TLS files: {e}")
         return
