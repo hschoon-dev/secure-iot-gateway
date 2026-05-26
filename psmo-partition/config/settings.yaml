@@ -20,3 +20,5 @@ logging:
   log_level: INFO
   max_bytes: 1048576   # 1 MB
   backup_count: 3
+
+# add database data...

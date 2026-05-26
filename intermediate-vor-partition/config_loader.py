@@ -1,16 +1,16 @@
 """
 ------------------------------------------------------------
- Config:   intermediate-vor-partition/vor_config.py
+ Config:   intermediate-vor-partition/config_loader.py
  Projekt:  Secure IoT Gateway
 ------------------------------------------------------------
  Beschreibung:
     Pydantic configuration model for the Intermediate VoR
-    partition. Covers ruleset file paths, the TinyDB mapped-
-    request database, the inbound gRPC server (mTLS), and
+    partition. Covers ruleset file paths, the MariaDB
+    database connection, the inbound gRPC server (mTLS), and
     logging.
 
  Usage:
-    from vor_config import load_config, VoRConfig
+    from config_loader import load_config, VoRConfig
 
     config = load_config()               # reads settings.yaml
     config = load_config("custom.yaml")  # custom path
@@ -49,15 +49,18 @@ class RulesetConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Mapped-request database (TinyDB / JSON)
+# MariaDB connection
 # ---------------------------------------------------------------------------
 
-class DatabaseConfig(BaseModel):
-    """TinyDB JSON database shared between the VoR and CPC-intermediate partitions."""
-    db_path: Path = Field(
-        Path("/mnt/mapped_requests.json"),
-        description="Absolute path to the TinyDB JSON file (shared mount)",
-    )
+class MariaDBConfig(BaseModel):
+    """MariaDB connection parameters for the VoR partition."""
+    host:      str = Field("192.168.178.117",    description="MariaDB host address")
+    port:      int = Field(3306,                 description="MariaDB port")
+    user:      str = Field("vor-1",              description="Database user")
+    password:  str = Field("VoR-1-Password",     description="Database password")
+    database:  str = Field("secure_iot_gateway", description="Database name")
+    pool_name: str = Field("iot_gateway_pool",   description="Connection pool name")
+    pool_size: int = Field(5,                    description="Connection pool size")
 
 
 # ---------------------------------------------------------------------------
@@ -106,10 +109,10 @@ class LoggingConfig(BaseModel):
 
 class VoRConfig(BaseModel):
     """Root configuration for the Intermediate VoR partition."""
-    rulesets: RulesetConfig = Field(default_factory=RulesetConfig)
-    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
+    rulesets:   RulesetConfig   = Field(default_factory=RulesetConfig)
+    mariadb:    MariaDBConfig   = Field(default_factory=MariaDBConfig)
     grpc_server: GrpcServerConfig = Field(default_factory=GrpcServerConfig)
-    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    logging:    LoggingConfig   = Field(default_factory=LoggingConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -130,14 +133,12 @@ def _read_raw(path: Path) -> Dict[str, Any]:
 
 def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
     """Resolve relative paths in rulesets and grpc_server.certs."""
-    # Ruleset paths
     rulesets = raw.get("rulesets", {})
     for field in ("verification_ruleset", "mapping_ruleset"):
         if field in rulesets:
             p = Path(rulesets[field])
             rulesets[field] = str(p if p.is_absolute() else base_dir / p)
 
-    # gRPC cert paths
     certs = raw.get("grpc_server", {}).get("certs", {})
     for field in ("ca_cert", "server_cert", "server_key"):
         if field in certs:
@@ -151,10 +152,10 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
     """
     Optional environment-variable overrides.
 
-    Rulesets  : VERIFICATION_RULESET_PATH, MAPPING_RULESET_PATH
-    Database  : MAPPED_RQ_DB_PATH
-    gRPC      : GRPC_PORT, GRPC_MAX_WORKERS
-    Logging   : LOG_LEVEL, LOG_FILE
+    Rulesets : VERIFICATION_RULESET_PATH, MAPPING_RULESET_PATH
+    MariaDB  : DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_POOL_SIZE
+    gRPC     : GRPC_PORT, GRPC_MAX_WORKERS
+    Logging  : LOG_LEVEL, LOG_FILE
     """
     env = os.environ
 
@@ -164,9 +165,19 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
     if v := env.get("MAPPING_RULESET_PATH"):
         ruleset_data["mapping_ruleset"] = v
 
-    db_data = config.database.model_dump()
-    if v := env.get("MAPPED_RQ_DB_PATH"):
-        db_data["db_path"] = v
+    db_data = config.mariadb.model_dump()
+    if v := env.get("DB_HOST"):
+        db_data["host"] = v
+    if v := env.get("DB_PORT"):
+        db_data["port"] = int(v)
+    if v := env.get("DB_USER"):
+        db_data["user"] = v
+    if v := env.get("DB_PASSWORD"):
+        db_data["password"] = v
+    if v := env.get("DB_NAME"):
+        db_data["database"] = v
+    if v := env.get("DB_POOL_SIZE"):
+        db_data["pool_size"] = int(v)
 
     grpc_data = config.grpc_server.model_dump()
     if v := env.get("GRPC_PORT"):
@@ -182,7 +193,7 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
 
     return VoRConfig(
         rulesets=RulesetConfig.model_validate(ruleset_data),
-        database=DatabaseConfig.model_validate(db_data),
+        mariadb=MariaDBConfig.model_validate(db_data),
         grpc_server=GrpcServerConfig.model_validate(grpc_data),
         logging=LoggingConfig.model_validate(log_data),
     )
@@ -217,7 +228,7 @@ def load_config(
 
     raw = _read_raw(cfg_path) if cfg_path.exists() else {}
     raw.setdefault("rulesets", {})
-    raw.setdefault("database", {})
+    raw.setdefault("mariadb", {})
     raw.setdefault("grpc_server", {})
     raw.setdefault("logging", {})
 

@@ -1,17 +1,16 @@
 """
 ------------------------------------------------------------
- Config:   intermediate-vor-partition-cpc/vor_cpc_config.py
+ Config:   intermediate-vor-partition-cpc/config_loader.py
  Projekt:  Secure IoT Gateway
 ------------------------------------------------------------
  Beschreibung:
     Pydantic configuration model for the Intermediate VoR-CPC
-    partition. Covers acceptance ruleset paths, the TinyDB
-    mapped-request database (shared mount), the Flask bridge
-    HTTP client (temporary, to be replaced by gRPC), and
+    partition. Covers acceptance ruleset paths, the MariaDB
+    database connection, the Flask bridge HTTP client, and
     logging.
 
  Usage:
-    from vor_cpc_config import load_config, VoRCPCConfig
+    from config_loader import load_config, VoRCPCConfig
 
     config = load_config()               # reads settings.yaml
     config = load_config("custom.yaml")  # custom path
@@ -38,10 +37,7 @@ from pydantic import BaseModel, Field, PositiveInt
 # ---------------------------------------------------------------------------
 
 class AcceptanceRulesetConfig(BaseModel):
-    """
-    XML acceptance rulesets consumed during the acceptance and mapping
-    verification steps.
-    """
+    """XML acceptance rulesets consumed during acceptance and mapping verification."""
     ruleset: Path = Field(
         Path("config/Acceptance_Ruleset.xml"),
         description="Path to the primary acceptance ruleset XML",
@@ -53,15 +49,18 @@ class AcceptanceRulesetConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# TinyDB mapped-request database
+# MariaDB connection
 # ---------------------------------------------------------------------------
 
-class DatabaseConfig(BaseModel):
-    """TinyDB JSON database shared with the intermediate-vor-partition."""
-    db_path: Path = Field(
-        Path("/mnt/mapped_requests.json"),
-        description="Absolute path to the TinyDB JSON file (shared volume mount)",
-    )
+class MariaDBConfig(BaseModel):
+    """MariaDB connection parameters for the VoR-CPC partition."""
+    host:      str = Field("192.168.178.117",    description="MariaDB host address")
+    port:      int = Field(3306,                 description="MariaDB port")
+    user:      str = Field("vor-2",              description="Database user")
+    password:  str = Field("VoR-2-Password",     description="Database password")
+    database:  str = Field("secure_iot_gateway", description="Database name")
+    pool_name: str = Field("iot_gateway_pool",   description="Connection pool name")
+    pool_size: int = Field(5,                    description="Connection pool size")
 
 
 # ---------------------------------------------------------------------------
@@ -95,7 +94,7 @@ class FlaskBridgeClientConfig(BaseModel):
 class ProcessingConfig(BaseModel):
     """Tuning parameters for the request-pull-and-process loop."""
     idle_sleep_seconds: float = Field(
-        0.01,
+        0.5,
         description="Sleep duration when no requests are in the database (avoids busy-wait)",
     )
     startup_delay_seconds: float = Field(
@@ -111,7 +110,7 @@ class ProcessingConfig(BaseModel):
 class LoggingConfig(BaseModel):
     """Rotating-file + console logging configuration."""
     log_file: Path = Field(Path("logs/app.log"), description="Path to the log file")
-    log_level: str = Field("INFO", description="Logging level (DEBUG/INFO/WARNING/ERROR)")
+    log_level: str = Field("WARNING", description="Logging level (DEBUG/INFO/WARNING/ERROR)")
     max_bytes: PositiveInt = Field(1 * 1024 * 1024, description="Max log file size in bytes before rotation")
     backup_count: PositiveInt = Field(3, description="Number of rotated backup files to keep")
 
@@ -123,10 +122,10 @@ class LoggingConfig(BaseModel):
 class VoRCPCConfig(BaseModel):
     """Root configuration for the Intermediate VoR-CPC partition."""
     acceptance_rulesets: AcceptanceRulesetConfig = Field(default_factory=AcceptanceRulesetConfig)
-    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
-    flask_bridge: FlaskBridgeClientConfig = Field(default_factory=FlaskBridgeClientConfig)
-    processing: ProcessingConfig = Field(default_factory=ProcessingConfig)
-    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    mariadb:             MariaDBConfig            = Field(default_factory=MariaDBConfig)
+    flask_bridge:        FlaskBridgeClientConfig  = Field(default_factory=FlaskBridgeClientConfig)
+    processing:          ProcessingConfig         = Field(default_factory=ProcessingConfig)
+    logging:             LoggingConfig            = Field(default_factory=LoggingConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -159,10 +158,10 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
     """
     Optional environment-variable overrides.
 
-    Rulesets      : ACCEPTANCE_RULESET_PATH, ACCEPTANCE_RULESET_MODIFIED_PATH
-    Database      : MAPPED_RQ_DB_PATH
-    Flask bridge  : FLASK_HOST, FLASK_PORT, FLASK_TIMEOUT
-    Logging       : LOG_LEVEL, LOG_FILE
+    Rulesets     : ACCEPTANCE_RULESET_PATH, ACCEPTANCE_RULESET_MODIFIED_PATH
+    MariaDB      : DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_POOL_SIZE
+    Flask bridge : FLASK_HOST, FLASK_PORT, FLASK_TIMEOUT
+    Logging      : LOG_LEVEL, LOG_FILE
     """
     env = os.environ
 
@@ -172,9 +171,19 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
     if v := env.get("ACCEPTANCE_RULESET_MODIFIED_PATH"):
         ruleset_data["ruleset_modified"] = v
 
-    db_data = config.database.model_dump()
-    if v := env.get("MAPPED_RQ_DB_PATH"):
-        db_data["db_path"] = v
+    db_data = config.mariadb.model_dump()
+    if v := env.get("DB_HOST"):
+        db_data["host"] = v
+    if v := env.get("DB_PORT"):
+        db_data["port"] = int(v)
+    if v := env.get("DB_USER"):
+        db_data["user"] = v
+    if v := env.get("DB_PASSWORD"):
+        db_data["password"] = v
+    if v := env.get("DB_NAME"):
+        db_data["database"] = v
+    if v := env.get("DB_POOL_SIZE"):
+        db_data["pool_size"] = int(v)
 
     flask_data = config.flask_bridge.model_dump()
     if v := env.get("FLASK_HOST"):
@@ -192,7 +201,7 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
 
     return VoRCPCConfig(
         acceptance_rulesets=AcceptanceRulesetConfig.model_validate(ruleset_data),
-        database=DatabaseConfig.model_validate(db_data),
+        mariadb=MariaDBConfig.model_validate(db_data),
         flask_bridge=FlaskBridgeClientConfig.model_validate(flask_data),
         processing=config.processing,
         logging=LoggingConfig.model_validate(log_data),
@@ -228,7 +237,7 @@ def load_config(
 
     raw = _read_raw(cfg_path) if cfg_path.exists() else {}
     raw.setdefault("acceptance_rulesets", {})
-    raw.setdefault("database", {})
+    raw.setdefault("mariadb", {})
     raw.setdefault("flask_bridge", {})
     raw.setdefault("processing", {})
     raw.setdefault("logging", {})

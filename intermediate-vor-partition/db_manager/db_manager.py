@@ -49,11 +49,11 @@ class DatabaseManager:
 
     def __init__(
         self,
-        host: str = "localhost",
+        host: str = "192.168.178.117",
         port: int = 3306,
-        user: str = "iot_gateway",
-        password: str = "your_secure_password",
-        database: str = "secure_iot_gateway",
+        user: str = "vor-1",
+        password: str = "VoR-1-Password",
+        database: str = "secure_iot_gateway", #TODO: check!
         pool_name: str = "iot_gateway_pool",
         pool_size: int = 5,
     ):

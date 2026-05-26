@@ -4,8 +4,14 @@ acceptance_rulesets:
   ruleset: config/Acceptance_Ruleset.xml
   ruleset_modified: config/Acceptance_Ruleset_modified.xml
 
-database:
-  db_path: /mnt/mapped_requests.json   # shared volume mount
+mariadb:
+  host: "192.168.178.117"
+  port: 3306
+  user: "vor-2"
+  password: "VoR-2-Password"
+  database: "secure_iot_gateway"
+  pool_name: "iot_gateway_pool"
+  pool_size: 5
 
 flask_bridge:
   host: "192.168.156.14"
@@ -15,11 +21,11 @@ flask_bridge:
   timeout_seconds: 5.0
 
 processing:
-  idle_sleep_seconds: 0.01
+  idle_sleep_seconds: 0.5
   startup_delay_seconds: 2.0
 
 logging:
   log_file: logs/app.log
-  log_level: INFO
+  log_level: WARNING
   max_bytes: 1048576   # 1 MB
   backup_count: 3

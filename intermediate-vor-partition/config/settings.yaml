@@ -4,8 +4,14 @@ rulesets:
   verification_ruleset: config/Request_Verification_Ruleset.xml
   mapping_ruleset: config/Mapping_Rulesets.xml
 
-database:
-  db_path: /mnt/mapped_requests.json   # shared volume mount
+mariadb:
+  host: "192.168.178.117"
+  port: 3306
+  user: "vor-1"
+  password: "VoR-1-Password"
+  database: "secure_iot_gateway"
+  pool_name: "iot_gateway_pool"
+  pool_size: 5
 
 grpc_server:
   port: 50051
