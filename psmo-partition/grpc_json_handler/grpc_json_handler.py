@@ -30,28 +30,21 @@ from google.protobuf import empty_pb2
 
 import jsontransfer_pb2_grpc
 
+from config_loader import GrpcServerConfig, GrpcServerCerts  # only sub-model needed
+
 _logger = logging.getLogger(__name__)
 
-project_root = Path(__file__).resolve().parents[1]
-rel_base = project_root / "certs"
-abs_base = Path("/certs")
-cert_base = rel_base if rel_base.exists() else abs_base
 
-SERVER_CERT = cert_base / "server" / "server.crt"
-SERVER_KEY  = cert_base / "server" / "server.key"
-CA_CERT     = cert_base / "ca"     / "ca.crt"   # CA that signs CLIENT certs
-
-
-def _load_server_credentials() -> grpc.ServerCredentials:
+def _load_server_credentials(certs: "GrpcServerCerts") -> grpc.ServerCredentials:
     """
-    Build server credentials for mTLS:
-      - SERVER_KEY / SERVER_CERT: server identity
-      - CA_CERT: CA trusted for client certificates
+    Build server credentials for mTLS from a GrpcServerCerts config instance:
+      - server_key / server_cert: server identity
+      - ca_cert: CA trusted for client certificates
     """
     try:
-        private_key = SERVER_KEY.read_bytes()
-        certificate_chain = SERVER_CERT.read_bytes()
-        root_certificates = CA_CERT.read_bytes()
+        private_key       = Path(certs.server_key).read_bytes()
+        certificate_chain = Path(certs.server_cert).read_bytes()
+        root_certificates = Path(certs.ca_cert).read_bytes()
     except FileNotFoundError as e:
         _logger.error("TLS file not found: %s", e)
         raise
@@ -64,9 +57,6 @@ def _load_server_credentials() -> grpc.ServerCredentials:
         root_certificates=root_certificates,
         require_client_auth=True,
     )
-
-
-_SERVER_CREDS = _load_server_credentials()
 
 
 class JsonSenderServicer(jsontransfer_pb2_grpc.JsonSenderServicer):
@@ -110,7 +100,6 @@ class JsonSenderServicer(jsontransfer_pb2_grpc.JsonSenderServicer):
         }
 
         if request.source == "OPCUA":
-            # Hot path -> debug (not warning)
             _logger.debug("OPCUA payload received: size=%d ts=%s", len(data) if hasattr(data, "__len__") else -1, request.id)
             if self._opcua_queue is not None:
                 self._put_latest(self._opcua_queue, msg)
@@ -127,16 +116,28 @@ class JsonSenderServicer(jsontransfer_pb2_grpc.JsonSenderServicer):
 
 
 class JSON_gRPC_Thread(Thread):
-    def __init__(self, opcua_message_queue: Queue | None = None, modbustcp_message_queue: Queue | None = None):
+    def __init__(
+        self,
+        opcua_message_queue: Queue | None = None,
+        modbustcp_message_queue: Queue | None = None,
+        config: GrpcServerConfig | None = None,
+    ):
         super().__init__(name="gRPC-Server", daemon=True)
         self._stop_event = Event()
         self._opcua_queue = opcua_message_queue
         self._modbustcp_queue = modbustcp_message_queue
+        self._config = config
         self._server: grpc.Server | None = None
 
     def run(self):
+        if self._config is None:
+            _logger.error("GrpcServerConfig not provided to JSON_gRPC_Thread.")
+            return
+
         try:
-            server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
+            server_creds = _load_server_credentials(self._config.certs)
+
+            server = grpc.server(futures.ThreadPoolExecutor(max_workers=self._config.max_workers))
 
             jsontransfer_pb2_grpc.add_JsonSenderServicer_to_server(
                 JsonSenderServicer(
@@ -146,8 +147,8 @@ class JSON_gRPC_Thread(Thread):
                 server,
             )
 
-            server.add_secure_port("[::]:50051", _SERVER_CREDS)
-            _logger.info("mTLS gRPC-Server started on port 50051")
+            server.add_secure_port(f"[::]:{self._config.port}", server_creds)
+            _logger.info("mTLS gRPC-Server started on port %d", self._config.port)
 
             self._server = server
         except Exception as e:

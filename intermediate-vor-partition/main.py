@@ -32,26 +32,35 @@ import sys
 import time
 import signal
 import os
+from pathlib import Path
 
 from request_verification import RuleSet
 from mapping_verification import Mapping_RuleSets
 from feedback_system import FeedbackSystem
 from grpc_request_handler import build_grpc_server
 from request_message_handler import RequestMessageHandler
+from config_loader import load_config, VoRConfig
 
-path = os.path.dirname(os.path.abspath(__file__))
-verfication_ruleset_path = os.path.join(path, "config/Request_Verification_Ruleset.xml")
-mapping_ruleset_path = os.path.join(path, "config/Mapping_Rulesets.xml")
+CONFIG = load_config(
+    path=Path(__file__).parent / "config/settings.yaml",
+    base_dir=Path(__file__).parent,
+)
+
+#path = os.path.dirname(os.path.abspath(__file__))
+#verfication_ruleset_path = os.path.join(path, "config/Request_Verification_Ruleset.xml")
+#mapping_ruleset_path = os.path.join(path, "config/Mapping_Rulesets.xml")
 #mapped_rq_db_path = os.path.join(path, "config/mapped_requests.db")
+verfication_ruleset_path = CONFIG.rulesets.verification_ruleset
+mapping_ruleset_path     = CONFIG.rulesets.mapping_ruleset
+mapped_rq_db_path        = CONFIG.database.db_path
 
 #mapped_rq_db_path = os.path.join(path, "mnt/mapped_requests.json")
-mapped_rq_db_path = "/mnt/mapped_requests.json"
-logging_path = os.path.join(path, "logs/app.log")
-
+#mapped_rq_db_path = "/mnt/mapped_requests.json"
+#logging_path = os.path.join(path, "logs/app.log")
 
 def setup_logging(
     log_level=logging.WARNING,
-    log_file=logging_path,
+    log_file="default.log",
     max_bytes=1 * 1024 * 1024,  # 1 MB
     backup_count=3
     ) -> logging.Logger:
@@ -82,10 +91,14 @@ def setup_logging(
         level=log_level,
         handlers=[console_handler, file_handler],
     )
-
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.DEBUG)
+_logger = setup_logging(
+    log_level=logging.WARNING,
+    log_file=CONFIG.logging.log_file,
+    max_bytes=CONFIG.logging.max_bytes,
+    backup_count=CONFIG.logging.backup_count,
+)
 
 # Global flag for controlled shutdown
 _running = True
@@ -98,7 +111,8 @@ def signal_handler(sig, frame):
     if _grpc_server is not None:
         try:
             _logger.info("Stopping gRPC server...")
-            _grpc_server.stop(grace=5)
+            #_grpc_server.stop(grace=5)
+            _grpc_server.stop(grace=CONFIG.grpc_server.grace_period_seconds)
         except Exception as e:
             _logger.error(f"Error stopping gRPC server: {e}")
 
@@ -120,8 +134,10 @@ def main() -> None:
 
     # (3) Start the gRPC server that invokes the handler synchronously
     try:
-        srv, addr = build_grpc_server(handler=handler, port=50051)  # pass cert_base=Path(path)/"certificates"/"grpc" if needed
+        #srv, addr = build_grpc_server(handler=handler, port=50051)  # pass cert_base=Path(path)/"certificates"/"grpc" if needed
+        srv, addr = build_grpc_server(handler=handler, config=CONFIG.grpc_server)
         srv.start()
+        
         _grpc_server = srv
         _logger.info(f"gRPC server started on {addr} (mTLS).")
     except Exception as e:
@@ -139,7 +155,8 @@ def main() -> None:
     finally:
         if _grpc_server is not None:
             _logger.info("Finalizing gRPC server shutdown...")
-            _grpc_server.stop(grace=2)
+            #_grpc_server.stop(grace=2)
+            _grpc_server.stop(grace=CONFIG.grpc_server.grace_period_seconds)
         _logger.info("Intermediate VoR Partition shutdown complete.")
 
 if __name__ == "__main__":

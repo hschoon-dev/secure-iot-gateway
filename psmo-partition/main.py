@@ -36,18 +36,25 @@ import logging
 import time
 import sys
 import os
+from pathlib import Path
 from queue import Queue
 from logging.handlers import RotatingFileHandler
 
 #from psmo_shm_handler import OPCUA_Thread, ModbusTCP_Thread
 from grpc_json_handler import JSON_gRPC_Thread
+from config_loader import load_config, PSMOConfig
 
-path = os.path.dirname(os.path.abspath(__file__))
-logging_path = os.path.join(path, "logs/app.log")
+CONFIG = load_config(
+    path=Path(__file__).parent / "config/settings.yaml",
+    base_dir=Path(__file__).parent,
+)
+
+#path = os.path.dirname(os.path.abspath(__file__))
+#logging_path = os.path.join(path, "logs/app.log")
 
 def setup_logging(
     log_level=logging.WARNING,
-    log_file=logging_path,
+    log_file="default.log",
     max_bytes=1 * 1024 * 1024,  # 1 MB
     backup_count=3
     ) -> logging.Logger:
@@ -68,6 +75,7 @@ def setup_logging(
     # Rotating file handler
     print(f"Logging to file: {log_file}")
     file_handler = RotatingFileHandler(
+        #log_path, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
         log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
     )
     file_handler.setFormatter(formatter)
@@ -77,19 +85,30 @@ def setup_logging(
         level=log_level,
         handlers=[console_handler, file_handler],
     )
-
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.INFO)
+_logger = setup_logging(
+    log_level=logging.WARNING,
+    log_file=CONFIG.logging.log_file,
+    max_bytes=CONFIG.logging.max_bytes,
+    backup_count=CONFIG.logging.backup_count,
+)
 
 
 def main():
-    time.sleep(7)
+    time.sleep(CONFIG.lifecycle.startup_delay_seconds)
 
-    opcua_queue = Queue(maxsize=2)
-    modbustcp_queue = Queue(maxsize=2)
+    #opcua_queue = Queue(maxsize=2)
+    #modbustcp_queue = Queue(maxsize=2)
+    opcua_queue    = Queue(maxsize=CONFIG.queues.opcua_maxsize)
+    modbustcp_queue = Queue(maxsize=CONFIG.queues.modbustcp_maxsize)
 
-    json_grpc_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
+    #json_grpc_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
+    json_grpc_thread = JSON_gRPC_Thread(
+    opcua_message_queue=opcua_queue,
+    modbustcp_message_queue=modbustcp_queue,
+    config=CONFIG.grpc_server,
+    )
     json_grpc_thread.start()
 
     try:

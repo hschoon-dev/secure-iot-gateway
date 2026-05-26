@@ -1,0 +1,22 @@
+# psmo-partition/config/settings.yaml
+
+grpc_server:
+  port: 50051
+  max_workers: 4
+  certs:
+    ca_cert: certs/ca/ca.crt
+    server_cert: certs/server/server.crt
+    server_key: certs/server/server.key
+
+queues:
+  opcua_maxsize: 2
+  modbustcp_maxsize: 2
+
+lifecycle:
+  startup_delay_seconds: 7.0
+
+logging:
+  log_file: logs/app.log
+  log_level: INFO
+  max_bytes: 1048576   # 1 MB
+  backup_count: 3

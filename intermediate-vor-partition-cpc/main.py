@@ -38,31 +38,40 @@ import threading
 import time
 import logging
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 from tinydb import TinyDB, Query
 from tinydb.storages import JSONStorage
 from tinydb.middlewares import CachingMiddleware
 
 # local imports
-# from flask_server_bridge.flask_server_bridge import FlaskServerBridge
+from config_loader import load_config, VoRCPCConfig
 
-path = os.path.dirname(os.path.abspath(__file__))
-acceptance_ruleset_path = os.path.join(path, "config/Acceptance_Ruleset.xml")
-acceptance_ruleset_path_modified = os.path.join(path, "config/Acceptance_Ruleset_modified.xml")
+CONFIG = load_config(
+    path=Path(__file__).parent / "config/settings.yaml",
+    base_dir=Path(__file__).parent,
+)
+
+#path = os.path.dirname(os.path.abspath(__file__))
+#acceptance_ruleset_path = os.path.join(path, "config/Acceptance_Ruleset.xml")
+#acceptance_ruleset_path_modified = os.path.join(path, "config/Acceptance_Ruleset_modified.xml")
 
 # NOTE: keep variable name for compatibility, but now it points to a TinyDB JSON file
 #mapped_rq_database_path = os.path.join(path, "mnt/mapped_requests.json")
-mapped_rq_database_path = "/mnt/mapped_requests.json"
+#mapped_rq_database_path = "/mnt/mapped_requests.json"
+acceptance_ruleset_path          = CONFIG.acceptance_rulesets.ruleset
+acceptance_ruleset_path_modified = CONFIG.acceptance_rulesets.ruleset_modified
+mapped_rq_database_path          = CONFIG.database.db_path
 
-logging_path = os.path.join(path, "logs/app.log")
-
+#logging_path = os.path.join(path, "logs/app.log")
 
 def setup_logging(
-    log_level=logging.DEBUG,
-    log_file=logging_path,
+    log_level=logging.WARNING,
+    log_file="default.log",
     max_bytes=1 * 1024 * 1024,  # 1 MB
-    backup_count=3,
-) -> logging.Logger:
+    backup_count=3
+    ) -> logging.Logger:
+
     # Common log format
     log_format = (
         "[%(asctime)s] [%(levelname)-8s] "
@@ -79,6 +88,7 @@ def setup_logging(
     # Rotating file handler
     print(f"Logging to file: {log_file}")
     file_handler = RotatingFileHandler(
+        #log_path, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
         log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
     )
     file_handler.setFormatter(formatter)
@@ -88,11 +98,14 @@ def setup_logging(
         level=log_level,
         handlers=[console_handler, file_handler],
     )
-
     return logging.getLogger(__name__)
 
-
-_logger = setup_logging(logging.INFO)
+_logger = setup_logging(
+    log_level=logging.WARNING,
+    log_file=CONFIG.logging.log_file,
+    max_bytes=CONFIG.logging.max_bytes,
+    backup_count=CONFIG.logging.backup_count,
+)
 
 
 def _open_tinydb():
@@ -217,10 +230,15 @@ def add_affected_endpoints_to_xml(xml_data, affected_endpoints):
 
 
 def send_request(xml_data) -> str | None:
-    url = "http://192.168.156.14:5000/read_values_xml"
+    #url = "http://192.168.156.14:5000/read_values_xml"
+    url = CONFIG.flask_bridge.read_values_url
 
     headers = {"Content-Type": "application/xml"}
-    response = requests.post(url, data=xml_data, headers=headers)
+    #response = requests.post(url, data=xml_data, headers=headers)
+    response = requests.post(
+        url, data=xml_data, headers=headers,
+        timeout=CONFIG.flask_bridge.timeout_seconds
+    )
 
     if response.status_code == 200:  # 200 is the default normal value
         _logger.debug(f"Response status code: {response.status_code}")
@@ -366,10 +384,15 @@ def mapping_verification(request, xml_data):
 def send_back_results(affected_endpoints_dict):
     try:
         _logger.info(f"Sending back to Flask server: {affected_endpoints_dict}")
-        url = "http://192.168.156.14:5000/update_endpoints"
+        #url = "http://192.168.156.14:5000/update_endpoints"
+        url = CONFIG.flask_bridge.update_endpoints_url
         headers = {"Content-Type": "application/json"}
+        #response = requests.post(
+        #    url, json=affected_endpoints_dict, headers=headers, timeout=5
+        #)
         response = requests.post(
-            url, json=affected_endpoints_dict, headers=headers, timeout=5
+            url, json=affected_endpoints_dict, headers=headers,
+            timeout=CONFIG.flask_bridge.timeout_seconds
         )
     except requests.RequestException as e:
         _logger.error(f"Error sending back to Flask server: {e}")
@@ -399,7 +422,7 @@ def send_back_results(affected_endpoints_dict):
 
 
 def pull_request_and_process():
-    time.sleep(2)
+    time.sleep(CONFIG.processing.startup_delay_seconds)
 
     while True:
         try:
@@ -439,7 +462,7 @@ def pull_request_and_process():
                             _logger.error(f"Error sending back results to Flask server: {e}")
 
             if request is None:
-                time.sleep(0.01)  # Sleep for a short duration to avoid busy waiting
+                time.sleep(CONFIG.processing.idle_sleep_seconds)  # Sleep for a short duration to avoid busy waiting
         except Exception as e:
             _logger.error(f"An error occurred: {e}")
 

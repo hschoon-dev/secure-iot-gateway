@@ -1,0 +1,25 @@
+# intermediate-vor-partition-cpc/config/settings.yaml
+
+acceptance_rulesets:
+  ruleset: config/Acceptance_Ruleset.xml
+  ruleset_modified: config/Acceptance_Ruleset_modified.xml
+
+database:
+  db_path: /mnt/mapped_requests.json   # shared volume mount
+
+flask_bridge:
+  host: "192.168.156.14"
+  port: 5000
+  read_values_path: /read_values_xml
+  update_endpoints_path: /update_endpoints
+  timeout_seconds: 5.0
+
+processing:
+  idle_sleep_seconds: 0.01
+  startup_delay_seconds: 2.0
+
+logging:
+  log_file: logs/app.log
+  log_level: INFO
+  max_bytes: 1048576   # 1 MB
+  backup_count: 3

@@ -63,13 +63,27 @@ _logger.debug(f"Casbin policy path: {casbin_policy_path_res}")
 _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), str(casbin_policy_path_res))
 
 
-@uamethod 
+#@uamethod  #TODO: test...
 # TODO: Update method parameters according the project/NOA-standard requirements and yuanchens additional developments
 # TODO: Implement additional UserManagement 
-def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_characteristics: list[str], timestamp: str, 
-                  #description: list[str], impact: list[str], parameters: str,
-                  description: list[str], impact: str, parameters: str,
-                  modification: str, priority: int) -> tuple[str, str, str]:
+#def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_characteristics: list[str], timestamp: str, 
+#                  #description: list[str], impact: list[str], parameters: str,
+#                  description: list[str], impact: str, parameters: str,
+#                  modification: str, priority: int) -> tuple[str, str, str]:
+async def submit_request(
+    parent,
+    issuer_id: str,
+    credentials: str,
+    issuer_characteristics: list[str],
+    timestamp: str,
+    description: list[str],
+    impact: str,
+    parameters: str,
+    modification: str,
+    priority: int,
+    *,
+    grpc_config,
+) -> tuple[str, str, str]:
     """
     OPC UA method to handle a request submission.
 
@@ -127,7 +141,8 @@ def submit_request(parent: Any, issuer_id: str, credentials: str, issuer_charact
     # 3) Submit the request to the intermediate VoR partition
     # Setup POSIX message queue for ipc with the intermediate VoR partition
     try:
-        send_request_as_grpc(request=request_dict)
+        #send_request_as_grpc(request=request_dict)
+        send_request_as_grpc(request=request_dict, config=grpc_config)
         _logger.info(f"Request with priority {priority} at {server_timestamp} received and forwared.")
     except Exception as e:
         _logger.error(f"Error submit request method: {e}")

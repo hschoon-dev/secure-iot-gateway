@@ -25,7 +25,6 @@
 import asyncio
 import logging
 import sys
-import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import threading
@@ -33,9 +32,9 @@ import threading
 # local imports
 from opcua_client_manager import OpcUaClientManager
 from modbus_tcp_client_manager import ModbusClientManager
-
 from flask_server_bridge.flask_server_bridge import FlaskServerBridge
-from config_loader import load_config
+from config_loader import load_config, CPCConfig
+from grpc_sender import init_ssl_credentials
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -43,13 +42,14 @@ CONFIG = load_config(
     path=Path(__file__).parent / "config/settings.yaml",  # or .json
     base_dir=Path(__file__).parent,
 )
+init_ssl_credentials(CONFIG.grpc_certs)
 
-path = os.path.dirname(os.path.abspath(__file__))
-logging_path = os.path.join(path, "logs/app.log")
+#path = os.path.dirname(os.path.abspath(__file__))
+#logging_path = os.path.join(path, "logs/app.log")
 
 def setup_logging(
     log_level=logging.WARNING,
-    log_file=logging_path,
+    log_file="default.log",
     max_bytes=1 * 1024 * 1024,  # 1 MB
     backup_count=3
     ) -> logging.Logger:
@@ -70,6 +70,7 @@ def setup_logging(
     # Rotating file handler
     print(f"Logging to file: {log_file}")
     file_handler = RotatingFileHandler(
+        #log_path, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
         log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
     )
     file_handler.setFormatter(formatter)
@@ -79,10 +80,14 @@ def setup_logging(
         level=log_level,
         handlers=[console_handler, file_handler],
     )
-
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.WARNING)
+_logger = setup_logging(
+    log_level=logging.WARNING,
+    log_file=CONFIG.logging.log_file,
+    max_bytes=CONFIG.logging.max_bytes,
+    backup_count=CONFIG.logging.backup_count,
+)
 
 async def opcua_service() -> None:
     """
@@ -134,8 +139,19 @@ def run_flask_server() -> None:
     """
     This function starts the Flask server.
     """
-    bridge = FlaskServerBridge()
-    bridge.run(debug=False, threaded=True)
+    #bridge = FlaskServerBridge()
+    #bridge.run(debug=False, threaded=True)
+
+    bridge = FlaskServerBridge(
+       opcua_files=CONFIG.opcua.files,
+       modbustcp_files=CONFIG.modbustcp.files
+    )
+    bridge.run(
+        host=CONFIG.flask_bridge.host,
+        port=CONFIG.flask_bridge.port,
+        debug=CONFIG.flask_bridge.debug,
+        threaded=CONFIG.flask_bridge.threaded,
+    )
 
 async def main():
     await asyncio.sleep(3)

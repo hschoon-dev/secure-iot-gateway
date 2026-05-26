@@ -31,20 +31,26 @@ from logging.handlers import RotatingFileHandler
 import os
 import sys
 import argparse
-
+from pathlib import Path
 from queue import Queue
 from grpc_json_handler import JSON_gRPC_Thread
 
 # Own modules
 from interface_setup import setup_opcua_server
 from data_manager import DataManager
+from config_loader import load_config, InterfaceConfig
 
-path = os.path.dirname(os.path.abspath(__file__))
-logging_path = os.path.join(path, "logs/app.log")
+CONFIG = load_config(
+    path=Path(__file__).parent / "config/settings.yaml",
+    base_dir=Path(__file__).parent,
+)
+
+#path = os.path.dirname(os.path.abspath(__file__))
+#logging_path = os.path.join(path, "logs/app.log")
 
 def setup_logging(
     log_level=logging.WARNING,
-    log_file=logging_path,
+    log_file="default.log",
     max_bytes=1 * 1024 * 1024,  # 1 MB
     backup_count=3
     ) -> logging.Logger:
@@ -77,7 +83,12 @@ def setup_logging(
     )
     return logging.getLogger(__name__)
 
-_logger = setup_logging(logging.INFO)
+_logger = setup_logging(
+    log_level=logging.WARNING,
+    log_file=CONFIG.logging.log_file,
+    max_bytes=CONFIG.logging.max_bytes,
+    backup_count=CONFIG.logging.backup_count,
+)
 
 
 async def await_soft_timeout(task: asyncio.Task, label: str, timeout: float):
@@ -110,14 +121,24 @@ async def main():
     log_level = getattr(logging, args.log_level.upper(), logging.WARNING)
     _logger = setup_logging(log_level)
 
-    opcua_queue = Queue(maxsize=2)
-    modbustcp_queue = Queue(maxsize=2)
+    #opcua_queue = Queue(maxsize=2)
+    #modbustcp_queue = Queue(maxsize=2)
+    opcua_queue = Queue(maxsize=CONFIG.queues.opcua_maxsize)
+    modbustcp_queue = Queue(maxsize=CONFIG.queues.modbustcp_maxsize)
 
-
-    grpc_server_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
+    #grpc_server_thread = JSON_gRPC_Thread(opcua_message_queue=opcua_queue, modbustcp_message_queue=modbustcp_queue)
+    grpc_server_thread = JSON_gRPC_Thread(
+    opcua_message_queue=opcua_queue,
+    modbustcp_message_queue=modbustcp_queue,
+    config=CONFIG.grpc_server,
+    )
     grpc_server_thread.start()
 
-    server = await setup_opcua_server()
+    #server = await setup_opcua_server(config=CONFIG.opcua_server)
+    server = await setup_opcua_server(
+        config=CONFIG.opcua_server,
+        grpc_client=CONFIG.grpc_client,
+    )
     await asyncio.sleep(5)
 
 

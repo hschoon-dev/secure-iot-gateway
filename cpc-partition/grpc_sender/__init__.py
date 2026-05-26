@@ -3,6 +3,7 @@ from .grpc_sender import (
     close_all_senders,
     get_sender,
     send_json_payload,
+    init_ssl_credentials,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "get_sender",
     "close_all_senders",
     "send_json_payload",
+    "init_ssl_credentials"
 ]

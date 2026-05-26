@@ -1,22 +1,40 @@
-# config/settings.yaml
+# cpc-partition/config/settings.yaml
+
 opcua:
-  # interval: 1          # optional; defaults to 1
+  interval: 1
   files:
     xml_config: config/opcua-endpoints_demonstrator.xml
-    xsd_schema:  config/opcua-endpoints.xsd
+    xsd_schema: config/opcua-endpoints.xsd
   shared_memory:
     name: opcua_shm
-    size: 10240          # bytes; default 1024*10
+    size: 10240        # 1024 * 10 bytes
   semaphore:
     name: opcua_semaphore
 
 modbustcp:
-  # interval: 1          # optional; defaults to 1
+  interval: 1
   files:
     xml_config: config/modbustcp-endpoints_demonstrator.xml
-    xsd_schema:  config/modbustcp-endpoints.xsd
+    xsd_schema: config/modbustcp-endpoints.xsd
   shared_memory:
     name: modbus_shm
-    size: 12288          # bytes; default 1024*12
+    size: 12288        # 1024 * 12 bytes
   semaphore:
     name: modbus_semaphore
+
+flask_bridge:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+  threaded: true
+
+grpc_certs:
+  ca_cert: certs/ca/ca.crt
+  client_cert: certs/client/client.crt
+  client_key: certs/client/client.key
+
+logging:
+  log_file: logs/app.log
+  log_level: WARNING
+  max_bytes: 1048576   # 1 MB
+  backup_count: 3

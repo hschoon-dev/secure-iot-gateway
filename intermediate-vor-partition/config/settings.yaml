@@ -1,0 +1,23 @@
+# intermediate-vor-partition/config/settings.yaml
+
+rulesets:
+  verification_ruleset: config/Request_Verification_Ruleset.xml
+  mapping_ruleset: config/Mapping_Rulesets.xml
+
+database:
+  db_path: /mnt/mapped_requests.json   # shared volume mount
+
+grpc_server:
+  port: 50051
+  max_workers: 10
+  grace_period_seconds: 5
+  certs:
+    ca_cert: certificates/grpc/ca/ca.crt
+    server_cert: certificates/grpc/server/server.crt
+    server_key: certificates/grpc/server/server.key
+
+logging:
+  log_file: logs/app.log
+  log_level: WARNING
+  max_bytes: 1048576   # 1 MB
+  backup_count: 3

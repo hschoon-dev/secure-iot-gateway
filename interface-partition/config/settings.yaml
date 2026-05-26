@@ -1,0 +1,32 @@
+# interface-partition/config/settings.yaml
+
+opcua_server:
+  endpoint: "opc.tcp://0.0.0.0:4840/freeopcua/server/"
+  application_uri: "urn:freeopcua:interface_server"
+  namespace_uri: "idx.request-handler.ua"
+  certs:
+    server_cert: certificates/python-server/interface_server_cert.der
+    server_key: certificates/python-server/interface_server_key.pem
+    trusted_certs_dir: certificates/trusted/certs
+  transport_limits:
+    recv_buffer_bytes: 16384   # 16 KB
+    send_buffer_bytes: 16384
+    max_message_bytes: 10240   # 10 KB
+
+grpc_server:
+  port: 50051
+  max_workers: 4
+  certs:
+    ca_cert: certificates/grpc/ca/ca.crt
+    server_cert: certificates/grpc/server/server.crt
+    server_key: certificates/grpc/server/server.key
+
+queues:
+  opcua_maxsize: 2
+  modbustcp_maxsize: 2
+
+logging:
+  log_file: logs/app.log
+  log_level: WARNING
+  max_bytes: 1048576   # 1 MB
+  backup_count: 3

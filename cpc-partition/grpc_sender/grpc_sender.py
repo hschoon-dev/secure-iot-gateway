@@ -45,25 +45,12 @@ KEEPALIVE_OPTS: list[tuple[str, Any]] = [
 ]
 
 
-def _resolve_certs_base() -> Path:
-    # dev: repo-relative /certs, docker: mounted /certs
-    project_root = Path(__file__).resolve().parents[1]
-    rel_base = project_root / "certs"
-    abs_base = Path("/certs")
-    return rel_base if rel_base.exists() else abs_base
-
-
-def _load_ssl_credentials() -> grpc.ChannelCredentials:
-    cert_base = _resolve_certs_base()
-
-    client_cert = cert_base / "client" / "client.crt"
-    client_key = cert_base / "client" / "client.key"
-    ca_cert = cert_base / "ca" / "ca.crt"
-
+def _load_ssl_credentials(certs: "GrpcClientCerts") -> grpc.ChannelCredentials:
+    """Build mTLS channel credentials from a GrpcClientCerts config instance."""
     try:
-        root_certificates = ca_cert.read_bytes()
-        private_key = client_key.read_bytes()
-        certificate_chain = client_cert.read_bytes()
+        root_certificates = Path(certs.ca_cert).read_bytes()
+        private_key       = Path(certs.client_key).read_bytes()
+        certificate_chain = Path(certs.client_cert).read_bytes()
 
         return grpc.ssl_channel_credentials(
             root_certificates=root_certificates,
@@ -71,11 +58,8 @@ def _load_ssl_credentials() -> grpc.ChannelCredentials:
             certificate_chain=certificate_chain,
         )
     except Exception:
-        _logger.exception("Failed to load TLS certificates from %s", cert_base)
+        _logger.exception("Failed to load TLS certificates from config")
         raise
-
-
-_SSL_CREDS = _load_ssl_credentials()
 
 
 class GrpcJsonSender:
@@ -87,7 +71,7 @@ class GrpcJsonSender:
     def __init__(
         self,
         target: str,
-        ssl_credentials: grpc.ChannelCredentials = _SSL_CREDS,
+        ssl_credentials: grpc.ChannelCredentials,
         *,
         options: Optional[list[tuple[str, Any]]] = None,
         enable_retry: bool = True,
@@ -216,12 +200,30 @@ class GrpcJsonSender:
 
 _SENDER_CACHE_LOCK = threading.RLock()
 _SENDER_CACHE: dict[str, GrpcJsonSender] = {}
+_SSL_CREDS: grpc.ChannelCredentials | None = None
+
+
+def init_ssl_credentials(certs: "GrpcClientCerts") -> None:
+    """
+    Initialise the module-level SSL credentials from config.
+    Call this once from main.py before any send_json_payload() calls:
+
+        from grpc_sender import init_ssl_credentials
+        init_ssl_credentials(CONFIG.grpc_certs)
+    """
+    global _SSL_CREDS
+    _SSL_CREDS = _load_ssl_credentials(certs)
 
 
 def get_sender(dest: str) -> GrpcJsonSender:
     """Get or create a cached sender for `dest` (host:port)."""
     if not dest:
         raise ValueError("dest must not be empty")
+    if _SSL_CREDS is None:
+        raise RuntimeError(
+            "SSL credentials not initialised. Call init_ssl_credentials(config.grpc_certs) "
+            "from main.py before using get_sender()."
+        )
     with _SENDER_CACHE_LOCK:
         sender = _SENDER_CACHE.get(dest)
         if sender is None:

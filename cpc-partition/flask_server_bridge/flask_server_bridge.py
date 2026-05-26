@@ -26,7 +26,7 @@ from pathlib import Path
 
 from flask import Flask, request, Response, jsonify
 from defusedxml import ElementTree as ET
-
+from config_loader import EndpointFiles
 from .cpc_clients_for_vor import OnDemandOpcUaRegistry, OnDemandModbusTCPRegistry
 
 _logger = logging.getLogger(__name__)
@@ -43,13 +43,7 @@ def to_vor_text(value) -> str:
     return str(value)
 
 
-def resolve_config_paths() -> tuple[Path, Path | None, Path, Path | None]:
-    """
-    Resolve paths for BOTH OPC UA and Modbus TCP configs.
-
-    Searches typical container/project config locations and selects the first match.
-    XSDs are optional; if missing, validation is skipped.
-    """
+"""def resolve_config_paths() -> tuple[Path, Path | None, Path, Path | None]:
     candidates = [
         Path(__file__).parent.parent / "config"
     ]
@@ -102,15 +96,26 @@ def resolve_config_paths() -> tuple[Path, Path | None, Path, Path | None]:
         _logger.warning("Using Modbus XSD: %s", mb_xsd_path)
 
     return opc_xml_path, opc_xsd_path, mb_xml_path, mb_xsd_path
-
+"""
 
 class FlaskServerBridge:
-    def __init__(self):
+    def __init__(self, opcua_files: EndpointFiles, modbustcp_files: EndpointFiles):
+        """
+        Args:
+            opcua_files:    CONFIG.opcua.files    (xml_config + xsd_schema paths)
+            modbustcp_files: CONFIG.modbustcp.files (xml_config + xsd_schema paths)
+        """
         self.app = Flask(__name__)
-
-        opc_xml_path, opc_xsd_path, mb_xml_path, mb_xsd_path = resolve_config_paths()
-        self.opcua_registry = OnDemandOpcUaRegistry(opc_xml_path, opc_xsd_path)
-        self.modbus_registry = OnDemandModbusTCPRegistry(mb_xml_path, mb_xsd_path)
+ 
+        # Paths come directly from config — no filesystem search needed
+        self.opcua_registry  = OnDemandOpcUaRegistry(
+            opcua_files.xml_config,
+            opcua_files.xsd_schema,
+        )
+        self.modbus_registry = OnDemandModbusTCPRegistry(
+            modbustcp_files.xml_config,
+            modbustcp_files.xsd_schema,
+        )
 
         def resolve_any(name: str) -> tuple[str | None, str | None]:
             """
@@ -320,8 +325,10 @@ class FlaskServerBridge:
 
             return jsonify(results), 200
 
-    def run(self, debug: bool = False, threaded: bool = True):
-        self.app.run(debug=debug, host="0.0.0.0", port=5000, threaded=threaded)
+    #def run(self, debug: bool = False, threaded: bool = True):
+    #    self.app.run(debug=debug, host="0.0.0.0", port=5000, threaded=threaded)
+    def run(self, debug: bool = False, threaded: bool = True, host: str = "0.0.0.0", port: int = 5000):
+        self.app.run(debug=debug, host=host, port=port, threaded=threaded)
 
 
 if __name__ == "__main__":
