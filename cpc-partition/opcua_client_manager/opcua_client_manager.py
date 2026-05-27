@@ -41,18 +41,23 @@ class OpcUaClientManager:
     def __init__(self, xml_config_path: str | Path, xsd_path: str | Path, grpc_interface_ip_address: str, grpc_psmo_ip_address: str):
         self.xml_config_path = str(xml_config_path)
         self.xsd_path = str(xsd_path)
-        self.clients: list[OpcUaClient] = self.parse_clients()
 
-        # Reuse snapshot dicts to reduce allocations/GC pressure (full snapshot semantics kept).
+        # Initialise all instance attributes unconditionally before calling
+        # parse_clients(). If parse_clients() raises (e.g. XML file missing),
+        # the previous code aborted mid-__init__, leaving _psmo_sender and
+        # _interface_sender unset. Any subsequent attribute access on the
+        # partially-constructed object would then raise AttributeError.
         self._snapshot: dict[str, dict] = {}
         self._entry_pool: dict[str, dict] = {}
+        self._conn_key: dict[str, str] = {}
 
-        # Pre-create/reuse gRPC senders (lazy init inside get_sender).
+        # gRPC senders are created before XML parsing so they are always
+        # available even if the client list ends up empty.
         self._psmo_sender = get_sender(grpc_psmo_ip_address)
         self._interface_sender = get_sender(grpc_interface_ip_address)
 
-        # Precompute connection status keys per client alias
-        self._conn_key: dict[str, str] = {}
+        self.clients: list[OpcUaClient] = self.parse_clients()
+
         for c in self.clients:
             self._conn_key[c.alias] = f"OPC UA Connections:{c.alias}"
 

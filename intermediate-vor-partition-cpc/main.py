@@ -27,7 +27,14 @@
 """
 
 import requests
-import xml.etree.ElementTree as ET
+# defusedxml prevents XML entity-expansion (billion-laughs) and external-entity
+# attacks on XML received from network sources (Flask bridge response, field
+# devices). All other partitions already use defusedxml; this one must too.
+# Note: defusedxml.ElementTree.fromstring() is a drop-in replacement.
+# ET.tostring() and ET.SubElement() are write-side helpers that produce XML and
+# are not vulnerable; they may remain as stdlib imports via an alias.
+import xml.etree.ElementTree as _ET          # write-side helpers only
+from defusedxml import ElementTree as ET     # read-side (fromstring / parse)
 import sys
 import threading
 import time
@@ -43,17 +50,17 @@ from config_loader import load_config
 # Pydantic config
 # ---------------------------------------------------------------------------
 
-CONFIG = load_config(
-    path=Path(__file__).parent / "config/settings.yaml",
-    base_dir=Path(__file__).parent,
-)
+# CONFIG is populated inside main() after logging is set up, so that any
+# Pydantic validation errors or YAML parse warnings are routed through the
+# configured formatter rather than landing on the bare stderr default handler.
+CONFIG = None  # type: ignore[assignment]  # assigned in main() before use
 
 # ---------------------------------------------------------------------------
 # Ruleset / database paths — all from config
 # ---------------------------------------------------------------------------
 
-acceptance_ruleset_path          = CONFIG.acceptance_rulesets.ruleset
-acceptance_ruleset_path_modified = CONFIG.acceptance_rulesets.ruleset_modified
+#acceptance_ruleset_path          = CONFIG.acceptance_rulesets.ruleset
+#acceptance_ruleset_path_modified = CONFIG.acceptance_rulesets.ruleset_modified
 
 # ---------------------------------------------------------------------------
 # MariaDB credentials — all from CONFIG.mariadb (env vars override via
@@ -95,12 +102,7 @@ def setup_logging(
     return logging.getLogger(__name__)
 
 
-_logger = setup_logging(
-    log_level=logging.WARNING,
-    log_file=CONFIG.logging.log_file,
-    max_bytes=CONFIG.logging.max_bytes,
-    backup_count=CONFIG.logging.backup_count,
-)
+_logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -178,25 +180,32 @@ def read_xml_file(filename: str) -> str:
         return file.read()
 
 
-def add_affected_endpoints_to_xml(xml_data, affected_endpoints):
-    """Add affected endpoint information to XML structure."""
-    root = ET.fromstring(xml_data)
+def add_affected_endpoints_to_xml(xml_data, affected_endpoints) -> str:
+    """
+    Return the acceptance ruleset XML extended with affected endpoint stubs.
 
-    affected_endpoints_elem = ET.SubElement(root, "affected_endpoints")
+    The result is returned as an in-memory string; no file is written.
+
+    Previously this function wrote to the fixed path
+    `config/Acceptance_Ruleset_modified.xml` before returning. Writing to a
+    fixed path is a latent race condition: if two requests are ever processed
+    concurrently (e.g. after the processing loop is parallelised), the second
+    write corrupts the XML being consumed by the first request. Passing the
+    XML string directly through the call chain avoids all file-system
+    contention and removes the dependency on acceptance_ruleset_path_modified.
+    """
+    root = ET.fromstring(xml_data)      # defusedxml — see FIX-04
+
+    affected_endpoints_elem = _ET.SubElement(root, "affected_endpoints")
 
     for endpoint in affected_endpoints:
-        endpoint_elem = ET.SubElement(affected_endpoints_elem, "affected_endpoint")
-        name_elem = ET.SubElement(endpoint_elem, "name")
+        endpoint_elem = _ET.SubElement(affected_endpoints_elem, "affected_endpoint")
+        name_elem = _ET.SubElement(endpoint_elem, "name")
         name_elem.text = endpoint[0]
-        value_elem = ET.SubElement(endpoint_elem, "value")
+        value_elem = _ET.SubElement(endpoint_elem, "value")
         value_elem.text = "0"
 
-    updated_xml = ET.tostring(root, encoding="utf-8").decode("utf-8")
-
-    with open(acceptance_ruleset_path_modified, "w", encoding="utf-8") as file:
-        file.write(updated_xml)
-
-    return updated_xml
+    return _ET.tostring(root, encoding="utf-8").decode("utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -425,6 +434,30 @@ def pull_request_and_process(db_manager: DatabaseManager):
 
 def main():
     """Main entry point that initializes the database and starts the request processor."""
+    # Load config before setup_logging() so the log file path is available,
+    # but after the import block so module-level symbols are resolved.
+    # Pydantic validation errors here will go to stderr (acceptable: the
+    # process cannot continue without a valid config anyway).
+    global CONFIG          # FIX-18: CONFIG zuerst laden
+    CONFIG = load_config(
+        path=Path(__file__).parent / "config/settings.yaml",
+        base_dir=Path(__file__).parent,
+    )
+    global acceptance_ruleset_path, acceptance_ruleset_path_modified
+    acceptance_ruleset_path          = CONFIG.acceptance_rulesets.ruleset
+    acceptance_ruleset_path_modified = CONFIG.acceptance_rulesets.ruleset_modified
+
+    # Configure the root logger exactly once, as early as possible in the
+    # process lifetime. All other modules obtain child loggers via
+    # logging.getLogger(__name__) and inherit this configuration automatically.
+    global _logger
+    _logger = setup_logging(
+        log_level=getattr(logging, CONFIG.logging.log_level.upper(), logging.WARNING),
+        log_file=CONFIG.logging.log_file,
+        max_bytes=CONFIG.logging.max_bytes,
+        backup_count=CONFIG.logging.backup_count,
+    )
+
     try:
         db_manager = initialize_database()
         _logger.info("Database connection pool initialized")

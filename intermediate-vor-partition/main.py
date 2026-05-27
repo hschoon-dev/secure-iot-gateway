@@ -41,13 +41,13 @@ from request_message_handler import RequestMessageHandler
 from db_manager import DatabaseManager
 from config_loader import load_config, VoRConfig
 
-CONFIG = load_config(
-    path=Path(__file__).parent / "config/settings.yaml",
-    base_dir=Path(__file__).parent,
-)
+# CONFIG is populated inside main() after logging is set up, so that any
+# Pydantic validation errors or YAML parse warnings are routed through the
+# configured formatter rather than landing on the bare stderr default handler.
+CONFIG = None  # type: ignore[assignment]  # assigned in main() before use
 
-verfication_ruleset_path = CONFIG.rulesets.verification_ruleset
-mapping_ruleset_path     = CONFIG.rulesets.mapping_ruleset
+#verfication_ruleset_path = CONFIG.rulesets.verification_ruleset
+#mapping_ruleset_path     = CONFIG.rulesets.mapping_ruleset
 
 
 def setup_logging(
@@ -80,12 +80,10 @@ def setup_logging(
     return logging.getLogger(__name__)
 
 
-_logger = setup_logging(
-    log_level=logging.WARNING,
-    log_file=CONFIG.logging.log_file,
-    max_bytes=CONFIG.logging.max_bytes,
-    backup_count=CONFIG.logging.backup_count,
-)
+# Module-level logger: handlers are not attached here. Logging is configured
+# inside main() so that importing this module in a test or another context
+# does not silently create log files or pollute the root logger's handler list.
+_logger = logging.getLogger(__name__)
 
 # Global flag for controlled shutdown
 _running = True
@@ -133,6 +131,30 @@ def initialize_database() -> DatabaseManager:
 
 
 def main() -> None:
+    global CONFIG
+    # Load config before setup_logging() so the log file path is available,
+    # but after the import block so module-level symbols are resolved.
+    # Pydantic validation errors here will go to stderr (acceptable: the
+    # process cannot continue without a valid config anyway).
+    CONFIG = load_config(
+        path=Path(__file__).parent / "config/settings.yaml",
+        base_dir=Path(__file__).parent,
+    )
+    global verfication_ruleset_path, mapping_ruleset_path
+    verfication_ruleset_path = CONFIG.rulesets.verification_ruleset
+    mapping_ruleset_path     = CONFIG.rulesets.mapping_ruleset
+
+    # Configure the root logger exactly once, as early as possible in the
+    # process lifetime. All other modules obtain child loggers via
+    # logging.getLogger(__name__) and inherit this configuration automatically.
+    global _logger
+    _logger = setup_logging(
+        log_level=getattr(logging, CONFIG.logging.log_level.upper(), logging.WARNING),
+        log_file=CONFIG.logging.log_file,
+        max_bytes=CONFIG.logging.max_bytes,
+        backup_count=CONFIG.logging.backup_count,
+    )
+    
     global _grpc_server
 
     # (1) Init database

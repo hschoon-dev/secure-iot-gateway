@@ -84,10 +84,26 @@ class ModbusClientManager:
 
     async def start_clients(self) -> None:
         """
-        Connect to the ModbusTCP servers.
+        Attempt an initial connection to every configured Modbus TCP server.
+
+        Unlike OpcUaClientManager, the pymodbus sync client connects lazily on
+        the first read; this method therefore just logs the configured targets so
+        connection failures during the first periodic_read() are not silent.
+        A genuine connect() call would require switching to the async pymodbus
+        client or using asyncio.to_thread — left as a future improvement.
         """
-        #await asyncio.gather(*(client.connect() for client in self.clients))
-        pass
+        if not self.clients:
+            _logger.warning(
+                "ModbusClientManager.start_clients: no clients configured "
+                "(XML parse may have failed). periodic_read() will abort immediately."
+            )
+            return
+        for client in self.clients:
+            _logger.info(
+                "Modbus TCP client configured for %s:%s (alias: %s). "
+                "Connection will be attempted on first read.",
+                client.ipaddr, client.port, client.serveralias,
+            )
 
     async def stop_clients(self) -> None:
         """
@@ -116,7 +132,13 @@ class ModbusClientManager:
             client: ModbusTCPClient
             for client in self.clients:
                 if not client.client.is_open:
-                    client.retry_connection()
+                    # retry_connection() uses a synchronous pymodbus client and
+                    # may block for a full TCP-connect timeout (several seconds).
+                    # Running it directly in the async event loop would stall all
+                    # other coroutines (OPC UA reads, gRPC sends) for that duration.
+                    # asyncio.to_thread() offloads the blocking call to a worker
+                    # thread so the event loop remains responsive.
+                    await asyncio.to_thread(client.retry_connection)
                 conn_key = self._conn_key.get(client.serveralias) or f"ModbusTCP Connections:{client.serveralias}: Connection status"
                 if not client.client.is_open:  # Check again if the connection was successful
                     self._set_entry(
@@ -175,7 +197,10 @@ class ModbusClientManager:
 
             await asyncio.sleep(interval)
 
-    def load_endpoints_from_xml(self) -> dict[tuple[str, int, str], dict[str, dict[str, str | int]]]:
+    def load_endpoints_from_xml(self) -> dict[tuple[str, int, str], dict[str, dict[str, str | int]]] | None:
+        # Returns None when the XML file cannot be parsed. Callers must guard
+        # for None before iterating. create_clients() already does this check;
+        # any future consumer of self.endpoints must do the same.
         """
         Load the ModbusTCP endpoints from an XML file and return a dictionary with the server's IP address, port, and alias as the key.
         The value is a dictionary with the endpoint name as the key and the endpoint details as the value.

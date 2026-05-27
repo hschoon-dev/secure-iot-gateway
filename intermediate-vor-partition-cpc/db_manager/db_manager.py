@@ -49,14 +49,18 @@ class DatabaseManager:
 
     def __init__(
         self,
-        host: str = "192.168.178.117",
-        port: int = 3306,
-        user: str = "vor-2",
-        password: str = "VoR-2-Password",
-        database: str = "secure_iot_gateway",
-        pool_name: str = "iot_gateway_pool", #TODO: check!
+        host: str,
+        port: int,
+        user: str,
+        password: str,
+        database: str,
+        pool_name: str = "iot_gateway_pool",
         pool_size: int = 5,
     ):
+        # All connection parameters are required; no defaults are provided for
+        # credentials or addresses to prevent accidental use of stale values.
+        # Callers (main.py) must supply values sourced from environment variables
+        # or a secrets manager, not from version-controlled config files.
         """
         Initialize the database manager with connection pool.
         

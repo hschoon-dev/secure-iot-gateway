@@ -117,13 +117,16 @@ async def submit_request(
         "prio": priority,
         "request_id": request_id
     }
-    for i in issuer_characteristics:
+    # list.index() returns the position of the FIRST occurrence, so duplicate
+    # non-empty strings would map to the same key and silently overwrite each
+    # other. enumerate() always uses the iteration position, which is unique.
+    for idx, i in enumerate(issuer_characteristics):
         if i:
-            request_dict["issuer_characteristics"][f"issuer_characteristics_{issuer_characteristics.index(i)}"] = i
+            request_dict["issuer_characteristics"][f"issuer_characteristics_{idx}"] = i
 
-    for descr in description:
+    for idx, descr in enumerate(description):
         if descr:
-            request_dict["description"][f"description_{description.index(descr)}"] = descr
+            request_dict["description"][f"description_{idx}"] = descr
     _logger.info(f"Request: {request_dict}")
 
     # 1) Authenticate the request issuer
@@ -313,19 +316,13 @@ def list_users(parent: Any, admin_id: str, admin_secret: str) -> tuple[StatusCod
         if not _rbac_authorization_handler.check_admin_role(admin_id):
             return StatusCode(StatusCodes.BadUserAccessDenied), [""], f"Admin role required for user listing."
 
-        # We need to implement get_all_users in the UserManager class
-        # Here's a simple approach using a temporary connection
-        users = []
-        conn = _user_manager.db._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT username FROM credentials")
-            for row in cursor.fetchall():
-                users.append(row[0])  # Username is the first column
-        finally:
-            _user_manager.db._return_connection(conn)
-            
+        # UserManagerTinyDB.get_all_users() queries the TinyDB credentials table
+        # directly and returns a list[str] of usernames.
+        # The old code called _get_connection()/_return_connection() which belonged
+        # to a previous SQLite-backed implementation and no longer exists.
+        users = _user_manager.get_all_users() 
         return StatusCode(StatusCodes.Good), users, f"Successfully retrieved {len(users)} users."
+    
     except Exception as e:
         _logger.error(f"Error listing users: {e}")
         return StatusCode(StatusCodes.BadInternalError), [""], f"Error: {str(e)}"

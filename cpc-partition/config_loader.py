@@ -53,12 +53,34 @@ class Semaphore(BaseModel):
     name: str = Field(..., description="Name of the POSIX semaphore")
 
 
+class GrpcTargets(BaseModel):
+    """
+    gRPC destination addresses for the two downstream consumers of CPC data.
+
+    YAML keys use underscores so they map directly to Python identifiers
+    without aliases. Update settings.yaml accordingly (see FIX-01b).
+    """
+    interface_partition: str = Field(
+        ..., description="host:port of the interface partition gRPC server"
+    )
+    psmo_partition: str = Field(
+        ..., description="host:port of the psM+O partition gRPC server"
+    )
+
+
 class ServiceConfig(BaseModel):
     """Full configuration for one protocol client (OPC UA or Modbus TCP)."""
     interval: PositiveInt = Field(1, description="Polling interval in seconds")
     files: EndpointFiles
     shared_memory: SharedMemory
     semaphore: Semaphore
+    grpc_targets: GrpcTargets = Field(
+        ...,
+        description=(
+            "Downstream gRPC destinations. Both fields are required; "
+            "there is no safe default address."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -27,6 +27,7 @@
 from threading import Thread, Event
 import time
 import json
+import warnings
 from multiprocessing import shared_memory
 import logging
 from queue import Queue
@@ -42,16 +43,27 @@ _logger = logging.getLogger(__name__)
 
 class OPCUA_Thread(Thread):
     def __init__(self, semaphore_name: str, shared_memory_name: str, message_queue: Queue = None):
+        # Call super().__init__ exactly once. The bare Thread.__init__(self) that
+        # followed previously re-initialised the thread with default arguments,
+        # silently discarding the daemon=True flag and the thread name.
         super().__init__(name="OPCUA-Reader", daemon=True)
         self._sem_name = semaphore_name
         self._shm_name = shared_memory_name
         self._queue = message_queue
-        Thread.__init__(self)
         self._stop_event = Event()
+        # Thread.__init__(self) # previous bug
 
-        # Added deprecation warning:
-        _logger.warning(f"The module is deprecated! Use grpc_json_handler instead.")
-        raise DeprecationWarning
+        # Emit a proper DeprecationWarning via the warnings module so callers
+        # that filter warnings (e.g. test frameworks) can catch or suppress it.
+        # Raising DeprecationWarning as an exception is semantically incorrect:
+        # Warning subclasses are not meant to be raised as exceptions, and doing
+        # so aborts __init__ after all instance state has already been set up.
+        warnings.warn(
+            "OPCUA_Thread is deprecated and will be removed. "
+            "Use grpc_json_handler.JSON_gRPC_Thread instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     def run(self):
         try:
@@ -106,11 +118,11 @@ class OPCUA_Thread(Thread):
 
 class ModbusTCP_Thread(Thread):
     def __init__(self, semaphore_name: str, shared_memory_name: str, message_queue: Queue = None):
+        # Same fix as OPCUA_Thread: remove duplicate Thread.__init__(self) call.
         super().__init__(name="MODBUSTCP-Reader", daemon=True)
         self._sem_name = semaphore_name
         self._shm_name = shared_memory_name
         self._queue = message_queue
-        Thread.__init__(self)
         self._stop_event = Event()
 
     def run(self):
