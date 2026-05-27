@@ -16,7 +16,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.156.18
+        ipv4_address: 192.168.178.118
 
   ecotec-modbus-server:
     container_name: ecotec-modbus-server
@@ -27,7 +27,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.156.181
+        ipv4_address: 192.168.178.181
 
 
 # Gateway-Applications:
@@ -47,7 +47,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.156.30
+        ipv4_address: 192.168.178.30
 
 
   # Application of the gateway's Interface Partition
@@ -63,10 +63,10 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - 4840:4840
-    attach: false
+    attach: true
     networks:
       static-network:
-        ipv4_address: 192.168.156.12
+        ipv4_address: 192.168.178.112
 
 
   # Intermediate VoR Partition
@@ -90,7 +90,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.156.15
+        ipv4_address: 192.168.178.115
 
   # Second Intermediate VoR Partition
   intermediate-vor-partition-cpc:
@@ -116,10 +116,10 @@ services:
         condition: service_started
       cpc-partition:
         condition: service_started
-    attach: true
+    attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.156.16
+        ipv4_address: 192.168.178.116
 
   # Application of the gateway's psM+O Partition
   psmo-partition:
@@ -134,7 +134,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.156.13
+        ipv4_address: 192.168.178.113
 
   # Application of the gateway's CPC Partition
   cpc-partition:
@@ -158,12 +158,12 @@ services:
     attach: true
     networks:
       static-network:
-          ipv4_address: 192.168.156.14
+          ipv4_address: 192.168.178.114
 
 
 networks:
   static-network:
     ipam:
       config:
-        - subnet: 192.168.156.0/24
-          gateway: 192.168.156.1
+        - subnet: 192.168.178.0/24
+          gateway: 192.168.178.1

@@ -28,4 +28,4 @@ ENV TZ=Europe/Berlin
 
 COPY . .
 
-CMD [ "python3", "-u", "./main.py", "--log-level", "INFO" ]
+CMD [ "python3", "-u", "./main.py"]

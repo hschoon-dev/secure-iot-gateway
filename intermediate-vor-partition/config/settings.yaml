@@ -24,6 +24,6 @@ grpc_server:
 
 logging:
   log_file: logs/app.log
-  log_level: WARNING
+  log_level: INFO
   max_bytes: 1048576   # 1 MB
   backup_count: 3

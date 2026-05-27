@@ -14,7 +14,7 @@ mariadb:
   pool_size: 5
 
 flask_bridge:
-  host: "192.168.156.14"
+  host: "192.168.178.114"
   port: 5000
   read_values_path: /read_values_xml
   update_endpoints_path: /update_endpoints
@@ -26,6 +26,6 @@ processing:
 
 logging:
   log_file: logs/app.log
-  log_level: WARNING
+  log_level: INFO
   max_bytes: 1048576   # 1 MB
   backup_count: 3

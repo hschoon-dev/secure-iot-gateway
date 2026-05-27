@@ -79,9 +79,11 @@ class DatabaseManager:
             "user": user,
             "password": password,
             "database": database,
-            "autocommit": False,  # Explicit transaction control
+            "autocommit": False,
             "use_unicode": True,
             "charset": "utf8mb4",
+            "collation": "utf8mb4_unicode_ci",  # must match column/procedure collation;
+                                                 # charset alone maps to utf8mb4_general_ci
         }
 
         try:

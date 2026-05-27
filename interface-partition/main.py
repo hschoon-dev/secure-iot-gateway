@@ -28,9 +28,7 @@
 import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
-import os
 import sys
-import argparse
 from pathlib import Path
 from queue import Queue
 from grpc_json_handler import JSON_gRPC_Thread
@@ -128,24 +126,6 @@ async def main():
         max_bytes=CONFIG.logging.max_bytes,
         backup_count=CONFIG.logging.backup_count,
     )
-
-    parser = argparse.ArgumentParser(description="Interface Partition OPC UA Server")
-    parser.add_argument("--log-level", default="WARNING", help="Set the logging level")
-    args = parser.parse_args()
-    # TODO: Add more arguments for:
-    # - authorizaton handler (config file and rbac ruleset)
-    # - user manager (credentials db)
-    # - shared memory and semaphore names for OPC UA and ModbusTCP
-    # - message queue names for VoR requests
-
-    # logging.basicConfig() is a no-op after the first call (which already
-    # happened at module level). To honour the --log-level CLI argument we
-    # must adjust the root logger's level directly instead of calling
-    # setup_logging() a second time.
-    # We also must NOT assign to a local _logger here, because that would
-    # shadow the module-level _logger used by every function in this file.
-    log_level = getattr(logging, args.log_level.upper(), logging.WARNING)
-    logging.getLogger().setLevel(log_level)
 
     #opcua_queue = Queue(maxsize=2)
     #modbustcp_queue = Queue(maxsize=2)

@@ -29,6 +29,7 @@ _logger = logging.getLogger(__name__)
 class ModbusTCPClient:
     def __init__(self, ipaddr: str, port: int, serveralias: str, endpoints: dict[str, dict[str, str | int | bool]]):
         self.ipaddr = ipaddr
+        self.port = port          # store so callers (e.g. start_clients logging) can read it
         self.endpoints = endpoints
         self.serveralias = serveralias
         self.client = ModbusClient(host=ipaddr, port=port, unit_id=1, auto_open=True)

@@ -79,9 +79,11 @@ class DatabaseManager:
             "user": user,
             "password": password,
             "database": database,
-            "autocommit": False,  # Explicit transaction control
+            "autocommit": False,
             "use_unicode": True,
             "charset": "utf8mb4",
+            "collation": "utf8mb4_unicode_ci",  # must match column/procedure collation;
+                                                 # charset alone maps to utf8mb4_general_ci
         }
 
         try:
@@ -150,6 +152,18 @@ class DatabaseManager:
             description_json = self._to_json_string(description)
             tags_json = self._to_json_string(tags)
             affected_list_json = self._to_json_string(affected_endpoint_list)
+
+            # MariaDB DATETIME has no timezone support. Strip the UTC offset so
+            # mysql-connector-python sends a plain naive datetime string
+            # (e.g. '2026-05-27 14:51:28.764002') instead of the ISO 8601 form
+            # with '+00:00', which MariaDB rejects with error 1292.
+            # The value is already UTC; removing tzinfo does not change the instant.
+            if isinstance(generation_timestamp, datetime):
+                generation_timestamp = generation_timestamp.replace(tzinfo=None)
+            elif isinstance(generation_timestamp, str):
+                # Handle ISO strings arriving as strings (e.g. from the proto layer)
+                dt = datetime.fromisoformat(generation_timestamp)
+                generation_timestamp = dt.replace(tzinfo=None)
 
             with self.get_connection() as conn:
                 cursor = conn.cursor()
