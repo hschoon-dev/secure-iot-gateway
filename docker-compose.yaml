@@ -3,13 +3,57 @@
 # Date: 23. September 2025
 
 services:
-# Emulated CPC applications:
-  # Emulated brownfield OPC UA Server
+
+# ---------------------------------------------------------------
+# Database — mirrors the RPi MariaDB setup exactly:
+#   - utf8mb4 / utf8mb4_unicode_ci throughout
+#   - users vor-1 (write) and vor-2 (read+delete)
+#   - get_next_request stored procedure with explicit COLLATE
+#   - init SQL sourced from ./maria-db/
+# ---------------------------------------------------------------
+
+  mariadb:
+    container_name: siot-mariadb
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: "${MARIADB_ROOT_PASSWORD}"
+      MARIADB_DATABASE: "secure_iot_gateway"
+      # Passed into 01_init.sql via envsubst so CREATE USER uses the
+      # same passwords the partition containers receive — no hardcoding.
+      MARIADB_VOR1_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
+      MARIADB_VOR2_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
+      # Force the same charset/collation as the RPi server config
+      # (equivalent to setting character-set-server and collation-server
+      # in /etc/mysql/mariadb.conf.d/50-server.cnf on the RPi).
+      MARIADB_CHARACTER_SET_SERVER: "utf8mb4"
+      MARIADB_COLLATION_SERVER: "utf8mb4_unicode_ci"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - type: bind
+        source: ./maria-db
+        target: /docker-entrypoint-initdb.d
+        read_only: true
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    attach: false
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.117
+
+
+# ---------------------------------------------------------------
+# Emulated CPC applications
+# ---------------------------------------------------------------
+
   brownfield-opcua-server:
     container_name: brownfield-opcua-server
     build: brownfield-opcua-server/
     volumes:
-      # Logging files
       - type: bind
         source: ./brownfield-opcua-server/logs
         target: /app/logs
@@ -30,8 +74,105 @@ services:
         ipv4_address: 192.168.178.181
 
 
-# Gateway-Applications:
-  # Central M+O Application
+# ---------------------------------------------------------------
+# Gateway applications
+# ---------------------------------------------------------------
+
+  interface-partition:
+    container_name: interface-partition
+    build: interface-partition/
+    volumes:
+      - type: bind
+        source: ./interface-partition/logs
+        target: /app/logs
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    ports:
+      - 4840:4840
+    attach: false
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.112
+
+  intermediate-vor-partition:
+    container_name: intermediate-vor-partition
+    build: intermediate-vor-partition/
+    volumes:
+      - type: bind
+        source: ./intermediate-vor-partition/logs
+        target: /app/logs
+    #environment:
+    #  MARIADB_USER: "vor-1"
+    #  MARIADB_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      interface-partition:
+        condition: service_started
+    attach: true
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.115
+
+  intermediate-vor-partition-cpc:
+    container_name: intermediate-vor-partition-cpc
+    build: intermediate-vor-partition-cpc/
+    volumes:
+      - type: bind
+        source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
+        target: /app/config/Acceptance_Ruleset_modified.xml
+      - type: bind
+        source: ./intermediate-vor-partition-cpc/logs
+        target: /app/logs
+    #environment:
+    #  MARIADB_USER: "vor-2"
+    #  MARIADB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      intermediate-vor-partition:
+        condition: service_started
+      cpc-partition:
+        condition: service_started
+    attach: true
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.116
+
+  psmo-partition:
+    container_name: psmo-partition
+    build: psmo-partition/
+    volumes:
+      - type: bind
+        source: ./psmo-partition/logs
+        target: /app/logs
+    attach: false
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.113
+
+  cpc-partition:
+    container_name: cpc-partition
+    build: cpc-partition/
+    volumes:
+      - type: bind
+        source: ./cpc-partition/logs
+        target: /app/logs
+    ipc: "shareable"
+    depends_on:
+      brownfield-opcua-server:
+        condition: service_started
+      ecotec-modbus-server:
+        condition: service_started
+      psmo-partition:
+        condition: service_started
+      interface-partition:
+        condition: service_started
+    attach: true
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.114
+
   central-mo-client:
     container_name: central-mo-client
     build: central-mo-client/
@@ -42,7 +183,7 @@ services:
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
-      interface-partition: 
+      interface-partition:
         condition: service_started
     attach: false
     networks:
@@ -50,116 +191,12 @@ services:
         ipv4_address: 192.168.178.30
 
 
-  # Application of the gateway's Interface Partition
-  interface-partition:
-    container_name: interface-partition
-    build: interface-partition/
-    volumes:
-      # Logging files
-      - type: bind
-        source: ./interface-partition/logs
-        target: /app/logs
-    environment:
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-    ports:
-      - 4840:4840
-    attach: true
-    networks:
-      static-network:
-        ipv4_address: 192.168.178.112
+# ---------------------------------------------------------------
+# Volumes and networks
+# ---------------------------------------------------------------
 
-
-  # Intermediate VoR Partition
-  intermediate-vor-partition:
-    container_name: intermediate-vor-partition
-    build: intermediate-vor-partition/
-    volumes:
-      # Database for mapped requests
-      - type: bind
-        #source: ./intermediate-vor-partition/config/mapped_requests.db
-        source: ./vor-database/mapped_requests.json
-        #target: /app/config/mapped_requests.db
-        target: /mnt/mapped_requests.json
-      # Logging files
-      - type: bind
-        source: ./intermediate-vor-partition/logs
-        target: /app/logs
-    depends_on:
-      interface-partition: 
-        condition: service_started
-    attach: false
-    networks:
-      static-network:
-        ipv4_address: 192.168.178.115
-
-  # Second Intermediate VoR Partition
-  intermediate-vor-partition-cpc:
-    container_name: intermediate-vor-partition-cpc
-    build: intermediate-vor-partition-cpc/
-    volumes:
-      # Database for mapped requests
-      - type: bind
-        #source: ./intermediate-vor-partition/config/mapped_requests.db
-        source: ./vor-database/mapped_requests.json
-        #target: /app/config/mapped_requests.db
-        target: /mnt/mapped_requests.json
-      # Configuration file for modified acceptance ruleset
-      - type: bind
-        source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
-        target: /app/config/Acceptance_Ruleset_modified.xml
-      # Logging files
-      - type: bind
-        source: ./intermediate-vor-partition-cpc/logs
-        target: /app/logs
-    depends_on:
-      intermediate-vor-partition: 
-        condition: service_started
-      cpc-partition:
-        condition: service_started
-    attach: false
-    networks:
-      static-network:
-        ipv4_address: 192.168.178.116
-
-  # Application of the gateway's psM+O Partition
-  psmo-partition:
-    container_name: psmo-partition
-    #ipc: "service:cpc-partition"
-    build: psmo-partition/
-    volumes:
-      # Logging files
-      - type: bind
-        source: ./psmo-partition/logs
-        target: /app/logs
-    attach: false
-    networks:
-      static-network:
-        ipv4_address: 192.168.178.113
-
-  # Application of the gateway's CPC Partition
-  cpc-partition:
-    container_name: cpc-partition 
-    build: cpc-partition/
-    volumes:
-      # Logging files
-      - type: bind
-        source: ./cpc-partition/logs
-        target: /app/logs
-    ipc: "shareable"
-    depends_on:
-       brownfield-opcua-server: 
-         condition: service_started
-       ecotec-modbus-server:
-         condition: service_started
-       psmo-partition:
-         condition: service_started
-       interface-partition:
-         condition: service_started
-    attach: true
-    networks:
-      static-network:
-          ipv4_address: 192.168.178.114
-
+volumes:
+  mariadb_data:
 
 networks:
   static-network:
