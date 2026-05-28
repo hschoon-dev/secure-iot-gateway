@@ -1,0 +1,123 @@
+[
+    {
+        "id": "8b185ae09b09b523",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "99b70f2ed27e8c8b",
+        "type": "opcua-endpoint",
+        "name": "SIoT-Gateway",
+        "endpointUrl": "opc.tcp://192.168.178.112:4840/freeopcua/server/",
+        "securityMode": "SignAndEncrypt",
+        "securityPolicy": "Aes256_Sha256_RsaPss",
+        "certificateFile": "/data/opcua-certs/opcua_client_cert.der",
+        "privateKeyFile": "/data/opcua-certs/opcua_client.key.pem",
+        "caCertificateFile": "",
+        "userCertificateFile": "",
+        "userPrivateKeyFile": ""
+    },
+    {
+        "id": "195fc6322e4ded5f",
+        "type": "opcua-method",
+        "z": "8b185ae09b09b523",
+        "name": "Send Request via OPC UA method",
+        "endpoint": "99b70f2ed27e8c8b",
+        "methodNodeId": "ns=2;i=2",
+        "objectNodeId": "ns=2;i=1",
+        "x": 640,
+        "y": 160,
+        "wires": [
+            [
+                "7d1d2a12327d1b14"
+            ]
+        ]
+    },
+    {
+        "id": "414f0ab2ab180994",
+        "type": "function",
+        "z": "8b185ae09b09b523",
+        "name": "Method payload",
+        "func": "msg.payload = [\n    // IssuerID\n    {\n        dataType: \"String\",\n        value: \"admin\"\n    },\n\n    // Credentials\n    {\n        dataType: \"String\",\n        value: \"SuperDuperRandomPassword2025\"\n    },\n\n    // Issuer characteristics (array)\n    {\n        dataType: \"String\",\n        value: [\n            \"Ut enim ad minim veniam\",\n            \"Lorem ipsum dolor sit amet\"\n        ]\n    },\n\n    // Timestamp (IMPORTANT: must be stable or close to server time)\n    {\n        dataType: \"DateTime\",\n        value: new Date(\"2026-05-28T14:51:05.861Z\")\n    },\n\n    // Description (array)\n    {\n        dataType: \"String\",\n        value: [\n            \"Refactor sensor data integration\"\n        ]\n    },\n\n    // Impact\n    {\n        dataType: \"String\",\n        value: \"flow rate adjustment\"\n    },\n\n    // Parameters\n    {\n        dataType: \"String\",\n        value: \"Pump_B_Power\"\n    },\n\n    // Modification\n    {\n        dataType: \"String\",\n        value: \"4\"\n    },\n\n    // Priority\n    {\n        dataType: \"Int32\",\n        value: 8\n    }\n];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 160,
+        "wires": [
+            [
+                "195fc6322e4ded5f",
+                "be6164629b21cb4c"
+            ]
+        ]
+    },
+    {
+        "id": "98ca4a77326cd634",
+        "type": "inject",
+        "z": "8b185ae09b09b523",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "414f0ab2ab180994"
+            ]
+        ]
+    },
+    {
+        "id": "7d1d2a12327d1b14",
+        "type": "debug",
+        "z": "8b185ae09b09b523",
+        "name": "Debug method call",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 950,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "be6164629b21cb4c",
+        "type": "debug",
+        "z": "8b185ae09b09b523",
+        "name": "Debug payload",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 100,
+        "wires": []
+    }
+]

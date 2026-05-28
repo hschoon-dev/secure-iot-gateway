@@ -89,7 +89,7 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - 4840:4840
-    attach: false
+    attach: true
     networks:
       static-network:
         ipv4_address: 192.168.178.112
@@ -101,15 +101,15 @@ services:
       - type: bind
         source: ./intermediate-vor-partition/logs
         target: /app/logs
-    #environment:
-    #  MARIADB_USER: "vor-1"
-    #  MARIADB_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
+    environment:
+      MARIADB_USER: "vor-1"
+      MARIADB_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
     depends_on:
       mariadb:
         condition: service_healthy
       interface-partition:
         condition: service_started
-    attach: true
+    attach: false
     networks:
       static-network:
         ipv4_address: 192.168.178.115
@@ -124,9 +124,9 @@ services:
       - type: bind
         source: ./intermediate-vor-partition-cpc/logs
         target: /app/logs
-    #environment:
-    #  MARIADB_USER: "vor-2"
-    #  MARIADB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
+    environment:
+      MARIADB_USER: "vor-2"
+      MARIADB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
     depends_on:
       mariadb:
         condition: service_healthy
@@ -134,7 +134,7 @@ services:
         condition: service_started
       cpc-partition:
         condition: service_started
-    attach: true
+    attach: false
     networks:
       static-network:
         ipv4_address: 192.168.178.116
@@ -168,7 +168,7 @@ services:
         condition: service_started
       interface-partition:
         condition: service_started
-    attach: true
+    attach: false
     networks:
       static-network:
         ipv4_address: 192.168.178.114
@@ -188,8 +188,28 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.30
+        ipv4_address: 192.168.178.31
 
+
+
+# ---------------------------------------------------------------
+# Node-RED OPC UA client
+# ---------------------------------------------------------------
+
+  #nodered:
+  #  image: nodered/node-red:latest
+  #  container_name: nodered
+  #  restart: unless-stopped
+  #  ports:
+  #    - "1880:1880"
+  #  environment:
+  #    - TZ=Europe/Berlin
+  #  volumes:
+  #    # Persistent Node-RED data
+  #    - ./node-red:/data
+  #  networks:
+  #    static-network:
+  #      ipv4_address: 192.168.178.30
 
 # ---------------------------------------------------------------
 # Volumes and networks
@@ -197,6 +217,7 @@ services:
 
 volumes:
   mariadb_data:
+  #nodered_data:
 
 networks:
   static-network:

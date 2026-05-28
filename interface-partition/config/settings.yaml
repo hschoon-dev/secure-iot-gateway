@@ -9,9 +9,9 @@ opcua_server:
     server_key: certificates/python-server/interface_server_key.pem
     trusted_certs_dir: certificates/trusted/certs
   transport_limits:
-    recv_buffer_bytes: 16384   # 16 KB
-    send_buffer_bytes: 16384
-    max_message_bytes: 10240   # 10 KB
+    recv_buffer_bytes: 65536   # 16 KB
+    send_buffer_bytes: 65536
+    max_message_bytes: 65536   # 10 KB
 
 grpc_server:
   port: 50051
@@ -32,6 +32,6 @@ queues:
 
 logging:
   log_file: logs/app.log
-  log_level: WARNING
+  log_level: DEBUG
   max_bytes: 1048576   # 1 MB
   backup_count: 3

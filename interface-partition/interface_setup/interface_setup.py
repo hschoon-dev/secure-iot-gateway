@@ -158,6 +158,7 @@ async def setup_opcua_server(config: OpcUaServerConfig, grpc_client: GrpcClientC
     cert_user_manager = CertificateUserManager()
     await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "mo_client_cert.der",    name="Python-M+O-Client")
     await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "uaexpert.der",          name="UA-Expert-Client")
+    await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "node_red_client_cert.der",     name="Node-RED OPC UA Method@266c024c708c")
     await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "uaexpert_OMAG.der",     name="UA-Expert-Client-OMAG")
 
     limits = config.transport_limits

@@ -27,6 +27,8 @@ import datetime
 import uuid
 import logging
 import os
+import re
+import json
 from asyncua import uamethod
 from asyncua.ua import StatusCode, StatusCodes
 from typing import Any
@@ -61,6 +63,33 @@ casbin_policy_path_res = Path(parent_path / "authorization_handler" / "rbac_test
 _logger.debug(f"Casbin model path: {casbin_model_path_res}")
 _logger.debug(f"Casbin policy path: {casbin_policy_path_res}")
 _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), str(casbin_policy_path_res))
+
+# When True, a failed authorization response tells the caller which actions
+# the issuer IS allowed to perform on the requested resource. Set to False
+# in environments where leaking allowed actions is a security concern.
+RETURN_ALLOWED_IMPACTS_ON_AUTHZ_FAILURE: bool = os.getenv(
+    "VOR1_RETURN_ALLOWED_IMPACTS_ON_AUTHZ_FAILURE", "true"
+).strip().lower() in ("1", "true", "yes", "on")
+
+
+def get_allowed_actions_for_user(issuer_id: str, parameters: str) -> list[str]:
+    """
+    Return the sorted list of impacts the given issuer is permitted to request
+    for the given parameter, according to the Casbin policy.
+    Used to populate the authorization-failure message with actionable guidance.
+    """
+    allowed: list[str] = []
+    for policy in _rbac_authorization_handler.enforcer.get_policy():
+        if len(policy) < 3:
+            continue
+        _, policy_resource, policy_action = policy[:3]
+        if policy_resource != parameters:
+            continue
+        if _rbac_authorization_handler.verify_authorization(
+            issuer_id, parameter_name=parameters, action=policy_action
+        ):
+            allowed.append(policy_action)
+    return sorted(set(allowed))
 
 
 #@uamethod  #TODO: test...
@@ -129,6 +158,23 @@ async def submit_request(
             request_dict["description"][f"description_{idx}"] = descr
     _logger.info(f"Request: {request_dict}")
 
+    # 0) Validate and normalise the modification field.
+    #    Strip outer parentheses that some clients send, e.g. "(5)" -> "5".
+    if isinstance(modification, str) and modification.startswith("(") and modification.endswith(")"):
+        modification = modification[1:-1]
+    #    Normalise Python/OPC UA boolean variants to lowercase strings.
+    if isinstance(modification, bool):
+        modification = str(modification).lower()
+    elif isinstance(modification, str) and modification.lower() in ("true", "false"):
+        modification = modification.lower()
+    #    Reject anything that is not a number (optionally with %), a percentage, or a boolean.
+    _mod_pattern = r"^(?:-?\d+(?:\.\d+)?%?|true|false)$"
+    if not re.fullmatch(_mod_pattern, str(modification)):
+        _logger.warning(f"Invalid modification value from {issuer_id}: {modification!r}")
+        return request_id, server_timestamp, "Invalid input for modification."
+    #    Store the normalised value in the request dict.
+    request_dict["modification"] = modification
+
     # 1) Authenticate the request issuer
     if not _user_manager.verify_credentials(username=issuer_id, password=credentials):
         _logger.error(f"Authentication failed for {issuer_id}")
@@ -139,6 +185,14 @@ async def submit_request(
     # TODO: Create documentation of parameters/actions, users/credentials, roles, and policies (initial users/credentials e.g., Admin etc.)
     if not _rbac_authorization_handler.verify_authorization(issuer_id, parameter_name=parameters, action=f'"{impact}"'):
         _logger.error(f"Authorization failed for {issuer_id} with parameters {parameters} and action {impact}")
+        if RETURN_ALLOWED_IMPACTS_ON_AUTHZ_FAILURE: #BUG: Sec vuln, REMOVE
+            allowed = get_allowed_actions_for_user(issuer_id, parameters)
+            return (
+                request_id,
+                server_timestamp,
+                f"Request authorization failed: {issuer_id}. "
+                f"Allowed actions for '{parameters}': {json.dumps(allowed, ensure_ascii=False)}",
+            )
         return request_id, server_timestamp, f"Request authorization failed: {issuer_id}"
     
     # 3) Submit the request to the intermediate VoR partition

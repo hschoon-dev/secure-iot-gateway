@@ -35,7 +35,7 @@ p, MaintenancePersonnel, Ejector, retract
 p, MaintenancePersonnel, Drill, turn_on
 p, MaintenancePersonnel, Drill, turn_off
 
-p, MaintenancePersonnel, MotorSpeed_SP, "mixing adjustment"0
+p, MaintenancePersonnel, MotorSpeed_SP, "mixing adjustment"
 p, MaintenancePersonnel, MotorSpeed_SP, "Motor Speed Configuration"
 p, MaintenancePersonnel, Mixer_SP, "mixing adjustment"
 p, MaintenancePersonnel, Pump_A_Power, "flow rate adjustment"
