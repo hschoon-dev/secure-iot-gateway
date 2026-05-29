@@ -1,0 +1,80 @@
+{
+  "server": {
+    "listenerAddress": "0.0.0.0",
+    "listenerPort": 503,
+    "protocol": "TCP",
+    "tlsParams": {
+      "description": "path to certificate and private key to enable tls",
+      "privateKey": null,
+      "certificate": null
+    },
+    "logging": {
+      "format": "%(asctime)-15s %(threadName)-15s  %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s",
+      "logLevel": "WARN"
+    }
+  },
+  "registers": {
+    "description": "Dummy registers from original config + live registers from LOGO! compressor simulation (marked with _source: logo_sim)",
+    "zeroMode": true,
+    "initializeUndefinedRegisters": true,
+    "discreteInput": {
+      "1": true,
+      "2": false,
+      "3": true,
+      "4": false,
+      "5": false,
+      "6": false,
+      "7": false,
+      "8": false,
+      "9": true,
+      "10": true,
+      "11": true,
+      "12": true,
+      "13": true
+    },
+    "coils": {
+      "8193": false,
+      "8257": false,
+      "8258": false,
+      "8259": false,
+      "8260": true,
+      "8261": false,
+      "8262": false,
+      "8263": false,
+      "8264": false,
+      "8265": false,
+      "8266": false,
+      "8267": false
+    },
+    "holdingRegister": {
+      "6": 800,
+      "7": 800,
+      "529": 42,
+      "530": 42,
+      "531": 42,
+      "532": 42,
+      "533": 42,
+      "534": 42,
+      "535": 42,
+      "536": 42,
+      "537": 42,
+      "538": 42,
+      "539": 42,
+      "540": 42,
+      "541": 42,
+      "542": 42,
+      "543": 42,
+      "544": 42,
+      "545": 42,
+      "546": 42,
+      "547": 42,
+      "548": 42
+    },
+    "inputRegister": {
+      "8196": true,
+      "8197": true,
+      "8198": true,
+      "8199": true
+    }
+  }
+}

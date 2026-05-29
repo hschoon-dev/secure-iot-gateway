@@ -4,6 +4,12 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "node-red-contrib-opcua-suite": "^0.0.7"
+        "@flowfuse/node-red-dashboard": "~1.30.2",
+        "@flowfuse/node-red-dashboard-2-ui-led": "~1.1.0",
+        "@hotnipi/node-red-dashboard-2-ui-gauge-linear": "~0.1.10",
+        "node-red-contrib-calc": "~1.0.6",
+        "node-red-contrib-modbus": "~5.45.2",
+        "node-red-contrib-opcua-suite": "^0.0.7",
+        "node-red-contrib-remote": "~2.0.5"
     }
 }

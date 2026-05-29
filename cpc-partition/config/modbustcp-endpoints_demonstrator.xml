@@ -8,7 +8,7 @@
     <port>503</port>
     <serveralias>HSEL-LOGO</serveralias>
     <endpoints>
-    <endpoint>
+      <endpoint>
         <name>M3</name>
         <function>Read Coils</function>
         <address>8258</address>
@@ -45,7 +45,6 @@
         <type>Holding Registers</type>
         <description>AM2 Operating Hours</description>
       </endpoint>
-
     </endpoints>
   </server>
 
@@ -55,7 +54,38 @@
     <port>503</port>
     <serveralias>Ecotec</serveralias>
     <endpoints>
-    <endpoint>
+
+      <!-- Coils: logo_sim registers -->
+      <endpoint>
+        <name>Compressor1_Modbus Read</name>
+        <function>Read Coils</function>
+        <address>8193</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>Compressor1 status mirror — written by Modbus Write M2 (logo_sim)</description>
+      </endpoint>
+      <endpoint>
+        <name>Modbus Write M2</name>
+        <function>Write Single Coil</function>
+        <address>8257</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>Compressor1 command coil — mirrors to 8193 on write (logo_sim)</description>
+      </endpoint>
+      <endpoint>
+        <name>Compressor1_Alarm Compressor 1</name>
+        <function>Read Coils</function>
+        <address>8260</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>Alarm Compressor 1 — initialized true (logo_sim)</description>
+      </endpoint>
+
+      <!-- Coils: Ecotec device registers -->
+      <endpoint>
         <name>M7 Störung Kondensat</name>
         <function>Read Coils</function>
         <address>8262</address>
@@ -110,6 +140,83 @@
         <description>M12 Störung Kompressor 4</description>
       </endpoint>
 
+      <!-- Coils: Q-outputs mapped as Coil Status (FC1) -->
+      <endpoint>
+        <name>Q5 Störung Trockner 1</name>
+        <function>Read Coils</function>
+        <address>8196</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>Störung Trockner 1</description>
+      </endpoint>
+      <endpoint>
+        <name>Q6 Störung Trockner 2</name>
+        <function>Read Coils</function>
+        <address>8197</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>Störung Trockner 2</description>
+      </endpoint>
+      <endpoint>
+        <name>Q7 Störung Trockner 3</name>
+        <function>Read Coils</function>
+        <address>8198</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>Störung Trockner 3</description>
+      </endpoint>
+      <endpoint>
+        <name>Q8 Störung Trockner 4</name>
+        <function>Read Coils</function>
+        <address>8199</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Coils</type>
+        <description>Störung Trockner 4</description>
+      </endpoint>
+
+      <!-- Holding Registers: logo_sim registers -->
+      <endpoint>
+        <name>Compressor1_Switch-On Pressure</name>
+        <function>Read Holding Registers</function>
+        <address>6</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>Switch-On Pressure setpoint — init 800 (logo_sim)</description>
+      </endpoint>
+      <endpoint>
+        <name>Switch-On Pressure Slider</name>
+        <function>Write Single Register</function>
+        <address>6</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>Switch-On Pressure write — FC6 (logo_sim)</description>
+      </endpoint>
+      <endpoint>
+        <name>Compressor1_Switch-Off Pressure</name>
+        <function>Read Holding Registers</function>
+        <address>7</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>Switch-Off Pressure setpoint — init 800 (logo_sim)</description>
+      </endpoint>
+      <endpoint>
+        <name>Switch-Off Pressure Slider</name>
+        <function>Write Single Register</function>
+        <address>7</address>
+        <quantity>1</quantity>
+        <offset>-1</offset>
+        <type>Holding Registers</type>
+        <description>Switch-Off Pressure write — FC6 (logo_sim)</description>
+      </endpoint>
+
+      <!-- Holding Registers: Ecotec device registers -->
       <endpoint>
         <name>AM2</name>
         <function>Read Holding Registers</function>
@@ -282,6 +389,7 @@
         <description>AM20</description>
       </endpoint>
 
+      <!-- Discrete Inputs -->
       <endpoint>
         <name>I2 Kompressor 2 Start über physischen Fernkontakt</name>
         <function>Read Discrete Input</function>
@@ -389,43 +497,6 @@
         <offset>-1</offset>
         <type>Discrete Inputs</type>
         <description>Störung Kompressor 4</description>
-      </endpoint>
-
-      <endpoint>
-        <name>Q5 Störung Trockner 1</name>
-        <function>Read Coil Status</function>
-        <address>8196</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Coil Status</type>
-        <description>Störung Trockner 1</description>
-      </endpoint>
-      <endpoint>
-        <name>Q6 Störung Trockner 2</name>
-        <function>Read Coil Status</function>
-        <address>8197</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Coil Status</type>
-        <description>Störung Trockner 2</description>
-      </endpoint>
-      <endpoint>
-        <name>Q7 Störung Trockner 3</name>
-        <function>Read Coil Status</function>
-        <address>8198</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Coil Status</type>
-        <description>Störung Trockner 3</description>
-      </endpoint>
-      <endpoint>
-        <name>Q8 Störung Trockner 4</name>
-        <function>Read Coil Status</function>
-        <address>8199</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Coil Status</type>
-        <description>Störung Trockner 4</description>
       </endpoint>
 
     </endpoints>

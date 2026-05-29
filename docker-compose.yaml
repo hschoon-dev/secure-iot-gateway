@@ -65,9 +65,9 @@ services:
   ecotec-modbus-server:
     container_name: ecotec-modbus-server
     image: oitc/modbus-server:latest
-    command: -f /server_config.json
+    command: -f /server_config_v2.json
     volumes:
-      - ./modbus-server/server_config.json:/server_config.json:ro
+      - ./modbus-server/server_config_v2.json:/server_config_v2.json:ro
     attach: false
     networks:
       static-network:

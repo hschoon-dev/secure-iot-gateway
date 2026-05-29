@@ -32,6 +32,6 @@ queues:
 
 logging:
   log_file: logs/app.log
-  log_level: DEBUG
+  log_level: WARNING
   max_bytes: 1048576   # 1 MB
   backup_count: 3

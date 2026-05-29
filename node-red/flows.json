@@ -2,10 +2,207 @@
     {
         "id": "8b185ae09b09b523",
         "type": "tab",
-        "label": "Flow 1",
+        "label": "OPC UA with Aes256-Sha256-RsaPss",
         "disabled": false,
         "info": "",
         "env": []
+    },
+    {
+        "id": "dcecb7a13e520d44",
+        "type": "tab",
+        "label": "SIoT Project Node-RED",
+        "disabled": true,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "6edaabb832fba859",
+        "type": "tab",
+        "label": "SIoT Project Node-RED",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "ad650b47896fd4e0",
+        "type": "group",
+        "z": "dcecb7a13e520d44",
+        "name": "",
+        "style": {
+            "fill": "#e3f3d3",
+            "label": true
+        },
+        "nodes": [
+            "765eb7f48f9c9aec",
+            "6b3f73c0d1715610",
+            "f9f0c61d7534a7ab",
+            "4ba7b708c2676058",
+            "df92665e8ee6188e",
+            "df6a137717a8d584",
+            "f140e43ad74788d1",
+            "473874913627549a",
+            "a2d6269cf7b34b92",
+            "469d1973a269a3fa",
+            "5b66532a1d3cb4a5",
+            "633784f17c689cc0",
+            "e2c3f660349ba3d0",
+            "27a41620108eaba7"
+        ],
+        "x": 74,
+        "y": 359,
+        "w": 1382,
+        "h": 362
+    },
+    {
+        "id": "0b5ffb67f83b4469",
+        "type": "group",
+        "z": "dcecb7a13e520d44",
+        "name": "",
+        "style": {
+            "fill": "#e3f3d3",
+            "label": true
+        },
+        "nodes": [
+            "514668265053cc10",
+            "62501f9ed123db32",
+            "8d9a34f06563b609",
+            "6e5f3ad0f978f4bc",
+            "4bbe09287a1bfc38",
+            "9260b379cc2af840",
+            "9febe309ec20d303",
+            "2bae96e6254021f2",
+            "2653490647e88339",
+            "e544905adff3b1d0",
+            "632c22a81558de96",
+            "88ecd0c802bbe13e",
+            "a5fcde5e156f711c",
+            "38077170c7ce95c0",
+            "348bdd2d7eb52647",
+            "b04699add5d74f73",
+            "f0dff8e37d6e6a4a",
+            "58f8427a8c98481d",
+            "ef072464912b8c99",
+            "d03134cdeb5aec68",
+            "ec7bcd7bb2ea7620",
+            "793901426ab08e06",
+            "079f67efef8da195",
+            "2c9661bc18b0f0cd",
+            "96e3633f1877a14e",
+            "74997e4724a85f71"
+        ],
+        "x": 74,
+        "y": 759,
+        "w": 812,
+        "h": 662
+    },
+    {
+        "id": "c9f279479df8683c",
+        "type": "group",
+        "z": "dcecb7a13e520d44",
+        "name": "",
+        "style": {
+            "fill": "#ffefbf",
+            "label": true
+        },
+        "nodes": [
+            "d4a5018390320509",
+            "4e83fb156109b26b"
+        ],
+        "x": 94,
+        "y": 79,
+        "w": 232,
+        "h": 142
+    },
+    {
+        "id": "876272a923828998",
+        "type": "group",
+        "z": "6edaabb832fba859",
+        "name": "",
+        "style": {
+            "fill": "#e3f3d3",
+            "label": true
+        },
+        "nodes": [
+            "65e3a3e714e3c834",
+            "0e4285abb43f3ae5",
+            "d00a3701d314acef",
+            "07432c92f63462eb",
+            "9914ea3e7b36bd14",
+            "bc511a65ce3ec93d",
+            "b90c4e79518139d3",
+            "340fa16f70920af7",
+            "aaeacb5742ad4081",
+            "c52426d9c943434d",
+            "84c40fe65f2a3369",
+            "cd913b21d8703346",
+            "f1e55c2ed24fac5f",
+            "32f53b1d39d6909f"
+        ],
+        "x": 24,
+        "y": 119,
+        "w": 1382,
+        "h": 362
+    },
+    {
+        "id": "801bde08723ddbf4",
+        "type": "group",
+        "z": "6edaabb832fba859",
+        "name": "",
+        "style": {
+            "fill": "#e3f3d3",
+            "label": true
+        },
+        "nodes": [
+            "dfc627aa1b3ea46b",
+            "edc988fa3756223c",
+            "ecdbc786eb747c4c",
+            "33ef8fb3ca33d6da",
+            "7d97b34cda3c9e2b",
+            "1f9696f15978e527",
+            "32d09a048f46221d",
+            "e254a70494e7e670",
+            "c836621025911a15",
+            "97d5f94832e76197",
+            "e3b092a19189de94",
+            "b543ac395e31751f",
+            "eac14b9dd3bd1a0d",
+            "c16c31cebb2fdbee",
+            "417bfd14d7c566bc",
+            "dd2cca4e040efd41",
+            "74c40da832c33c22",
+            "7bbc3f69453a8763",
+            "2ec77dbcb6bb591f",
+            "55fdb2291cb9c4ae",
+            "d26f5f80b6047110",
+            "20fe63ff3389a040",
+            "fe09ab0fcf8a1554",
+            "ba76a1f41e80655e",
+            "5ed0a529b57ff8ac",
+            "8aace5a84def68a9",
+            "888e101b31ad0427",
+            "b37e1aa9a8551b3d"
+        ],
+        "x": 24,
+        "y": 499,
+        "w": 702,
+        "h": 762
+    },
+    {
+        "id": "e298cdb79e97fc6e",
+        "type": "group",
+        "z": "6edaabb832fba859",
+        "name": "",
+        "style": {
+            "fill": "#ffefbf",
+            "label": true
+        },
+        "nodes": [
+            "58cf1315623019d2"
+        ],
+        "x": 34,
+        "y": 19,
+        "w": 1072,
+        "h": 82
     },
     {
         "id": "99b70f2ed27e8c8b",
@@ -19,6 +216,178 @@
         "caCertificateFile": "",
         "userCertificateFile": "",
         "userPrivateKeyFile": ""
+    },
+    {
+        "id": "5a56acdaf6328bf8",
+        "type": "ui-group",
+        "name": "VoR Method Call",
+        "page": "872a5da17f047f0b",
+        "width": 6,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "1076126a2884c43b",
+        "type": "ui-group",
+        "name": "Audit Logs",
+        "page": "872a5da17f047f0b",
+        "width": 6,
+        "height": 1,
+        "order": 4,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "c71dde24199fbd31",
+        "type": "ui-group",
+        "name": "Ecotec Compressor Start/Stop",
+        "page": "872a5da17f047f0b",
+        "width": 6,
+        "height": 1,
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "b4ea22497e159742",
+        "type": "ui-group",
+        "name": "Ecotec Network Pressure Control",
+        "page": "872a5da17f047f0b",
+        "width": 6,
+        "height": 1,
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "aa218366d243222d",
+        "type": "ui-base",
+        "name": "My Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "3640715d774dfa5b",
+        "type": "remote-config",
+        "name": "Node-RED UI",
+        "host": "localhost",
+        "protocol": "http",
+        "port": "1880",
+        "baseurl": "/dashboard",
+        "instancehash": "yy3e4uhtmyjva6qj4lovc7sdq62zn0ncg50oq949ezk8wkgywj1z7d6hp9p4qhrz",
+        "server": "nodered04.remote-red.com",
+        "region": "de"
+    },
+    {
+        "id": "a83bc49ffcb07fb3",
+        "type": "modbus-client",
+        "name": "VoR Python ModbusTCP Server",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "host.docker.internal",
+        "tcpPort": "510",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": 9600,
+        "serialDatabits": 8,
+        "serialStopbits": 1,
+        "serialParity": "none",
+        "serialConnectionDelay": 100,
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": 255,
+        "commandDelay": 1,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "872a5da17f047f0b",
+        "type": "ui-page",
+        "name": "VoR Form",
+        "ui": "aa218366d243222d",
+        "path": "/form",
+        "icon": "format-columns",
+        "layout": "notebook",
+        "theme": "9d8bfd7e0d216779",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "9d8bfd7e0d216779",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#15617e",
+            "bgPage": "#eeeeee",
+            "groupBg": "#ffffff",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
     },
     {
         "id": "195fc6322e4ded5f",
@@ -119,5 +488,2659 @@
         "x": 540,
         "y": 100,
         "wires": []
+    },
+    {
+        "id": "765eb7f48f9c9aec",
+        "type": "opcua-method",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "",
+        "endpoint": "99b70f2ed27e8c8b",
+        "methodNodeId": "ns=2;i=2",
+        "objectNodeId": "ns=2;i=1",
+        "x": 820,
+        "y": 540,
+        "wires": [
+            [
+                "6b3f73c0d1715610",
+                "df6a137717a8d584",
+                "f140e43ad74788d1"
+            ]
+        ]
+    },
+    {
+        "id": "6b3f73c0d1715610",
+        "type": "debug",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1090,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "f9f0c61d7534a7ab",
+        "type": "comment",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "Call method by UI Input",
+        "info": "",
+        "x": 200,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "4ba7b708c2676058",
+        "type": "function",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "Argument Input",
+        "func": "// Build the inputArguments as msg.payload for node-red-contrib-opcua-suite\nconst form = msg.payload;\n\nmsg.payload = [\n    // IssuerID\n    { dataType: \"String\", value: String(form.issuerId || \"\") },\n\n    // Credentials\n    { dataType: \"String\", value: String(form.credentials || \"\") },\n\n    // Issuer characteristics\n    { dataType: \"String\", value: String(form.char || \"Node-RED\") },\n\n    // Timestamp\n    { dataType: \"DateTime\", value: new Date() },\n\n    // Description\n    { dataType: \"String\", value: String(form.desc || \"\") },\n\n    // Impact (Device)\n    { dataType: \"String\", value: String(form.device || \"\") },\n\n    // Parameters (Action)\n    { dataType: \"String\", value: String(form.action || \"\") },\n\n    // Modification\n    { dataType: \"String\", value: String(form.mod || \"\") },\n\n    // Priority\n    { dataType: \"Int32\", value: parseInt(form.priority) || 0 }\n];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 540,
+        "wires": [
+            [
+                "5b66532a1d3cb4a5"
+            ]
+        ]
+    },
+    {
+        "id": "df6a137717a8d584",
+        "type": "function",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "Toast Message",
+        "func": "let rawTime = msg.payload[1];\nlet status  = msg.payload[2];\n\nif (!rawTime || status === undefined) {\n    node.warn(\"Unexpected payload shape: \" + JSON.stringify(msg.payload));\n    return null;\n}\n\nlet time = rawTime.split('.')[0].replace('T', ' ');\n\nlet statusColor = (status === \"Submission received\") ? \"#4CAF50\" : \"#F44336\";\n\nmsg.payload = \"<b>Submission Time: </b> \" + time +\n    \"<br/><b>Submission Status: </b>\" +\n    \"<span style='color: \" + statusColor + \"; font-weight: bold;'>\" + status + \"</span>\";\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1100,
+        "y": 480,
+        "wires": [
+            [
+                "df92665e8ee6188e"
+            ]
+        ]
+    },
+    {
+        "id": "f140e43ad74788d1",
+        "type": "function",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "Log for Quick Audit",
+        "func": "// 1. 初始化\nlet history = global.get(\"audit_history\") || [];\nlet currentFilter = context.get(\"currentFilter\") || \"all\";\n\n// 2. 识别来源 (根据你的 Debug 截图适配)\nif (msg.topic === \"filter_command\") {\n    // 适配你 Dropdown 的实际输出值\n    if (msg.payload === \"Received\") {\n        currentFilter = \"success\";\n    } else if (msg.payload === \"Others\") {\n        currentFilter = \"error\";\n    } else {\n        currentFilter = \"all\";\n    }\n    context.set(\"currentFilter\", currentFilter);\n}\nelse if (Array.isArray(msg.payload)) {\n    // 处理 OPC UA 新数据\n    let id = msg.payload[0];\n    let rawTime = msg.payload[1];\n    let time = rawTime ? rawTime.split('.')[0].replace('T', ' ') : \"\";\n    let status = msg.payload[2] ? msg.payload[2].trim() : \"\";\n\n    let isSuccess = (status === \"Submission received\");\n    let color = isSuccess ? \"#4CAF50\" : \"#f44336\";\n    const format = (text) => `<span style=\"color: ${color}; font-weight: bold;\">${text}</span>`;\n\n    history.unshift({\n        time: format(time),\n        status: format(status),\n        id: format(id),\n        isSuccess: isSuccess\n    });\n\n    if (history.length > 100) history.pop();\n    global.set(\"audit_history\", history);\n}\n\n// 3. 执行过滤\nlet displayData = [];\nif (currentFilter === \"success\") {\n    displayData = history.filter(item => item.isSuccess === true);\n} else if (currentFilter === \"error\") {\n    displayData = history.filter(item => item.isSuccess === false);\n} else {\n    displayData = history;\n}\n\n// 4. 输出\nmsg.payload = displayData;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 580,
+        "wires": [
+            [
+                "473874913627549a"
+            ]
+        ]
+    },
+    {
+        "id": "469d1973a269a3fa",
+        "type": "function",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "Clear Log",
+        "func": "// 1. 将全局变量 audit_history 重置为空数组\nglobal.set(\"audit_history\", []);\n\n// 2. 发送一个空数组给 ui_table，使其界面立即变白\nmsg.payload = [];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 680,
+        "wires": [
+            [
+                "473874913627549a"
+            ]
+        ]
+    },
+    {
+        "id": "5b66532a1d3cb4a5",
+        "type": "delay",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 610,
+        "y": 540,
+        "wires": [
+            [
+                "765eb7f48f9c9aec"
+            ]
+        ]
+    },
+    {
+        "id": "d4a5018390320509",
+        "type": "comment",
+        "z": "dcecb7a13e520d44",
+        "g": "c9f279479df8683c",
+        "name": "Remote-RED",
+        "info": "",
+        "x": 190,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "62501f9ed123db32",
+        "type": "comment",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Kompressor 1",
+        "info": "",
+        "x": 170,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "8d9a34f06563b609",
+        "type": "change",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload[0]",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 410,
+        "y": 980,
+        "wires": [
+            [
+                "9260b379cc2af840"
+            ]
+        ]
+    },
+    {
+        "id": "2bae96e6254021f2",
+        "type": "change",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload[0]",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 410,
+        "y": 920,
+        "wires": [
+            [
+                "4bbe09287a1bfc38"
+            ]
+        ]
+    },
+    {
+        "id": "58f8427a8c98481d",
+        "type": "comment",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Steuerelemente",
+        "info": "",
+        "x": 180,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "27a41620108eaba7",
+        "type": "inject",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "Fill the form for Testing",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"issuerId\":\"YZ\",\"credentials\":\"123\",\"char\":\"Node-RED\",\"desc\":\"motor configuration in simulation server\",\"device\":\"HC10\",\"action\":\"motor speed configuration\",\"mod\":\"660\",\"priority\":10}",
+        "payloadType": "json",
+        "x": 220,
+        "y": 480,
+        "wires": [
+            [
+                "e2c3f660349ba3d0"
+            ]
+        ]
+    },
+    {
+        "id": "e2c3f660349ba3d0",
+        "type": "ui-form",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "name": "VoR Method Call",
+        "group": "5a56acdaf6328bf8",
+        "label": "",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "options": [
+            {
+                "label": "IssuerID",
+                "key": "issuerId",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Credentials",
+                "key": "credentials",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Issuer characteristics",
+                "key": "char",
+                "type": "text",
+                "required": false,
+                "rows": null
+            },
+            {
+                "label": "Description",
+                "key": "desc",
+                "type": "text",
+                "required": false,
+                "rows": null
+            },
+            {
+                "label": "Device",
+                "key": "device",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Action",
+                "key": "action",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Modification",
+                "key": "mod",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Priority",
+                "key": "priority",
+                "type": "number",
+                "required": true,
+                "rows": null
+            }
+        ],
+        "formValue": {
+            "issuerId": "",
+            "credentials": "",
+            "char": "",
+            "desc": "",
+            "device": "",
+            "action": "",
+            "mod": "",
+            "priority": ""
+        },
+        "payload": "",
+        "submit": "Submit",
+        "cancel": "Clear",
+        "resetOnSubmit": false,
+        "topic": "topic",
+        "topicType": "msg",
+        "splitLayout": true,
+        "className": "",
+        "passthru": false,
+        "dropdownOptions": [],
+        "x": 210,
+        "y": 540,
+        "wires": [
+            [
+                "4ba7b708c2676058"
+            ]
+        ]
+    },
+    {
+        "id": "a2d6269cf7b34b92",
+        "type": "ui-button",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "group": "1076126a2884c43b",
+        "name": "",
+        "label": "Clear History",
+        "order": 5,
+        "width": "1",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 890,
+        "y": 680,
+        "wires": [
+            [
+                "469d1973a269a3fa"
+            ]
+        ]
+    },
+    {
+        "id": "96e3633f1877a14e",
+        "type": "ui-button",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "group": "c71dde24199fbd31",
+        "name": "Acknowledge",
+        "label": "ACK",
+        "order": 6,
+        "width": "1",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "check",
+        "iconPosition": "left",
+        "payload": "false",
+        "payloadType": "bool",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 170,
+        "y": 1060,
+        "wires": [
+            [
+                "74997e4724a85f71"
+            ]
+        ]
+    },
+    {
+        "id": "2653490647e88339",
+        "type": "ui-button-group",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "group": "c71dde24199fbd31",
+        "order": 1,
+        "width": 6,
+        "height": 2,
+        "label": "Kompressor 1",
+        "className": "",
+        "rounded": true,
+        "useThemeColors": false,
+        "passthru": false,
+        "options": [
+            {
+                "label": "AN",
+                "icon": "",
+                "value": "true",
+                "valueType": "bool",
+                "color": "#009933"
+            },
+            {
+                "label": "AUS",
+                "icon": "",
+                "value": "false",
+                "valueType": "bool",
+                "color": "#ff4d4d"
+            }
+        ],
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 180,
+        "y": 840,
+        "wires": [
+            [
+                "514668265053cc10",
+                "4bbe09287a1bfc38"
+            ]
+        ]
+    },
+    {
+        "id": "633784f17c689cc0",
+        "type": "ui-dropdown",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "group": "1076126a2884c43b",
+        "name": "",
+        "label": "Select Option:",
+        "tooltip": "",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "chips": false,
+        "clearable": false,
+        "options": [
+            {
+                "label": "all",
+                "value": "all",
+                "type": "str"
+            },
+            {
+                "label": "recieved",
+                "value": "Received",
+                "type": "str"
+            },
+            {
+                "label": "failed",
+                "value": "Others",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "filter_command",
+        "topicType": "str",
+        "className": "",
+        "typeIsComboBox": true,
+        "msgTrigger": "onChange",
+        "x": 900,
+        "y": 620,
+        "wires": [
+            [
+                "f140e43ad74788d1"
+            ]
+        ]
+    },
+    {
+        "id": "b04699add5d74f73",
+        "type": "ui-slider",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "group": "b4ea22497e159742",
+        "name": "Einschaltdruck",
+        "label": "",
+        "tooltip": "",
+        "order": 8,
+        "width": 6,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "thumbLabel": "true",
+        "showTicks": "always",
+        "min": "600",
+        "max": "1100",
+        "step": "10",
+        "className": "",
+        "iconPrepend": "minus",
+        "iconAppend": "plus",
+        "color": "black",
+        "colorTrack": "darkgreen",
+        "colorThumb": "",
+        "showTextField": false,
+        "x": 200,
+        "y": 1320,
+        "wires": [
+            [
+                "632c22a81558de96"
+            ]
+        ]
+    },
+    {
+        "id": "f0dff8e37d6e6a4a",
+        "type": "ui-slider",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "group": "b4ea22497e159742",
+        "name": "Ausschaltdruck",
+        "label": "",
+        "tooltip": "",
+        "order": 6,
+        "width": 6,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "thumbLabel": "true",
+        "showTicks": "always",
+        "min": "600",
+        "max": "1100",
+        "step": "10",
+        "className": "",
+        "iconPrepend": "minus",
+        "iconAppend": "plus",
+        "color": "black",
+        "colorTrack": "darkgreen",
+        "colorThumb": "",
+        "showTextField": false,
+        "x": 200,
+        "y": 1380,
+        "wires": [
+            [
+                "a5fcde5e156f711c"
+            ]
+        ]
+    },
+    {
+        "id": "473874913627549a",
+        "type": "ui-table",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "group": "1076126a2884c43b",
+        "name": "",
+        "label": "",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "maxrows": "10",
+        "passthru": false,
+        "autocols": false,
+        "showSearch": true,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [
+            {
+                "title": "Time",
+                "key": "time",
+                "keyType": "key",
+                "type": "html",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Status",
+                "key": "status",
+                "keyType": "key",
+                "type": "html",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "ID",
+                "key": "id",
+                "keyType": "key",
+                "type": "html",
+                "width": "",
+                "align": "start"
+            }
+        ],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "className": "",
+        "x": 1330,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "df92665e8ee6188e",
+        "type": "ui-notification",
+        "z": "dcecb7a13e520d44",
+        "g": "ad650b47896fd4e0",
+        "ui": "aa218366d243222d",
+        "position": "top right",
+        "colorDefault": true,
+        "color": "#000000",
+        "displayTime": "5",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "allowConfirm": false,
+        "confirmText": "Confirm",
+        "raw": true,
+        "className": "",
+        "name": "",
+        "x": 1310,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4e83fb156109b26b",
+        "type": "remote-access",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "c9f279479df8683c",
+        "confignode": "3640715d774dfa5b",
+        "name": "",
+        "verbose": 0,
+        "x": 220,
+        "y": 180,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "ec7bcd7bb2ea7620",
+        "type": "modbus-response",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "registerShowMax": 20,
+        "x": 770,
+        "y": 1180,
+        "wires": []
+    },
+    {
+        "id": "793901426ab08e06",
+        "type": "modbus-response",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "registerShowMax": 20,
+        "x": 770,
+        "y": 1240,
+        "wires": []
+    },
+    {
+        "id": "079f67efef8da195",
+        "type": "modbus-response",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "registerShowMax": 20,
+        "x": 770,
+        "y": 1300,
+        "wires": []
+    },
+    {
+        "id": "2c9661bc18b0f0cd",
+        "type": "modbus-response",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "registerShowMax": 20,
+        "x": 770,
+        "y": 1380,
+        "wires": []
+    },
+    {
+        "id": "6e5f3ad0f978f4bc",
+        "type": "modbus-read",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Alarm Kompressor 1",
+        "topic": "",
+        "showStatusActivities": false,
+        "logIOActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "Coil",
+        "adr": "8260",
+        "quantity": "1",
+        "rate": "5",
+        "rateUnit": "s",
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "server": "a83bc49ffcb07fb3",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "x": 210,
+        "y": 980,
+        "wires": [
+            [
+                "8d9a34f06563b609"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "9febe309ec20d303",
+        "type": "modbus-read",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "topic": "",
+        "showStatusActivities": false,
+        "logIOActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "Coil",
+        "adr": "8193",
+        "quantity": "1",
+        "rate": "1",
+        "rateUnit": "s",
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "server": "a83bc49ffcb07fb3",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "x": 190,
+        "y": 920,
+        "wires": [
+            [
+                "2bae96e6254021f2"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "e544905adff3b1d0",
+        "type": "modbus-read",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Einschaltdruck",
+        "topic": "Einschaltdruck",
+        "showStatusActivities": false,
+        "logIOActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "HoldingRegister",
+        "adr": "6",
+        "quantity": "1",
+        "rate": "3",
+        "rateUnit": "s",
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "server": "a83bc49ffcb07fb3",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "x": 220,
+        "y": 1200,
+        "wires": [
+            [
+                "88ecd0c802bbe13e",
+                "ec7bcd7bb2ea7620"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "38077170c7ce95c0",
+        "type": "modbus-read",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Ausschaltdruck",
+        "topic": "Ausschaltdruck",
+        "showStatusActivities": false,
+        "logIOActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "HoldingRegister",
+        "adr": "7",
+        "quantity": "1",
+        "rate": "3",
+        "rateUnit": "s",
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "server": "a83bc49ffcb07fb3",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "x": 220,
+        "y": 1260,
+        "wires": [
+            [
+                "348bdd2d7eb52647",
+                "793901426ab08e06"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "514668265053cc10",
+        "type": "modbus-write",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Modbus Write M2",
+        "showStatusActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "Coil",
+        "adr": "8257",
+        "quantity": "1",
+        "server": "a83bc49ffcb07fb3",
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": false,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 410,
+        "y": 860,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "632c22a81558de96",
+        "type": "modbus-write",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Einschaltdruck-Slider",
+        "showStatusActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "HoldingRegister",
+        "adr": "6",
+        "quantity": "1",
+        "server": "a83bc49ffcb07fb3",
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": false,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 540,
+        "y": 1300,
+        "wires": [
+            [
+                "079f67efef8da195"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a5fcde5e156f711c",
+        "type": "modbus-write",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Ausschaltdruck-Slider",
+        "showStatusActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "HoldingRegister",
+        "adr": "7",
+        "quantity": "1",
+        "server": "a83bc49ffcb07fb3",
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": false,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 540,
+        "y": 1380,
+        "wires": [
+            [
+                "2c9661bc18b0f0cd"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "74997e4724a85f71",
+        "type": "modbus-write",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Reset Alarm",
+        "showStatusActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "255",
+        "dataType": "Coil",
+        "adr": "8260",
+        "quantity": "1",
+        "server": "a83bc49ffcb07fb3",
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": false,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 390,
+        "y": 1060,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "4bbe09287a1bfc38",
+        "type": "ui-led",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Status Kompressor 1",
+        "group": "c71dde24199fbd31",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "label": "Betrieb",
+        "labelPlacement": "left",
+        "labelAlignment": "left",
+        "states": [
+            {
+                "value": "false",
+                "valueType": "bool",
+                "color": "#ff0000"
+            },
+            {
+                "value": "true",
+                "valueType": "bool",
+                "color": "#00ff00"
+            }
+        ],
+        "allowColorForValueInMessage": false,
+        "shape": "circle",
+        "showBorder": true,
+        "showGlow": true,
+        "x": 420,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "9260b379cc2af840",
+        "type": "ui-led",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Störung",
+        "group": "c71dde24199fbd31",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "label": "Alarm",
+        "labelPlacement": "left",
+        "labelAlignment": "left",
+        "states": [
+            {
+                "value": "false",
+                "valueType": "bool",
+                "color": "#faf4f4"
+            },
+            {
+                "value": "true",
+                "valueType": "bool",
+                "color": "#ff0000"
+            }
+        ],
+        "allowColorForValueInMessage": false,
+        "shape": "circle",
+        "showBorder": true,
+        "showGlow": true,
+        "x": 580,
+        "y": 980,
+        "wires": []
+    },
+    {
+        "id": "88ecd0c802bbe13e",
+        "type": "calculator",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "inputMsgField": "payload",
+        "outputMsgField": "payload",
+        "operation": "div",
+        "constant": "100",
+        "round": false,
+        "truncate": false,
+        "decimals": 0,
+        "decimals2": 0,
+        "x": 390,
+        "y": 1180,
+        "wires": [
+            [
+                "ef072464912b8c99"
+            ]
+        ]
+    },
+    {
+        "id": "348bdd2d7eb52647",
+        "type": "calculator",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "",
+        "inputMsgField": "payload",
+        "outputMsgField": "payload",
+        "operation": "div",
+        "constant": "100",
+        "round": false,
+        "truncate": false,
+        "decimals": 0,
+        "decimals2": 0,
+        "x": 390,
+        "y": 1240,
+        "wires": [
+            [
+                "d03134cdeb5aec68"
+            ]
+        ]
+    },
+    {
+        "id": "ef072464912b8c99",
+        "type": "ui-gauge-linear",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Startdruck",
+        "group": "b4ea22497e159742",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "min": 0,
+        "max": "11",
+        "ticks": [],
+        "colors": [
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            }
+        ],
+        "zeroCrossColors": [
+            "#ff4c16",
+            "#00e300"
+        ],
+        "mode": "default",
+        "bar": "segmented",
+        "minLabel": "",
+        "maxLabel": "",
+        "label": "Startdruck",
+        "icon": "",
+        "unit": "bar",
+        "dim": 0.2,
+        "property": "payload",
+        "decimals": 2,
+        "zeros": true,
+        "myclass": "",
+        "x": 550,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "d03134cdeb5aec68",
+        "type": "ui-gauge-linear",
+        "z": "dcecb7a13e520d44",
+        "d": true,
+        "g": "0b5ffb67f83b4469",
+        "name": "Stoppdruck",
+        "group": "b4ea22497e159742",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "min": 0,
+        "max": "11",
+        "ticks": [],
+        "colors": [
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            }
+        ],
+        "zeroCrossColors": [
+            "#ff4c16",
+            "#00e300"
+        ],
+        "mode": "default",
+        "bar": "segmented",
+        "minLabel": "",
+        "maxLabel": "",
+        "label": "Stoppdruck",
+        "icon": "",
+        "unit": "bar",
+        "dim": 0.2,
+        "property": "payload",
+        "decimals": 2,
+        "zeros": true,
+        "myclass": "",
+        "x": 550,
+        "y": 1240,
+        "wires": []
+    },
+    {
+        "id": "65e3a3e714e3c834",
+        "type": "opcua-method",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "",
+        "endpoint": "99b70f2ed27e8c8b",
+        "methodNodeId": "ns=2;i=2",
+        "objectNodeId": "ns=2;i=1",
+        "x": 770,
+        "y": 300,
+        "wires": [
+            [
+                "0e4285abb43f3ae5",
+                "bc511a65ce3ec93d",
+                "b90c4e79518139d3"
+            ]
+        ]
+    },
+    {
+        "id": "0e4285abb43f3ae5",
+        "type": "debug",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "d00a3701d314acef",
+        "type": "comment",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "Call method by UI Input",
+        "info": "",
+        "x": 150,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "07432c92f63462eb",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "Argument Input",
+        "func": "const form = msg.payload;\nmsg.payload = [\n    { dataType: \"String\", value: String(form.issuerId || \"\") },\n    { dataType: \"String\", value: String(form.credentials || \"\") },\n    { dataType: \"String\", value: String(form.char || \"Node-RED\") },\n    { dataType: \"DateTime\", value: new Date() },\n    { dataType: \"String\", value: String(form.desc || \"\") },\n    { dataType: \"String\", value: String(form.device || \"\") },\n    { dataType: \"String\", value: String(form.action || \"\") },\n    { dataType: \"String\", value: String(form.mod || \"\") },\n    { dataType: \"Int32\", value: parseInt(form.priority) || 0 }\n];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 300,
+        "wires": [
+            [
+                "84c40fe65f2a3369"
+            ]
+        ]
+    },
+    {
+        "id": "bc511a65ce3ec93d",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "Toast Message",
+        "func": "let rawTime = msg.payload[1];\nlet status  = msg.payload[2];\nif (!rawTime || status === undefined) {\n    node.warn(\"Unexpected payload shape: \" + JSON.stringify(msg.payload));\n    return null;\n}\nlet time = rawTime.split('.')[0].replace('T', ' ');\nlet statusColor = (status === \"Submission received\") ? \"#4CAF50\" : \"#F44336\";\nmsg.payload = \"<b>Submission Time: </b> \" + time +\n    \"<br/><b>Submission Status: </b>\" +\n    \"<span style='color: \" + statusColor + \"; font-weight: bold;'>\" + status + \"</span>\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1050,
+        "y": 240,
+        "wires": [
+            [
+                "9914ea3e7b36bd14"
+            ]
+        ]
+    },
+    {
+        "id": "b90c4e79518139d3",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "Log for Quick Audit",
+        "func": "let history = global.get(\"audit_history\") || [];\nlet currentFilter = context.get(\"currentFilter\") || \"all\";\nif (msg.topic === \"filter_command\") {\n    if (msg.payload === \"Received\") { currentFilter = \"success\"; }\n    else if (msg.payload === \"Others\") { currentFilter = \"error\"; }\n    else { currentFilter = \"all\"; }\n    context.set(\"currentFilter\", currentFilter);\n} else if (Array.isArray(msg.payload)) {\n    let id = msg.payload[0];\n    let rawTime = msg.payload[1];\n    let time = rawTime ? rawTime.split('.')[0].replace('T', ' ') : \"\";\n    let status = msg.payload[2] ? msg.payload[2].trim() : \"\";\n    let isSuccess = (status === \"Submission received\");\n    let color = isSuccess ? \"#4CAF50\" : \"#f44336\";\n    const format = (text) => `<span style=\"color: ${color}; font-weight: bold;\">${text}</span>`;\n    history.unshift({ time: format(time), status: format(status), id: format(id), isSuccess: isSuccess });\n    if (history.length > 100) history.pop();\n    global.set(\"audit_history\", history);\n}\nlet displayData = [];\nif (currentFilter === \"success\") { displayData = history.filter(item => item.isSuccess === true); }\nelse if (currentFilter === \"error\") { displayData = history.filter(item => item.isSuccess === false); }\nelse { displayData = history; }\nmsg.payload = displayData;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1060,
+        "y": 340,
+        "wires": [
+            [
+                "340fa16f70920af7"
+            ]
+        ]
+    },
+    {
+        "id": "c52426d9c943434d",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "Clear Log",
+        "func": "global.set(\"audit_history\", []);\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 440,
+        "wires": [
+            [
+                "340fa16f70920af7"
+            ]
+        ]
+    },
+    {
+        "id": "84c40fe65f2a3369",
+        "type": "delay",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 560,
+        "y": 300,
+        "wires": [
+            [
+                "65e3a3e714e3c834"
+            ]
+        ]
+    },
+    {
+        "id": "32f53b1d39d6909f",
+        "type": "inject",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "Fill the form for Testing",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"issuerId\":\"YZ\",\"credentials\":\"123\",\"char\":\"Node-RED\",\"desc\":\"motor configuration in simulation server\",\"device\":\"HC10\",\"action\":\"motor speed configuration\",\"mod\":\"660\",\"priority\":10}",
+        "payloadType": "json",
+        "x": 170,
+        "y": 240,
+        "wires": [
+            [
+                "f1e55c2ed24fac5f"
+            ]
+        ]
+    },
+    {
+        "id": "f1e55c2ed24fac5f",
+        "type": "ui-form",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "name": "VoR Method Call",
+        "group": "5a56acdaf6328bf8",
+        "label": "",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "options": [
+            {
+                "label": "IssuerID",
+                "key": "issuerId",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Credentials",
+                "key": "credentials",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Issuer characteristics",
+                "key": "char",
+                "type": "text",
+                "required": false,
+                "rows": null
+            },
+            {
+                "label": "Description",
+                "key": "desc",
+                "type": "text",
+                "required": false,
+                "rows": null
+            },
+            {
+                "label": "Device",
+                "key": "device",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Action",
+                "key": "action",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Modification",
+                "key": "mod",
+                "type": "text",
+                "required": true,
+                "rows": null
+            },
+            {
+                "label": "Priority",
+                "key": "priority",
+                "type": "number",
+                "required": true,
+                "rows": null
+            }
+        ],
+        "formValue": {
+            "issuerId": "",
+            "credentials": "",
+            "char": "",
+            "desc": "",
+            "device": "",
+            "action": "",
+            "mod": "",
+            "priority": ""
+        },
+        "payload": "",
+        "submit": "Submit",
+        "cancel": "Clear",
+        "resetOnSubmit": false,
+        "topic": "topic",
+        "topicType": "msg",
+        "splitLayout": true,
+        "className": "",
+        "passthru": false,
+        "dropdownOptions": [],
+        "x": 160,
+        "y": 300,
+        "wires": [
+            [
+                "07432c92f63462eb"
+            ]
+        ]
+    },
+    {
+        "id": "aaeacb5742ad4081",
+        "type": "ui-button",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "group": "1076126a2884c43b",
+        "name": "",
+        "label": "Clear History",
+        "order": 4,
+        "width": "1",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 840,
+        "y": 440,
+        "wires": [
+            [
+                "c52426d9c943434d"
+            ]
+        ]
+    },
+    {
+        "id": "cd913b21d8703346",
+        "type": "ui-dropdown",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "group": "1076126a2884c43b",
+        "name": "",
+        "label": "Select Option:",
+        "tooltip": "",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "multiple": false,
+        "chips": false,
+        "clearable": false,
+        "options": [
+            {
+                "label": "all",
+                "value": "all",
+                "type": "str"
+            },
+            {
+                "label": "recieved",
+                "value": "Received",
+                "type": "str"
+            },
+            {
+                "label": "failed",
+                "value": "Others",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "filter_command",
+        "topicType": "str",
+        "className": "",
+        "typeIsComboBox": true,
+        "msgTrigger": "onChange",
+        "x": 850,
+        "y": 380,
+        "wires": [
+            [
+                "b90c4e79518139d3"
+            ]
+        ]
+    },
+    {
+        "id": "340fa16f70920af7",
+        "type": "ui-table",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "group": "1076126a2884c43b",
+        "name": "",
+        "label": "",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "maxrows": "10",
+        "passthru": false,
+        "autocols": false,
+        "showSearch": true,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [
+            {
+                "title": "Time",
+                "key": "time",
+                "keyType": "key",
+                "type": "html",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "Status",
+                "key": "status",
+                "keyType": "key",
+                "type": "html",
+                "width": "",
+                "align": "start"
+            },
+            {
+                "title": "ID",
+                "key": "id",
+                "keyType": "key",
+                "type": "html",
+                "width": "",
+                "align": "start"
+            }
+        ],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "className": "",
+        "x": 1280,
+        "y": 340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9914ea3e7b36bd14",
+        "type": "ui-notification",
+        "z": "6edaabb832fba859",
+        "g": "876272a923828998",
+        "ui": "aa218366d243222d",
+        "position": "top right",
+        "colorDefault": true,
+        "color": "#000000",
+        "displayTime": "5",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "allowConfirm": false,
+        "confirmText": "Confirm",
+        "raw": true,
+        "className": "",
+        "name": "",
+        "x": 1260,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "58cf1315623019d2",
+        "type": "comment",
+        "z": "6edaabb832fba859",
+        "g": "e298cdb79e97fc6e",
+        "name": "Updated from MODBUS/TCP to OPC UA, Ecotec can then connect and read via the OPC UA Server on the SIoTG-Interface and write via Requests (VoR))",
+        "info": "",
+        "x": 570,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "dfc627aa1b3ea46b",
+        "type": "comment",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Kompressor 1",
+        "info": "",
+        "x": 150,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "edc988fa3756223c",
+        "type": "comment",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Steuerelemente",
+        "info": "",
+        "x": 160,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "ecdbc786eb747c4c",
+        "type": "ui-button-group",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "",
+        "group": "c71dde24199fbd31",
+        "order": 2,
+        "width": 6,
+        "height": 2,
+        "label": "Kompressor 1",
+        "className": "",
+        "rounded": true,
+        "useThemeColors": false,
+        "passthru": false,
+        "options": [
+            {
+                "label": "AN",
+                "icon": "",
+                "value": "true",
+                "valueType": "bool",
+                "color": "#009933"
+            },
+            {
+                "label": "AUS",
+                "icon": "",
+                "value": "false",
+                "valueType": "bool",
+                "color": "#ff4d4d"
+            }
+        ],
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 160,
+        "y": 580,
+        "wires": [
+            [
+                "417bfd14d7c566bc",
+                "7d97b34cda3c9e2b"
+            ]
+        ]
+    },
+    {
+        "id": "33ef8fb3ca33d6da",
+        "type": "ui-button",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "group": "c71dde24199fbd31",
+        "name": "Acknowledge",
+        "label": "ACK",
+        "order": 5,
+        "width": "1",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "check",
+        "iconPosition": "left",
+        "payload": "false",
+        "payloadType": "bool",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 150,
+        "y": 800,
+        "wires": [
+            [
+                "74c40da832c33c22"
+            ]
+        ]
+    },
+    {
+        "id": "7d97b34cda3c9e2b",
+        "type": "ui-led",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Status Kompressor 1",
+        "group": "c71dde24199fbd31",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "label": "Betrieb",
+        "labelPlacement": "left",
+        "labelAlignment": "left",
+        "states": [
+            {
+                "value": "false",
+                "valueType": "bool",
+                "color": "#ff0000"
+            },
+            {
+                "value": "true",
+                "valueType": "bool",
+                "color": "#00ff00"
+            }
+        ],
+        "allowColorForValueInMessage": false,
+        "shape": "circle",
+        "showBorder": true,
+        "showGlow": true,
+        "x": 540,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "1f9696f15978e527",
+        "type": "ui-led",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Störung",
+        "group": "c71dde24199fbd31",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "label": "Alarm",
+        "labelPlacement": "left",
+        "labelAlignment": "left",
+        "states": [
+            {
+                "value": "false",
+                "valueType": "bool",
+                "color": "#faf4f4"
+            },
+            {
+                "value": "true",
+                "valueType": "bool",
+                "color": "#ff0000"
+            }
+        ],
+        "allowColorForValueInMessage": false,
+        "shape": "circle",
+        "showBorder": true,
+        "showGlow": true,
+        "x": 540,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "32d09a048f46221d",
+        "type": "ui-gauge-linear",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Startdruck",
+        "group": "b4ea22497e159742",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "min": 0,
+        "max": "11",
+        "ticks": [],
+        "colors": [
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            }
+        ],
+        "zeroCrossColors": [
+            "#ff4c16",
+            "#00e300"
+        ],
+        "mode": "default",
+        "bar": "segmented",
+        "minLabel": "",
+        "maxLabel": "",
+        "label": "Startdruck",
+        "icon": "",
+        "unit": "bar",
+        "dim": 0.2,
+        "property": "payload",
+        "decimals": 2,
+        "zeros": true,
+        "myclass": "",
+        "x": 540,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "e254a70494e7e670",
+        "type": "ui-gauge-linear",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Stoppdruck",
+        "group": "b4ea22497e159742",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "min": 0,
+        "max": "11",
+        "ticks": [],
+        "colors": [
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(0, 227, 0)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 169, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            },
+            {
+                "size": 100,
+                "color": "rgb(255, 76, 22)"
+            }
+        ],
+        "zeroCrossColors": [
+            "#ff4c16",
+            "#00e300"
+        ],
+        "mode": "default",
+        "bar": "segmented",
+        "minLabel": "",
+        "maxLabel": "",
+        "label": "Stoppdruck",
+        "icon": "",
+        "unit": "bar",
+        "dim": 0.2,
+        "property": "payload",
+        "decimals": 2,
+        "zeros": true,
+        "myclass": "",
+        "x": 540,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "c836621025911a15",
+        "type": "ui-slider",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "group": "b4ea22497e159742",
+        "name": "Einschaltdruck",
+        "label": "",
+        "tooltip": "",
+        "order": 3,
+        "width": 6,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "thumbLabel": "true",
+        "showTicks": "always",
+        "min": "600",
+        "max": "1100",
+        "step": "10",
+        "className": "",
+        "iconPrepend": "minus",
+        "iconAppend": "plus",
+        "color": "black",
+        "colorTrack": "darkgreen",
+        "colorThumb": "",
+        "showTextField": false,
+        "x": 180,
+        "y": 1060,
+        "wires": [
+            [
+                "5ed0a529b57ff8ac"
+            ]
+        ]
+    },
+    {
+        "id": "97d5f94832e76197",
+        "type": "ui-slider",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "group": "b4ea22497e159742",
+        "name": "Ausschaltdruck",
+        "label": "",
+        "tooltip": "",
+        "order": 5,
+        "width": 6,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "thumbLabel": "true",
+        "showTicks": "always",
+        "min": "600",
+        "max": "1100",
+        "step": "10",
+        "className": "",
+        "iconPrepend": "minus",
+        "iconAppend": "plus",
+        "color": "black",
+        "colorTrack": "darkgreen",
+        "colorThumb": "",
+        "showTextField": false,
+        "x": 180,
+        "y": 1140,
+        "wires": [
+            [
+                "888e101b31ad0427"
+            ]
+        ]
+    },
+    {
+        "id": "e3b092a19189de94",
+        "type": "inject",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Status K1",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.5,
+        "topic": "ns=3;i=6",
+        "payload": "",
+        "payloadType": "str",
+        "x": 170,
+        "y": 620,
+        "wires": [
+            [
+                "eac14b9dd3bd1a0d"
+            ]
+        ]
+    },
+    {
+        "id": "eac14b9dd3bd1a0d",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Status K1",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 400,
+        "y": 620,
+        "wires": [
+            [
+                "7d97b34cda3c9e2b"
+            ]
+        ]
+    },
+    {
+        "id": "b543ac395e31751f",
+        "type": "inject",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Alarm K1",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.5,
+        "topic": "ns=3;i=7",
+        "payload": "",
+        "payloadType": "str",
+        "x": 170,
+        "y": 700,
+        "wires": [
+            [
+                "c16c31cebb2fdbee"
+            ]
+        ]
+    },
+    {
+        "id": "c16c31cebb2fdbee",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Alarm K1",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 400,
+        "y": 700,
+        "wires": [
+            [
+                "1f9696f15978e527"
+            ]
+        ]
+    },
+    {
+        "id": "417bfd14d7c566bc",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Bool → Write msg",
+        "func": "msg.topic = \"ns=3;i=6\";\nmsg.datatype = \"Boolean\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 580,
+        "wires": [
+            [
+                "dd2cca4e040efd41"
+            ]
+        ]
+    },
+    {
+        "id": "dd2cca4e040efd41",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Write Start/Stop K1",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 570,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "74c40da832c33c22",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "ACK → Write msg",
+        "func": "msg.payload = false;\nmsg.topic = \"ns=3;i=7\";\nmsg.datatype = \"Boolean\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 800,
+        "wires": [
+            [
+                "7bbc3f69453a8763"
+            ]
+        ]
+    },
+    {
+        "id": "7bbc3f69453a8763",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Reset Alarm K1",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 550,
+        "y": 800,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2ec77dbcb6bb591f",
+        "type": "inject",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Einschaltdruck",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.5,
+        "topic": "ns=3;i=17",
+        "payload": "",
+        "payloadType": "str",
+        "x": 180,
+        "y": 980,
+        "wires": [
+            [
+                "d26f5f80b6047110"
+            ]
+        ]
+    },
+    {
+        "id": "d26f5f80b6047110",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Einschaltdruck",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 410,
+        "y": 980,
+        "wires": [
+            [
+                "20fe63ff3389a040"
+            ]
+        ]
+    },
+    {
+        "id": "20fe63ff3389a040",
+        "type": "calculator",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "",
+        "inputMsgField": "payload",
+        "outputMsgField": "payload",
+        "operation": "div",
+        "constant": "100",
+        "round": false,
+        "truncate": false,
+        "decimals": 0,
+        "decimals2": 0,
+        "x": 610,
+        "y": 980,
+        "wires": [
+            [
+                "32d09a048f46221d"
+            ]
+        ]
+    },
+    {
+        "id": "55fdb2291cb9c4ae",
+        "type": "inject",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Ausschaltdruck",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.5,
+        "topic": "ns=3;i=18",
+        "payload": "",
+        "payloadType": "str",
+        "x": 180,
+        "y": 1060,
+        "wires": [
+            [
+                "fe09ab0fcf8a1554"
+            ]
+        ]
+    },
+    {
+        "id": "fe09ab0fcf8a1554",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Subscribe Ausschaltdruck",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 410,
+        "y": 1060,
+        "wires": [
+            [
+                "ba76a1f41e80655e"
+            ]
+        ]
+    },
+    {
+        "id": "ba76a1f41e80655e",
+        "type": "calculator",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "",
+        "inputMsgField": "payload",
+        "outputMsgField": "payload",
+        "operation": "div",
+        "constant": "100",
+        "round": false,
+        "truncate": false,
+        "decimals": 0,
+        "decimals2": 0,
+        "x": 610,
+        "y": 1060,
+        "wires": [
+            [
+                "e254a70494e7e670"
+            ]
+        ]
+    },
+    {
+        "id": "5ed0a529b57ff8ac",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Slider × 100 → Write msg",
+        "func": "msg.payload = Math.round(msg.payload * 100);\nmsg.topic = \"ns=3;i=17\";\nmsg.datatype = \"UInt16\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 1140,
+        "wires": [
+            [
+                "8aace5a84def68a9"
+            ]
+        ]
+    },
+    {
+        "id": "8aace5a84def68a9",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Write Einschaltdruck",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 600,
+        "y": 1140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "888e101b31ad0427",
+        "type": "function",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Slider × 100 → Write msg",
+        "func": "msg.payload = Math.round(msg.payload * 100);\nmsg.topic = \"ns=3;i=18\";\nmsg.datatype = \"UInt16\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 1220,
+        "wires": [
+            [
+                "b37e1aa9a8551b3d"
+            ]
+        ]
+    },
+    {
+        "id": "b37e1aa9a8551b3d",
+        "type": "opcua-client",
+        "z": "6edaabb832fba859",
+        "g": "801bde08723ddbf4",
+        "name": "Write Ausschaltdruck",
+        "endpoint": "99b70f2ed27e8c8b",
+        "x": 600,
+        "y": 1220,
+        "wires": [
+            []
+        ]
     }
 ]
