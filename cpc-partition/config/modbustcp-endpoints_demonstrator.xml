@@ -1,56 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <modbus-servers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="modbustcp-endpoints.xsd">
 
-
-    <!-- Siemens LOGO! Server -->
+    <!-- Ecotec LOGO -->
   <server>
-    <ipaddr>192.168.156.20</ipaddr>
-    <port>503</port>
-    <serveralias>HSEL-LOGO</serveralias>
-    <endpoints>
-      <endpoint>
-        <name>M3</name>
-        <function>Read Coils</function>
-        <address>8258</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Coils</type>
-        <description>M3 Bool Operating Hours</description>
-      </endpoint>
-      <endpoint>
-        <name>M4</name>
-        <function>Read Coils</function>
-        <address>8259</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Coils</type>
-        <description>M4 Internal Flag</description>
-      </endpoint>
-      <endpoint>
-        <name>M5</name>
-        <function>Read Coils</function>
-        <address>8260</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Coils</type>
-        <description>M5 Internal Flag</description>
-      </endpoint>
-
-      <endpoint>
-        <name>AM2</name>
-        <function>Read Holding Registers</function>
-        <address>529</address>
-        <quantity>1</quantity>
-        <offset>-1</offset>
-        <type>Holding Registers</type>
-        <description>AM2 Operating Hours</description>
-      </endpoint>
-    </endpoints>
-  </server>
-
-    <!-- Raspberry Pi 4B Testserver -->
-  <server>
-    <ipaddr>192.168.178.181</ipaddr>
+    <ipaddr>10.200.1.142</ipaddr>
     <port>503</port>
     <serveralias>Ecotec</serveralias>
     <endpoints>

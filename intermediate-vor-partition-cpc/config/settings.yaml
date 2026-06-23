@@ -14,7 +14,7 @@ mariadb:
   pool_size: 5
 
 flask_bridge:
-  host: "192.168.178.114"
+  host: "10.200.1.176"
   port: 5000
   read_values_path: /read_values_xml
   update_endpoints_path: /update_endpoints

@@ -12,8 +12,8 @@ opcua:
     name: opcua_semaphore
   grpc_targets:
     # Keys must be valid Python identifiers to match the GrpcTargets Pydantic model.
-    interface_partition: 192.168.178.112:50051
-    psmo_partition: 192.168.178.113:50051
+    interface_partition: 10.200.1.174:50051
+    psmo_partition: 10.200.1.175:50051
 
 modbustcp:
   interval: 1
@@ -27,8 +27,8 @@ modbustcp:
     name: modbus_semaphore
   grpc_targets:
     # Keys must be valid Python identifiers to match the GrpcTargets Pydantic model.
-    interface_partition: 192.168.178.112:50051
-    psmo_partition: 192.168.178.113:50051
+    interface_partition: 10.200.1.174:50051
+    psmo_partition: 10.200.1.175:50051
 
 flask_bridge:
   host: "0.0.0.0"
