@@ -1,9 +1,9 @@
-**Docker implementation of the Secure IoT Gateway**
+**Implementation of the Secure IoT Gateway**
 =======================
 
 _________
 
-![PythonVersion](https://img.shields.io/badge/Python-3.11-green).
+![PythonVersion](https://img.shields.io/badge/Python-3.11-green)<br>
 A guide for developers is available in [DEV.md](./DEV.md), with setup steps and configuration advice for different labs and equipment. Please refer to it for integration and development instructions.
 _________
 A Docker-based IoT gateway setup for OPC UA and ModbusTCP communication.
@@ -37,16 +37,57 @@ Also implements the fuzzing services for testing the different steps of the Veri
 
 ______________________
 
-**Usage**
+# Modification Guide
+
+This section provides steps and recommendations for developers working with the Secure IoT Gateway, tailored for different lab setups and industrial demonstrators. Follow the instructions for your environment to ensure correct integration and configuration.
+
+---
+
+## Setup
+
+1. **Update Endpoints in XML Configuration**
+   - Edit the XML files for OPC UA and MODBUS/TCP servers in:
+     - `secure-iot-gateway/cpc-partition/config/`
+   - Ensure endpoints match the network and equipment in your environment.
+
+2. **Update RBAC Configuration**
+   - Modify the roles and actions in:
+     - `secure-iot-gateway/interface-partition/authorization_handler/rbac_test_with_impacts.csv`
+   - Actions should correspond to VoR-impacts relevant to your use case.
+
+3. **Update configs for the VoR Functionalities**
+   - Edit the XML files in:
+     - `secure-iot-gateway/intermediate-vor-partition/config/`
+     - `secure-iot-gateway/intermediate-vor-partition-cpc/config/`
+
+4. **Update OPC UA Certificates**
+   - Add trusted client certificates (`.der` format) to:
+     - `secure-iot-gateway/interface-partition/certificates/trusted/certs/`
+   - Register new clients in the OPC UA server setup:
+     - Edit `secure-iot-gateway/interface-partition/interface_setup/interface_setup.py` (see line 140+)
+     - Use the `add_user` method to add new client certificates.
+
+5. **Central M+O Services Development**
+   - Program your own Central M+O services as needed.
+   - The OPC UA server certificate for client authentication is located at:
+     - `secure-iot-gateway/interface-partition/certificates/python-server/server_cert.der`
+
+## General Recommendations
+- **Configuration Management**: Always document changes to configuration files and certificates.
+- **Testing**: After updates, test connectivity and authorization flows using UAExpert or your preferred OPC UA client.
+
+
+
+**Usage in docker**
 ---------
 Clone the repository using Git:
 ```bash
-git clone https://gitlab.technik-emden.de/bmbf_siot-gateway/secure-iot-gateway.git
+git clone https://github.com/hschoon-dev/secure-iot-gateway.git
 ```
 
 Navigate to the repository directory
 ```bash
-cd siot-gateway-docker
+cd secure-iot-gateway
 ```
 Building, (re)creating, starting:
 ```bash
@@ -114,6 +155,49 @@ central-mo-client           | Request ID:       14ec21c6-00d8-4dcc-9a97-8674ca8c
 central-mo-client           | Server Timestamp: 2025-03-11T15:43:19.680922+00:00                                                                                      
 central-mo-client           | Notification:     Submission received
 ```
+
+## Setup of the MariaDB database
+The database is used for the Request-Transport from the VoR-1-partition to the VoR-2-partition. It is currently hosted on a RPi 4B (siot@192.168.178.117).
+The setup script for the database can be found [here](./maria-db/01_init.sh).
+
+### Configuration
+```terminal
+ > SHOW DATABASES;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| secure_iot_gateway |
++--------------------+
+```
+
+```terminal
+ > SELECT user, host FROM mysql.user;
++------------------+-----------+
+| user             | host      |
++------------------+-----------+
+| root             | localhost |
+| vor-1            | %         |
+| vor-2            | %         |
++------------------+-----------+
+```
+Default passwords for the users are: VoR-X-Password with 'X' as the partition number.
+
+### User-Management
+```terminal
+-- Remove old user
+DROP USER 'vor-X'@'%';
+
+-- Create new users with remote access
+CREATE USER 'vor-X'@'%' IDENTIFIED BY 'NewPassword';
+
+-- Grant privileges to the database
+GRANT ALL PRIVILEGES ON secure_iot_gateway.* TO 'vor-X'@'%';
+
+FLUSH PRIVILEGES;
+```
 _________
 **Dependencies**
 --------------
@@ -127,6 +211,7 @@ _________
 	+ `bcrypt` — Password hashing and security
 	+ `requests` — HTTP requests
 	+ `flask` — Web application framework
+	+ tbc
 * Docker Engine
 _________
 **Partners**
@@ -140,9 +225,6 @@ _________
 University of Applied Sciences Emden/Leer
 [heiko.schoon@hs-emden-leer.de](mailto:heiko.schoon@hs-emden-leer.de)
 
-**Yuanchen Zhao**
-RWTH Aachen
-[y.zaoh@iat.rwth-aachen.de](mailto:[y.zaoh@iat.rwth-aachen.de)
 _________
 
 

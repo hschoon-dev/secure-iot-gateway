@@ -68,38 +68,32 @@ if (-not (Get-Command wt.exe -ErrorAction SilentlyContinue)) {
 $scriptPath = $MyInvocation.MyCommand.Path
 $total      = $Hosts.Count
 
-# Windows Terminal erwartet Tab-Trennzeichen als eigenes Argument: ";"
-# Jeder Tab-Block: new-tab --title "..." -- pwsh -NoExit -File "skript" --probe "host" N total
+# ──────────────────────────────────────────────────────────────────────────────
+# WICHTIG: wt.exe hat eine eigene, an ';' und '--' orientierte Mini-Grammatik.
+# Start-Process -ArgumentList mit einem String[]-Array lässt PowerShell die
+# Elemente selbst wieder zu EINER Kommandozeile zusammenbauen — dabei können
+# ';' und '--' verrutschen oder falsch gequotet werden, was genau dazu führt,
+# dass Tabs fehlen, verschmelzen oder in separaten Fenstern aufgehen.
 #
-# Der erste Tab wird OHNE "new-tab" angegeben (implizites erstes Tab von wt.exe).
-# Alle weiteren Tabs bekommen ";" "new-tab" vorangestellt.
+# Lösung: die komplette Kommandozeile selbst als EINEN fertig gequoteten
+# String bauen, exakt so, wie man sie auch interaktiv eingeben würde.
+# Für jeden Host wird "new-tab" explizit gesetzt (auch für den ersten Tab),
+# damit es keine Mehrdeutigkeit bei der impliziten Default-Aktion gibt.
+# ──────────────────────────────────────────────────────────────────────────────
 
-$wtArgs = [System.Collections.Generic.List[string]]::new()
+$segments = [System.Collections.Generic.List[string]]::new()
 
 for ($i = 0; $i -lt $Hosts.Count; $i++) {
     $sshHost = $Hosts[$i]
     $index   = $i + 1
 
-    if ($i -gt 0) {
-        # Semikolon muss als eigenständiges Argument übergeben werden
-        $wtArgs.Add(";")
-        $wtArgs.Add("new-tab")
-    }
-
-    $wtArgs.Add("--title")
-    $wtArgs.Add($sshHost)
-    $wtArgs.Add("--")
-    $wtArgs.Add("powershell.exe")
-    $wtArgs.Add("-NoExit")
-    $wtArgs.Add("-ExecutionPolicy")
-    $wtArgs.Add("Bypass")
-    $wtArgs.Add("-File")
-    $wtArgs.Add($scriptPath)
-    $wtArgs.Add("--probe")
-    $wtArgs.Add($sshHost)
-    $wtArgs.Add("$index")
-    $wtArgs.Add("$total")
+    $segment = "new-tab --title `"$sshHost`" -- powershell.exe -NoExit -NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" --probe `"$sshHost`" $index $total"
+    $segments.Add($segment)
 }
 
+$cmdLine = $segments -join " ; "
+
 Write-Host "Starte Windows Terminal mit $total SSH-Tabs..." -ForegroundColor Cyan
-Start-Process wt.exe -ArgumentList $wtArgs
+Write-Host "wt-Kommandozeile: $cmdLine" -ForegroundColor DarkGray
+
+Start-Process -FilePath "wt.exe" -ArgumentList $cmdLine
