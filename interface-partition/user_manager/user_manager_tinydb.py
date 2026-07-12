@@ -94,8 +94,25 @@ class UserManagerTinyDB:
             raise SystemExit(2)
 
         try:
-            self.create_user(username="admin", password=admin_pw)
-            _logger.info("Initial admin user created.")
+            if not self.create_user(username="admin", password=admin_pw):
+                _logger.critical(
+                    "Initial admin user could not be created. Refusing to start."
+                )
+                raise SystemExit(2)
+
+            # Do not trust only the insert return value: the service must start
+            # only after the bootstrap account can be read back from the store.
+            created, record = self.retrieve_user("admin")
+            if not created or record is None:
+                _logger.critical(
+                    "Initial admin user could not be verified after creation. "
+                    "Refusing to start."
+                )
+                raise SystemExit(2)
+
+            _logger.info("Initial admin user created and verified.")
+        except SystemExit:
+            raise
         except Exception as e:
             _logger.critical("Failed to create initial admin user: %s", e, exc_info=True)
             raise SystemExit(2)
@@ -327,8 +344,8 @@ def main():
     print("Clearing database...")
     user_manager.clear_database()
 
-    admin_password = "Admin123_secure_password_2025"
-    user_password = "User456_very_secure_pwd_2025"
+    admin_password = os.getenv("USER_MANAGER_TEST_ADMIN_PASSWORD", f"Admin{os.urandom(12).hex()}A1")
+    user_password = os.getenv("USER_MANAGER_TEST_USER_PASSWORD", f"User{os.urandom(12).hex()}B2")
 
     print("\n--- Testing User Creation ---")
     res_admin = user_manager.create_user("admin", admin_password)
@@ -343,7 +360,7 @@ def main():
     print(f"Admin invalid credentials: {admin_invalid}")
 
     print("\n--- Testing Password Update ---")
-    new_admin_password = "NewAdmin987_secure_password_2025"
+    new_admin_password = os.getenv("USER_MANAGER_TEST_NEW_ADMIN_PASSWORD", f"NewAdmin{os.urandom(12).hex()}C3")
     update_result = user_manager.update_user("admin", old_password=admin_password, new_password=new_admin_password)
     print(f"Password update result: {update_result}")
 
