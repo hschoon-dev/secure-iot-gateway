@@ -1,0 +1,123 @@
+name: Gateway sprint CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - creds-updated
+      - codex/e2e-mtls-sprint
+      - feat/security-hardening
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gateway-sprint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression-and-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Prepare evidence directory
+        run: mkdir -p evidence
+
+      - name: Generate ephemeral test identities
+        run: tests/ci/prepare_test_secrets.sh
+
+      - name: Python security regressions
+        run: python3 -m unittest discover -s tests -p 'test_*.py' 2>&1 | tee evidence/security-regressions.txt
+
+      - name: Secret hygiene and migration
+        run: tests/test_secret_hygiene.sh 2>&1 | tee evidence/secret-hygiene.txt
+
+      - name: Node-RED credential-key migration (synthetic fixture)
+        run: node tests/node-red/test_credential_migration.js 2>&1 | tee evidence/t11-node-red-migration.txt
+
+      - name: OPA policy tests
+        run: |
+          docker run --rm \
+            -v "$PWD/evaluation/opa-spike:/policy:ro" \
+            openpolicyagent/opa@sha256:cba27d3c6af2feba1e4d6e6b5e24df5b53db332420d4148a90acccd12efae6ed \
+            test /policy/policy.rego /policy/policy_test.rego \
+            2>&1 | tee evidence/opa-policy.txt
+
+      - name: Upload regression evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: regression-evidence-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error
+
+  risk-gate-report:
+    if: always()
+    needs: [regression-and-policy, docker-e2e-and-rotation]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Render commit-bound risk-gate evidence
+        env:
+          REGRESSION_RESULT: ${{ needs.regression-and-policy.result }}
+          DOCKER_RESULT: ${{ needs.docker-e2e-and-rotation.result }}
+        run: |
+          python3 tests/evaluation/render_risk_gate_report.py \
+            --regression-result "${REGRESSION_RESULT}" \
+            --docker-result "${DOCKER_RESULT}" \
+            --commit "${GITHUB_SHA}" \
+            --output-dir evidence
+
+      - name: Upload risk-gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: risk-gates-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error
+
+  docker-e2e-and-rotation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      ADMIN_PASSWORD: CI-Only-Admin-Password-2026-Strong
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Prepare evidence directory
+        run: mkdir -p evidence
+
+      - name: Generate ephemeral test identities
+        run: tests/ci/prepare_test_secrets.sh
+
+      - name: Build and run Docker E2E on clean runner
+        run: tests/e2e/run.sh 2>&1 | tee evidence/docker-e2e.txt
+
+      - name: Casbin ABAC and OPA decision parity
+        run: tests/evaluation/run_casbin_opa_comparison.sh 2>&1 | tee evidence/casbin-opa-parity.txt
+
+      - name: Isolated mTLS rotation
+        run: tests/rotation/run_isolated.sh 2>&1 | tee evidence/t02-rotation.txt
+
+      - name: Record immutable run context
+        if: always()
+        run: |
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "commit=${GITHUB_SHA}"
+            echo "workflow=${GITHUB_WORKFLOW}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+          } > evidence/run-context.txt
+
+      - name: Upload Docker and rotation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: docker-rotation-evidence-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error
