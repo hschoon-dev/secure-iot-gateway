@@ -240,6 +240,13 @@ class DatabaseConnector:
         self._table = self._db.table("credentials")
         self._User = Query()
 
+    def _flush(self) -> None:
+        """Persist CachingMiddleware writes before another module instance reads them."""
+        storage = getattr(self._db, "storage", None)
+        flush = getattr(storage, "flush", None)
+        if callable(flush):
+            flush()
+
     def insert_credentials(self, credentials: tuple[str, str]) -> bool:
         """Insert user credentials into the store. credentials: (username, plain_password)"""
         username, plain_password = credentials
@@ -255,6 +262,7 @@ class DatabaseConnector:
                 # Keep "salt" field for compatibility, but unused with Argon2id
                 doc = {"username": username, "password": hashed_password, "salt": ""}
                 self._table.insert(doc)
+                self._flush()
                 _logger.info("Credentials inserted")
                 return True
         except Exception as e:
@@ -266,6 +274,7 @@ class DatabaseConnector:
         try:
             with self._lock:
                 self._table.remove(doc_ids=[id])
+                self._flush()
                 _logger.info("Credentials deleted")
                 return True
         except Exception as e:
@@ -303,6 +312,7 @@ class DatabaseConnector:
 
                 hashed_new_password = UserManagerTinyDB.hash_password(new_password)
                 self._table.update({"password": hashed_new_password}, doc_ids=[doc.doc_id])
+                self._flush()
                 _logger.info("Credentials updated")
                 return True
         except Exception as e:
@@ -314,6 +324,7 @@ class DatabaseConnector:
         try:
             with self._lock:
                 self._table.truncate()
+                self._flush()
                 _logger.info("Database cleared")
                 return True
         except Exception as e:

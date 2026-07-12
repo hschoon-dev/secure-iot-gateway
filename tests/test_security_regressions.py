@@ -121,6 +121,23 @@ class AdminBootstrapTests(unittest.TestCase):
         manager.create_user.assert_called_once()
 
 
+class CredentialPersistenceTests(unittest.TestCase):
+    def test_insert_flushes_tinydb_cache_before_cross_module_readback(self):
+        module = _load_user_manager_module()
+        connector = module.DatabaseConnector.__new__(module.DatabaseConnector)
+        connector._lock = threading.RLock()
+        connector._User = Mock()
+        connector._table = Mock()
+        connector._table.get.return_value = None
+        connector._db = Mock()
+        connector._db.storage.flush = Mock()
+
+        with patch.object(module.UserManagerTinyDB, "hash_password", return_value="hash"):
+            self.assertTrue(connector.insert_credentials(("admin", "valid-password")))
+
+        connector._db.storage.flush.assert_called_once_with()
+
+
 class AuthorizationIsolationTests(unittest.TestCase):
     def test_authorization_read_waits_for_role_change(self):
         AuthorizationHandler = _load_authorization_handler_module().AuthorizationHandler
