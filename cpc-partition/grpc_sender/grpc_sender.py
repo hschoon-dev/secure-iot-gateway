@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime
 import json
 import logging
+import os
 import threading
 import time
 from pathlib import Path
@@ -47,10 +48,20 @@ KEEPALIVE_OPTS: list[tuple[str, Any]] = [
 
 def _load_ssl_credentials(certs: "GrpcClientCerts") -> grpc.ChannelCredentials:
     """Build mTLS channel credentials from a GrpcClientCerts config instance."""
+    cert_base = _resolve_certs_base()
+    if cert_base is not None:
+        ca_cert = cert_base / "ca" / "ca.crt"
+        client_key = cert_base / "client" / "client.key"
+        client_cert = cert_base / "client" / "client.crt"
+    else:
+        ca_cert = Path(certs.ca_cert)
+        client_key = Path(certs.client_key)
+        client_cert = Path(certs.client_cert)
+
     try:
-        root_certificates = Path(certs.ca_cert).read_bytes()
-        private_key       = Path(certs.client_key).read_bytes()
-        certificate_chain = Path(certs.client_cert).read_bytes()
+        root_certificates = ca_cert.read_bytes()
+        private_key = client_key.read_bytes()
+        certificate_chain = client_cert.read_bytes()
 
         return grpc.ssl_channel_credentials(
             root_certificates=root_certificates,
@@ -58,8 +69,34 @@ def _load_ssl_credentials(certs: "GrpcClientCerts") -> grpc.ChannelCredentials:
             certificate_chain=certificate_chain,
         )
     except Exception:
-        _logger.exception("Failed to load TLS certificates from config")
+        _logger.exception("Failed to load TLS certificates")
         raise
+
+
+def _resolve_certs_base() -> Path | None:
+    secrets_root = Path(os.getenv("SIOT_SECRETS_ROOT", "/run/siot-secrets"))
+    runtime_base = Path(
+        os.getenv("CPC_GRPC_CERT_BASE", str(secrets_root / "cpc-partition" / "certs"))
+    )
+    if runtime_base.exists():
+        return runtime_base
+
+    # Explicit development compatibility only; production fails closed.
+    project_root = Path(__file__).resolve().parents[1]
+    rel_base = project_root / "certs"
+    abs_base = Path("/certs")
+    if os.getenv("ALLOW_LEGACY_SECRETS", "false").lower() in ("1", "true", "yes", "on"):
+        legacy_base = rel_base if rel_base.exists() else abs_base
+        _logger.warning(
+            "Using legacy cpc gRPC cert path because ALLOW_LEGACY_SECRETS=true: %s",
+            legacy_base,
+        )
+        # Returning None preserves the current config-driven development paths.
+        return None
+    raise FileNotFoundError(
+        f"Runtime gRPC certificate directory not found: {runtime_base}. "
+        "Legacy fallback is disabled."
+    )
 
 
 class GrpcJsonSender:
