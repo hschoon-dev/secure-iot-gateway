@@ -14,7 +14,7 @@ services:
 
   mariadb:
     container_name: siot-mariadb
-    image: mariadb:10.11
+    build: maria-db/
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: "${MARIADB_ROOT_PASSWORD}"
@@ -30,10 +30,6 @@ services:
       MARIADB_COLLATION_SERVER: "utf8mb4_unicode_ci"
     volumes:
       - mariadb_data:/var/lib/mysql
-      - type: bind
-        source: ./maria-db
-        target: /docker-entrypoint-initdb.d
-        read_only: true
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -57,6 +53,10 @@ services:
       - type: bind
         source: ./brownfield-opcua-server/logs
         target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/brownfield-opcua-server
+        target: /run/siot-secrets/brownfield-opcua-server
+        read_only: true
     attach: false
     networks:
       static-network:
@@ -64,7 +64,7 @@ services:
 
   ecotec-modbus-server:
     container_name: ecotec-modbus-server
-    image: oitc/modbus-server:latest
+    image: oitc/modbus-server@sha256:58a9e9b97b994a2bbfb79bbe43e25387a2e6c458220b44cd058007af3881c243
     command: -f /server_config_v2.json
     volumes:
       - ./modbus-server/server_config_v2.json:/server_config_v2.json:ro
@@ -85,8 +85,23 @@ services:
       - type: bind
         source: ./interface-partition/logs
         target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/interface-partition
+        target: /run/siot-secrets/interface-partition
+        read_only: true
+      - type: bind
+        source: ./.runtime-data/interface-partition
+        target: /var/lib/siot
     environment:
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
+      SIOT_CREDENTIALS_DB: /var/lib/siot/credentials.json
+      ALLOW_LEGACY_CREDENTIALS: "false"
+      AUTHZ_MODE: "${AUTHZ_MODE:-casbin}"
+      OPA_URL: "${OPA_URL:-http://opa:8181/v1/data/siot/authz/allow}"
+      OPA_FAIL_OPEN: "${OPA_FAIL_OPEN:-false}"
+      OPA_TIMEOUT_SECONDS: "${OPA_TIMEOUT_SECONDS:-0.75}"
+      OPA_PUMP_B_POWER_MAX_KW: "${OPA_PUMP_B_POWER_MAX_KW:-16}"
+      GRPC_CLIENT_HOST: intermediate-vor-partition
     ports:
       - 4840:4840
     attach: true
@@ -101,9 +116,16 @@ services:
       - type: bind
         source: ./intermediate-vor-partition/logs
         target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/intermediate-vor-partition
+        target: /run/siot-secrets/intermediate-vor-partition
+        read_only: true
     environment:
-      MARIADB_USER: "vor-1"
-      MARIADB_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
+      DB_USER: "vor-1"
+      DB_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
+      DB_HOST: mariadb
+      PIPELINE_MODE: "${PIPELINE_MODE:-mariadb}"
+      INTERMEDIATE_VOR_GRPC_CERT_BASE: /run/siot-secrets/intermediate-vor-partition/certificates/grpc
     depends_on:
       mariadb:
         condition: service_healthy
@@ -124,9 +146,14 @@ services:
       - type: bind
         source: ./intermediate-vor-partition-cpc/logs
         target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/intermediate-vor-partition-cpc
+        target: /run/siot-secrets/intermediate-vor-partition-cpc
+        read_only: true
     environment:
-      MARIADB_USER: "vor-2"
-      MARIADB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
+      DB_USER: "vor-2"
+      DB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
+      DB_HOST: mariadb
     depends_on:
       mariadb:
         condition: service_healthy
@@ -146,6 +173,10 @@ services:
       - type: bind
         source: ./psmo-partition/logs
         target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/psmo-partition
+        target: /run/siot-secrets/psmo-partition
+        read_only: true
     attach: false
     networks:
       static-network:
@@ -158,6 +189,10 @@ services:
       - type: bind
         source: ./cpc-partition/logs
         target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/cpc-partition
+        target: /run/siot-secrets/cpc-partition
+        read_only: true
     ipc: "shareable"
     depends_on:
       brownfield-opcua-server:
@@ -176,10 +211,15 @@ services:
   central-mo-client:
     container_name: central-mo-client
     build: central-mo-client/
+    profiles: ["demo"]
     volumes:
       - type: bind
         source: ./central-mo-client/logs
         target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/central-mo-client
+        target: /run/siot-secrets/central-mo-client
+        read_only: true
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
@@ -189,6 +229,40 @@ services:
     networks:
       static-network:
         ipv4_address: 192.168.178.31
+
+  e2e-runner:
+    build: central-mo-client/
+    profiles: ["e2e"]
+    command: ["python3", "-u", "./e2e_runner.py"]
+    volumes:
+      - type: bind
+        source: ./central-mo-client/logs
+        target: /app/logs
+      - type: bind
+        source: ./.runtime-secrets/central-mo-client
+        target: /run/siot-secrets/central-mo-client
+        read_only: true
+    environment:
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
+    depends_on:
+      interface-partition:
+        condition: service_started
+    networks:
+      static-network: {}
+
+  opa:
+    container_name: opa
+    image: openpolicyagent/opa@sha256:cba27d3c6af2feba1e4d6e6b5e24df5b53db332420d4148a90acccd12efae6ed
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies/policy.rego"]
+    volumes:
+      - type: bind
+        source: ./evaluation/opa-spike/policy.rego
+        target: /policies/policy.rego
+        read_only: true
+    attach: false
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.40
 
 
 

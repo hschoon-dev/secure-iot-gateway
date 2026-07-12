@@ -12,6 +12,11 @@ services:
       - type: bind
         source: ./central-mo-client/logs
         target: /app/logs
+      # Runtime secrets (not versioned)
+      - type: bind
+        source: ./.runtime-secrets
+        target: /run/siot-secrets
+        read_only: true
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     attach: true

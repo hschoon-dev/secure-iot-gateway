@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # =============================================================================
 # /docker-entrypoint-initdb.d/01_init.sh
 #
