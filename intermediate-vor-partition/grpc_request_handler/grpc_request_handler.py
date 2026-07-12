@@ -3,6 +3,7 @@ from concurrent import futures
 from datetime import datetime, timezone
 from pathlib import Path
 import logging
+import os
 
 import request_pb2, request_pb2_grpc
 from request_message_handler import RequestMessageHandler
@@ -10,7 +11,21 @@ from request_message_handler import RequestMessageHandler
 from config_loader import GrpcServerConfig  # only sub-model needed
 
 REALTIME_BOUND_MS = 1500
+EXPECTED_CLIENT_CN = os.getenv("VOR_EXPECTED_CLIENT_CN", "grpc-client-interface")
 _logger = logging.getLogger(__name__)
+
+
+def _require_client_identity(context, expected_cn: str) -> None:
+    common_names = {
+        value.decode("utf-8", errors="strict")
+        for value in context.auth_context().get("x509_common_name", ())
+    }
+    if expected_cn not in common_names:
+        _logger.warning("Rejected mTLS client identities: %s", sorted(common_names))
+        context.abort(
+            grpc.StatusCode.PERMISSION_DENIED,
+            "client certificate is valid but not authorized for this service",
+        )
 
 
 def _parse_iso8601(ts: str):
@@ -27,6 +42,7 @@ class RequestService(request_pb2_grpc.RequestServiceServicer):
         self._handler = handler
 
     def Submit(self, request, context):
+        _require_client_identity(context, EXPECTED_CLIENT_CN)
         # Record server receive time ASAP
         server_recv_utc = datetime.now(timezone.utc)
 

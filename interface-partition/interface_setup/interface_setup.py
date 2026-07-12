@@ -25,6 +25,7 @@
 import logging
 import sys
 import math
+import os
 
 from asyncua import Server, ua
 from asyncua import uamethod
@@ -45,6 +46,27 @@ from config_loader import OpcUaServerConfig, GrpcClientConfig  # only sub-model 
 sys.path.insert(0, "..")
 _logger = logging.getLogger(__name__)
 
+def _resolve_interface_secret_base() -> Path | None:
+    """
+    Resolve interface-partition cert base.
+    Preferred: external runtime secret dir.
+    Fallback: legacy in-repo cert dir for compatibility.
+    """
+    secrets_root = Path(os.getenv("SIOT_SECRETS_ROOT", "/run/siot-secrets"))
+    runtime_base = Path(
+        os.getenv(
+            "INTERFACE_PARTITION_CERT_BASE",
+            str(secrets_root / "interface-partition"),
+        )
+    )
+    if runtime_base.exists():
+        return runtime_base
+    if os.getenv("ALLOW_LEGACY_SECRETS", "false").lower() in ("1", "true", "yes", "on"):
+        return None
+    raise FileNotFoundError(
+        f"Runtime certificate directory not found: {runtime_base}. "
+        "Legacy fallback is disabled."
+    )
 
 async def add_user_manager_methods(server: Server, namespace_uri: str) -> None:
     """
@@ -154,12 +176,21 @@ async def setup_opcua_server(config: OpcUaServerConfig, grpc_client: GrpcClientC
         )
 
     certs = config.certs
+    secret_base = _resolve_interface_secret_base()
+    if secret_base is not None:
+        server_cert = secret_base / "certificates/python-server/interface_server_cert.der"
+        server_key = secret_base / "certificates/python-server/interface_server_key.pem"
+        trusted_certs_dir = secret_base / "certificates/trusted/certs"
+    else:
+        server_cert = Path(certs.server_cert)
+        server_key = Path(certs.server_key)
+        trusted_certs_dir = Path(certs.trusted_certs_dir)
 
     cert_user_manager = CertificateUserManager()
-    await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "mo_client_cert.der",    name="Python-M+O-Client")
-    await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "uaexpert.der",          name="UA-Expert-Client")
-    await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "node_red_client_cert.der",     name="Node-RED OPC UA Method@266c024c708c")
-    await cert_user_manager.add_user(Path(certs.trusted_certs_dir) / "uaexpert_OMAG.der",     name="UA-Expert-Client-OMAG")
+    await cert_user_manager.add_user(trusted_certs_dir / "mo_client_cert.der", name="Python-M+O-Client")
+    await cert_user_manager.add_user(trusted_certs_dir / "uaexpert.der", name="UA-Expert-Client")
+    await cert_user_manager.add_user(trusted_certs_dir / "node_red_client_cert.der", name="Node-RED OPC UA Method@266c024c708c")
+    await cert_user_manager.add_user(trusted_certs_dir / "uaexpert_OMAG.der", name="UA-Expert-Client-OMAG")
 
     limits = config.transport_limits
     buffer_sz = limits.recv_buffer_bytes
@@ -184,11 +215,11 @@ async def setup_opcua_server(config: OpcUaServerConfig, grpc_client: GrpcClientC
     )
 
     # Load server certificate and private key
-    await server.load_certificate(str(certs.server_cert))
-    await server.load_private_key(str(certs.server_key))
+    await server.load_certificate(str(server_cert))
+    await server.load_private_key(str(server_key))
 
     # Truststore
-    trust_store = TrustStore([Path(certs.trusted_certs_dir)], [])
+    trust_store = TrustStore([trusted_certs_dir], [])
     await trust_store.load()
     validator = CertificateValidator(
         options=CertificateValidatorOptions.TRUSTED_VALIDATION | CertificateValidatorOptions.PEER_CLIENT,

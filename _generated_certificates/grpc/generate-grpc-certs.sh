@@ -9,8 +9,8 @@ CA_KEY="${CA_DIR}/ca.key"
 CA_CRT="${CA_DIR}/ca.crt"
 CA_SERIAL="${CA_DIR}/ca.srl"
 
-KEY_BITS=4096
-CERT_DAYS=825
+KEY_BITS="${KEY_BITS:-4096}"
+CERT_DAYS="${CERT_DAYS:-825}"
 
 echo "== gRPC Zertifikats-Generation =="
 
@@ -149,29 +149,35 @@ generate_client_cert() {
   fi
 
   echo "  Signiere Zertifikat: ${crt}"
-  openssl x509 -req \
-    -in "${csr}" \
-    -CA "${CA_CRT}" \
-    -CAkey "${CA_KEY}" \
-    -CAserial "${CA_SERIAL}" \
-    -out "${crt}" \
-    -days "${CERT_DAYS}" \
-    -sha256
+  local sign_args=(
+    -req -in "${csr}" -CA "${CA_CRT}" -CAkey "${CA_KEY}"
+    -CAserial "${CA_SERIAL}" -out "${crt}" -days "${CERT_DAYS}" -sha256
+  )
+  if [[ -f "${cnf}" ]]; then
+    sign_args+=( -extfile "${cnf}" -extensions v3_req )
+  fi
+  openssl x509 "${sign_args[@]}"
 
   echo "  Fertig: ${crt}"
 }
 
 # --- Konkrete Verzeichnisse aufrufen ---------------------------------------
 
-# cpc-certs: nur Client
+# CPC: client for existing data path, server for typed pipeline
 generate_client_cert "${ROOT_DIR}/cpc-certs" "client"
+generate_server_cert "${ROOT_DIR}/cpc-certs" "server"
 
 # interface-certs: Client + Server
 generate_client_cert "${ROOT_DIR}/interface-certs" "client"
 generate_server_cert "${ROOT_DIR}/interface-certs" "server"
 
-# intermediate-vor-certs: nur Server
+# Intermediate VoR: server for interface hop, client for processing hop
 generate_server_cert "${ROOT_DIR}/intermediate-vor-certs" "server"
+generate_client_cert "${ROOT_DIR}/intermediate-vor-certs" "client"
+
+# Intermediate VoR CPC: server for mapping hop, client for CPC hop
+generate_server_cert "${ROOT_DIR}/intermediate-vor-cpc-certs" "server"
+generate_client_cert "${ROOT_DIR}/intermediate-vor-cpc-certs" "client"
 
 # psmo-certs: nur Server
 generate_server_cert "${ROOT_DIR}/psmo-certs" "server"

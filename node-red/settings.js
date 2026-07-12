@@ -1,3 +1,24 @@
+const fs = require("fs");
+
+function loadCredentialSecret() {
+    const secretFile = process.env.NODE_RED_CREDENTIAL_SECRET_FILE ||
+        "/run/siot-secrets/node-red/credential-secret";
+    if (fs.existsSync(secretFile)) {
+        const value = fs.readFileSync(secretFile, "utf8").trim();
+        if (value.length >= 32) {
+            return value;
+        }
+        throw new Error("Node-RED credential secret file must contain at least 32 characters");
+    }
+    if (process.env.NODE_RED_CREDENTIAL_SECRET &&
+        process.env.NODE_RED_CREDENTIAL_SECRET.length >= 32) {
+        return process.env.NODE_RED_CREDENTIAL_SECRET;
+    }
+    throw new Error(
+        "Node-RED credential secret is missing; mount NODE_RED_CREDENTIAL_SECRET_FILE"
+    );
+}
+
 /**
  * This is the default settings file provided by Node-RED.
  *
@@ -41,7 +62,7 @@ module.exports = {
      * node-red from being able to decrypt your existing credentials and they will be
      * lost.
      */
-    //credentialSecret: "a-secret-key",
+    credentialSecret: loadCredentialSecret(),
 
     /** By default, the flow JSON will be formatted over multiple lines making
      * it easier to compare changes when using version control.

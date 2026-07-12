@@ -1,2 +1,5 @@
 # .dockerignore
 .env
+.runtime-secrets
+*.key
+*_key.pem

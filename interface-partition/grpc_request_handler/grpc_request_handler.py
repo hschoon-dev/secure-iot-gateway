@@ -12,6 +12,7 @@ for every submitted request.
 
 from __future__ import annotations
 import logging
+import os
 import threading
 from pathlib import Path
 from typing import Any, Optional
@@ -40,10 +41,30 @@ class GrpcRequestSender:
 
     def _load_credentials(self) -> grpc.ChannelCredentials:
         certs = self._config.certs
+        secrets_root = Path(os.getenv("SIOT_SECRETS_ROOT", "/run/siot-secrets"))
+        runtime_base = Path(
+            os.getenv(
+                "INTERFACE_GRPC_CERT_BASE",
+                str(secrets_root / "interface-partition" / "certificates" / "grpc"),
+            )
+        )
+        if runtime_base.exists():
+            client_key_path = runtime_base / "client" / "client.key"
+            client_cert_path = runtime_base / "client" / "client.crt"
+            ca_cert_path = runtime_base / "ca" / "ca.crt"
+        elif os.getenv("ALLOW_LEGACY_SECRETS", "false").lower() in ("1", "true", "yes", "on"):
+            client_key_path = Path(certs.client_key)
+            client_cert_path = Path(certs.client_cert)
+            ca_cert_path = Path(certs.ca_cert)
+        else:
+            raise FileNotFoundError(
+                f"Runtime gRPC certificate directory not found: {runtime_base}. "
+                "Legacy fallback is disabled."
+            )
         try:
-            client_key  = Path(certs.client_key).read_bytes()
-            client_cert = Path(certs.client_cert).read_bytes()
-            ca_cert     = Path(certs.ca_cert).read_bytes()
+            client_key = client_key_path.read_bytes()
+            client_cert = client_cert_path.read_bytes()
+            ca_cert = ca_cert_path.read_bytes()
         except Exception as e:
             _logger.error("Error reading TLS files: %s", e)
             raise
@@ -76,9 +97,9 @@ class GrpcRequestSender:
     def send(self, request: dict[str, Any]) -> None:
         try:
             stub = self._ensure_connected()
-        except Exception:
+        except Exception as exc:
             _logger.error("Cannot send request: channel setup failed.")
-            return
+            raise RuntimeError("VoR gRPC channel setup failed") from exc
 
         req = request_pb2.SubmitRequest(
             issuer_id              = request["issuer_id"],
@@ -98,9 +119,13 @@ class GrpcRequestSender:
         except grpc.RpcError as e:
             _logger.error("RPC failed (%s): %s", e.code().name, e.details())
             self._reset()
+            raise RuntimeError(
+                f"VoR gRPC submission failed: {e.code().name} - {e.details()}"
+            ) from e
         except Exception as e:
             _logger.error("Unexpected gRPC send error: %s", e)
             self._reset()
+            raise
 
 
 # Module-level singleton — initialised by interface_setup.py when it calls

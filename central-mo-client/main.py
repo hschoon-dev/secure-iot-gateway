@@ -74,6 +74,45 @@ def setup_logging(
 
 _logger = setup_logging(logging.INFO)
 
+def _log_user_with_optional_secret(action: str, user: str, secret: str) -> None:
+    """
+    Log credentials only in DEBUG mode.
+    In non-debug modes, credentials are not logged.
+    """
+    if _logger.isEnabledFor(logging.DEBUG):
+        _logger.debug("%s user %s with credentials %s", action, user, secret)
+    else:
+        _logger.info("%s user %s", action, user)
+
+def _resolve_component_secret_base() -> Path:
+    """
+    Resolve secret base path for central-mo-client.
+    Preferred: external runtime secret dir.
+    Fallback: legacy in-repo path for compatibility.
+    """
+    runtime_root = Path(os.getenv("SIOT_SECRETS_ROOT", "/run/siot-secrets"))
+    runtime_component = Path(os.getenv("CENTRAL_MO_CERT_BASE", runtime_root / "central-mo-client"))
+    local_runtime_component = Path(__file__).resolve().parent.parent / ".runtime-secrets" / "central-mo-client"
+    legacy_component = Path(__file__).parent
+
+    if runtime_component.exists():
+        return runtime_component
+    allow_legacy = os.getenv("ALLOW_LEGACY_SECRETS", "false").lower() in (
+        "1", "true", "yes", "on"
+    )
+    if allow_legacy and local_runtime_component.exists():
+        return local_runtime_component
+    if allow_legacy and legacy_component.exists():
+        _logger.warning(
+            "Using legacy central-mo-client certificate path because "
+            "ALLOW_LEGACY_SECRETS=true: %s", legacy_component,
+        )
+        return legacy_component
+    raise FileNotFoundError(
+        f"Runtime certificate directory not found: {runtime_component}. "
+        "Legacy fallback is disabled."
+    )
+
 async def submit_request(client: Client, in_args, params):
     """Submit the request to the server and log results"""
     try:
@@ -117,16 +156,16 @@ async def call_add_user_method(client: Client, admin: dict, users: dict):
         child = await objects.get_child(['2:UserManager'])
         
         for user, password in users.items():
-            _logger.info(f"Adding user {user} with password {password}")
+            _log_user_with_optional_secret("Adding", user, password)
             try:
                 res = await child.call_method("2:add_user",ua.Variant(admin_id, ua.VariantType.String), ua.Variant(admin_credentials, ua.VariantType.String), ua.Variant(user, ua.VariantType.String), ua.Variant(password, ua.VariantType.String))
                 ua_status_code, ua_status_message = res
-                _logger.debug(f"Method called for user {user} with credentials {password}: Result {res}")
+                _logger.debug("Method called for user %s: Result %s", user, res)
                 if str(ua_status_code) != str(StatusCode(StatusCodes.Good)):
-                    _logger.error(f"Error adding user {user} with credentials {password}: {ua_status_message}")
+                    _logger.error("Error adding user %s: %s", user, ua_status_message)
                 
             except Exception as e:
-                _logger.error(f"Error calling method for user {user} with credentials {password}: {e}")
+                _logger.error("Error calling add_user for user %s: %s", user, e)
         return True
     
     except Exception as e:
@@ -144,15 +183,15 @@ async def clear_database(client: Client, admin: dict, users: dict):
         
         _logger.debug(f"Clearing user manager database")
         for user, password in users.items():
-            _logger.info(f"Clearing user {user} with password {password}")
+            _log_user_with_optional_secret("Clearing", user, password)
             try:
                 res = await child.call_method("2:remove_user",ua.Variant(admin_id, ua.VariantType.String), ua.Variant(admin_credentials, ua.VariantType.String), ua.Variant(user, ua.VariantType.String))
-                _logger.debug(f"Method called for user {user} with credentials {password}: Result {res}")
+                _logger.debug("Method called for user %s: Result %s", user, res)
                 ua_status_code, ua_status_message = res
                 if str(ua_status_code) != str(StatusCode(StatusCodes.Good)):
                     _logger.error(f"Error clearing database: {ua_status_message}")
             except Exception as e:
-                _logger.error(f"Error calling method for user {user} with credentials {password}: {e}")
+                _logger.error("Error calling remove_user for user %s: %s", user, e)
         return True
     except Exception as e:
         _logger.error(f"Error calling method: {e}")
@@ -162,10 +201,9 @@ async def setup_client(max_retries=5, retry_delay=5):
     """Setup and connect to OPC UA client with security"""
     _logger.info(f"Central M+O Application started.")
 
-    #url = "opc.tcp://interface-partition:4840/freeopcua/server/"  # Ensure this matches the server address
-    url = "opc.tcp://192.168.178.112:4840/freeopcua/server/"
+    url = os.getenv("INTERFACE_OPCUA_URL", "opc.tcp://interface-partition:4840/freeopcua/server/")
 
-    cert_base = Path(__file__).parent
+    cert_base = _resolve_component_secret_base()
     client_cert = Path(cert_base / "certificates/python_client/mo_client_cert.der")
     client_private_key = Path(cert_base / "certificates/python_client/mo_client_key.pem")
     server_cert = Path(cert_base / "certificates/trusted/interface_server_cert.der")
