@@ -18,6 +18,7 @@ if [[ "${#ADMIN_PASSWORD}" -lt 21 || ! "${ADMIN_PASSWORD}" =~ [[:upper:]] || ! "
 fi
 
 cleanup() {
+  "${COMPOSE[@]}" --profile e2e unpause opa >/dev/null 2>&1 || true
   "${COMPOSE[@]}" --profile e2e down --remove-orphans >/dev/null 2>&1 || true
 }
 
@@ -161,6 +162,23 @@ probe_wrong_identity json \
   certificates/pipeline/ca/ca.crt
 
 "${COMPOSE[@]}" --profile e2e run --build --rm --no-deps e2e-runner
+
+# A reachable but non-responsive PDP is different from a stopped container:
+# the TCP connection remains present while the policy response never arrives.
+# The interface must enforce its configured timeout, deny the request within a
+# bounded interval, and resume normal authorization after the PDP is unpaused.
+"${COMPOSE[@]}" --profile e2e pause opa
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  -e E2E_SCENARIO=opa-timeout \
+  -e E2E_MAX_REQUEST_SECONDS=5 \
+  e2e-runner
+echo "PASS opa-timeout: non-responsive PDP denied within 5 seconds"
+"${COMPOSE[@]}" --profile e2e unpause opa
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  -e E2E_SCENARIO=opa-recovery \
+  -e E2E_MAX_REQUEST_SECONDS=5 \
+  e2e-runner
+echo "PASS opa-recovery: authorization recovered after PDP unpause"
 
 # A valid request that normally passes Casbin and OPA must be denied when the
 # external PDP disappears. This exercises the real OPC UA entry point and

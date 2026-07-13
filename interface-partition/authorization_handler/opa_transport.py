@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import ssl
 from functools import lru_cache
 from pathlib import Path
@@ -16,6 +17,29 @@ def opa_fail_open_allowed(requested: bool, deployment_mode: str) -> bool:
     """
 
     return bool(requested) and deployment_mode.strip().lower() == "test"
+
+
+def parse_opa_timeout_seconds(
+    raw_value: str | float,
+    *,
+    max_seconds: float = 10.0,
+) -> float:
+    """Validate the PDP timeout as a finite, bounded positive duration.
+
+    An unavailable policy decision point must fail closed promptly.  Invalid,
+    non-finite or operationally excessive values therefore abort service
+    startup instead of silently creating an unbounded authorization wait.
+    """
+
+    try:
+        timeout = float(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("OPA_TIMEOUT_SECONDS must be a number") from exc
+    if not math.isfinite(timeout) or timeout <= 0 or timeout > max_seconds:
+        raise ValueError(
+            f"OPA_TIMEOUT_SECONDS must be finite and in (0, {max_seconds}]"
+        )
+    return timeout
 
 
 def opa_transport_allowed(url: str, deployment_mode: str) -> tuple[bool, str]:

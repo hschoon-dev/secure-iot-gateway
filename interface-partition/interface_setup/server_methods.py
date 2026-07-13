@@ -42,6 +42,7 @@ from authorization_handler import (
     build_opa_ssl_context,
     opa_fail_open_allowed,
     opa_transport_allowed,
+    parse_opa_timeout_seconds,
     parse_numeric_value,
 )
 from grpc_request_handler import send_request_as_grpc
@@ -101,7 +102,9 @@ _OPA_FAIL_OPEN_REQUESTED = os.getenv("OPA_FAIL_OPEN", "false").strip().lower() i
     "yes",
     "on",
 )
-_OPA_TIMEOUT_SECONDS = float(os.getenv("OPA_TIMEOUT_SECONDS", "0.75"))
+_OPA_TIMEOUT_SECONDS = parse_opa_timeout_seconds(
+    os.getenv("OPA_TIMEOUT_SECONDS", "0.75")
+)
 _OPA_PUMP_B_POWER_MAX_KW = float(os.getenv("OPA_PUMP_B_POWER_MAX_KW", "16"))
 _OPA_TLS_CA_CERT = os.getenv("OPA_TLS_CA_CERT", "")
 _OPA_TLS_CLIENT_CERT = os.getenv("OPA_TLS_CLIENT_CERT", "")

@@ -147,6 +147,15 @@ class DeploymentTransportGuardTests(unittest.TestCase):
         self.assertFalse(allowed(True, "staging"))
         self.assertFalse(allowed(True, "typo"))
 
+    def test_opa_timeout_is_positive_finite_and_bounded(self):
+        parse = self.opa_transport.parse_opa_timeout_seconds
+        self.assertEqual(parse("0.75"), 0.75)
+        self.assertEqual(parse(10), 10.0)
+        for invalid in (None, "", "not-a-number", "nan", "inf", 0, -1, 10.01):
+            with self.subTest(value=invalid):
+                with self.assertRaisesRegex(ValueError, "OPA_TIMEOUT_SECONDS"):
+                    parse(invalid)
+
     def test_https_opa_requires_complete_component_tls_material(self):
         build = self.opa_transport.build_opa_ssl_context
         build.cache_clear()

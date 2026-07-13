@@ -29,6 +29,14 @@ use the typed CPC gRPC/mTLS service.
 - malformed numeric input is denied before OPA.
 - invalid credentials are denied before authorization.
 
+The harness then exercises two distinct PDP failure modes. A paused OPA
+container keeps the network endpoint present but returns no policy decision;
+the otherwise valid request must fail closed within five seconds. After OPA is
+unpaused, the same request must succeed again. Finally, stopping OPA entirely
+must also deny the valid request. Invalid, non-finite, non-positive or excessive
+`OPA_TIMEOUT_SECONDS` values fail service startup instead of creating an
+unbounded authorization wait.
+
 On failure, the harness prints the last 120 log lines for every service before
 cleaning up.
 
