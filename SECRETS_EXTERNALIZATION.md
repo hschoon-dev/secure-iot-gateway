@@ -59,6 +59,40 @@ identities have been negatively tested, a backup may be removed explicitly:
 Without both the matching confirmation value and `--delete`, the retirement
 script performs a dry run. It never removes active runtime material.
 
+### Script reference
+
+| Script | Typical command | Effect and rollback |
+| --- | --- | --- |
+| `setup-local-secrets.sh` | `./setup-local-secrets.sh [--env-file PATH] [--force]` | Writes a mode-`0600` local Compose env file. It does not overwrite one without `--force`; restore a prior `.env` from its own backup if necessary. |
+| `setup-local-secrets.sh` | `./setup-local-secrets.sh --generate-runtime` | Creates the `.env`, then rotates and activates fresh local runtime identities. A missing Node-RED runtime config is treated as an optional Node-RED deployment; an existing credential store still blocks unsafe key-only rotation. |
+| `stage-runtime-secrets.sh` | `./stage-runtime-secrets.sh --stage-dir /secure/stage-20260713` | Creates `runtime-secrets/` and `runtime-data/` below a new stage directory. It never touches the active directories and removes a partial stage on failure. |
+| `activate-runtime-secrets.sh` | `./activate-runtime-secrets.sh --stage-dir /secure/stage-20260713 [--backup-dir PATH]` | Moves a complete staged tree into the active runtime paths and moves the preceding paths into the backup. Keep stage and active paths on the same filesystem so each directory rename is atomic. |
+| `rotate-secrets.sh` | `./rotate-secrets.sh` | Backs up source and active runtime material, generates a new CA and service identities, stages the result, then activates it. This is a local cutover, not a distributed CA-overlap deployment. |
+| `retire-old-secrets.sh` | `./retire-old-secrets.sh --backup TS --confirm TS --delete` | Deletes only the timestamped backup after explicit matching confirmation. Without both flags, it is a dry run; it never removes active runtime paths. |
+
+### Recommended local sequence
+
+```bash
+# One-time local setup. Docker Compose automatically loads .env afterwards.
+./setup-local-secrets.sh --generate-runtime
+SIOT_DEPLOYMENT_MODE=production ./validate-deployment-secrets.sh
+docker compose up --build
+
+# Later, after a planned cutover and service validation.
+./rotate-secrets.sh
+SIOT_DEPLOYMENT_MODE=production ./validate-deployment-secrets.sh
+docker compose up --build -d
+
+# Only after new identities work and old ones are rejected.
+./retire-old-secrets.sh --backup 20260713-120000 \
+  --confirm 20260713-120000 --delete
+```
+
+For multiple hosts, deploy a truststore containing both old and new trust
+anchors first, migrate clients and servers in phases, and retire old material
+only after every peer has switched. The local scripts deliberately do not
+claim to implement that distributed rollover.
+
 ## Node-RED master-key migration (T11)
 
 `node-red/settings.js` reads a minimum 32-character key from

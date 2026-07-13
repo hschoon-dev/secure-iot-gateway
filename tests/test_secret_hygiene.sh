@@ -37,4 +37,6 @@ fi
 echo "Secret hygiene checks passed."
 bash "${ROOT_DIR}/tests/test_deployment_secret_guard.sh"
 bash "${ROOT_DIR}/tests/test_local_secret_setup.sh"
+bash "${ROOT_DIR}/tests/test_stage_runtime_secrets.sh"
 bash "${ROOT_DIR}/tests/test_runtime_secret_activation.sh"
+bash "${ROOT_DIR}/tests/test_retire_old_secrets.sh"
