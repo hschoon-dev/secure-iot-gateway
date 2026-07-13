@@ -40,6 +40,7 @@ from user_manager import UserManagerTinyDB
 from authorization_handler import (
     AuthorizationHandler,
     build_opa_ssl_context,
+    opa_fail_open_allowed,
     opa_transport_allowed,
     parse_numeric_value,
 )
@@ -94,13 +95,23 @@ _DEFAULT_NEW_USER_ROLE = os.getenv("DEFAULT_NEW_USER_ROLE", "PlantOperator")
 
 _AUTHZ_MODE = os.getenv("AUTHZ_MODE", "casbin").strip().lower()
 _OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/siot/authz/allow")
-_OPA_FAIL_OPEN = os.getenv("OPA_FAIL_OPEN", "false").strip().lower() in ("1", "true", "yes", "on")
+_OPA_FAIL_OPEN_REQUESTED = os.getenv("OPA_FAIL_OPEN", "false").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 _OPA_TIMEOUT_SECONDS = float(os.getenv("OPA_TIMEOUT_SECONDS", "0.75"))
 _OPA_PUMP_B_POWER_MAX_KW = float(os.getenv("OPA_PUMP_B_POWER_MAX_KW", "16"))
 _OPA_TLS_CA_CERT = os.getenv("OPA_TLS_CA_CERT", "")
 _OPA_TLS_CLIENT_CERT = os.getenv("OPA_TLS_CLIENT_CERT", "")
 _OPA_TLS_CLIENT_KEY = os.getenv("OPA_TLS_CLIENT_KEY", "")
 _DEPLOYMENT_MODE = os.getenv("SIOT_DEPLOYMENT_MODE", "production")
+_OPA_FAIL_OPEN = opa_fail_open_allowed(_OPA_FAIL_OPEN_REQUESTED, _DEPLOYMENT_MODE)
+if _OPA_FAIL_OPEN_REQUESTED and not _OPA_FAIL_OPEN:
+    _logger.warning(
+        "Ignoring OPA_FAIL_OPEN outside the explicitly labelled test deployment"
+    )
 
 
 def _resolve_authz_mode() -> str:

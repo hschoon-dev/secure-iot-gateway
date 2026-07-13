@@ -139,6 +139,14 @@ class DeploymentTransportGuardTests(unittest.TestCase):
             True,
         )
 
+    def test_opa_fail_open_is_test_only(self):
+        allowed = self.opa_transport.opa_fail_open_allowed
+        self.assertFalse(allowed(False, "test"))
+        self.assertTrue(allowed(True, "test"))
+        self.assertFalse(allowed(True, "production"))
+        self.assertFalse(allowed(True, "staging"))
+        self.assertFalse(allowed(True, "typo"))
+
     def test_https_opa_requires_complete_component_tls_material(self):
         build = self.opa_transport.build_opa_ssl_context
         build.cache_clear()

@@ -161,3 +161,12 @@ probe_wrong_identity json \
   certificates/pipeline/ca/ca.crt
 
 "${COMPOSE[@]}" --profile e2e run --build --rm --no-deps e2e-runner
+
+# A valid request that normally passes Casbin and OPA must be denied when the
+# external PDP disappears. This exercises the real OPC UA entry point and
+# network failure path, not only a mocked helper.
+"${COMPOSE[@]}" --profile e2e stop opa
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  -e E2E_SCENARIO=opa-outage \
+  e2e-runner
+echo "PASS opa-outage: valid request denied after PDP shutdown"

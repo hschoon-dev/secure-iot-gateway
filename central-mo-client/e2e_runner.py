@@ -50,20 +50,32 @@ async def run() -> None:
     if not password:
         raise RuntimeError("ADMIN_PASSWORD is required")
 
+    scenario = os.environ.get("E2E_SCENARIO", "full").strip().lower()
     _assert_secret_scope()
     client = await setup_client(max_retries=12, retry_delay=2)
     try:
-        cases = (
-            # 9 satisfies the complete mapping ruleset (including < 12 and < 16).
-            ("allowed", _arguments(password, "9"), "Submission received"),
-            ("opa-boundary-deny", _arguments(password, "16"), "authorization failed (opa)"),
-            ("malformed-deny", _arguments(password, "not-a-number"), "Invalid input for modification."),
-            (
-                "authentication-deny",
-                _arguments(password, "15", valid_credentials=False),
-                "Authentication failed",
-            ),
-        )
+        if scenario == "full":
+            cases = (
+                # 9 satisfies the complete mapping ruleset (including < 12 and < 16).
+                ("allowed", _arguments(password, "9"), "Submission received"),
+                ("opa-boundary-deny", _arguments(password, "16"), "authorization failed (opa)"),
+                ("malformed-deny", _arguments(password, "not-a-number"), "Invalid input for modification."),
+                (
+                    "authentication-deny",
+                    _arguments(password, "15", valid_credentials=False),
+                    "Authentication failed",
+                ),
+            )
+        elif scenario == "opa-outage":
+            cases = (
+                (
+                    "opa-outage-fail-closed",
+                    _arguments(password, "9"),
+                    "authorization failed (opa)",
+                ),
+            )
+        else:
+            raise ValueError(f"unknown E2E_SCENARIO: {scenario}")
         for name, arguments, expected in cases:
             notification = await _submit(client, arguments)
             if expected not in notification:

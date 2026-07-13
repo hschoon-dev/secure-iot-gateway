@@ -8,6 +8,16 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
+def opa_fail_open_allowed(requested: bool, deployment_mode: str) -> bool:
+    """Permit fail-open behavior only in an explicitly labelled test deployment.
+
+    A production or misspelled deployment mode must never turn an unavailable or
+    malformed external policy decision into an authorization grant.
+    """
+
+    return bool(requested) and deployment_mode.strip().lower() == "test"
+
+
 def opa_transport_allowed(url: str, deployment_mode: str) -> tuple[bool, str]:
     """Return whether an OPA endpoint is acceptable for this deployment mode.
 
