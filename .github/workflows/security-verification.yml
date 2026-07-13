@@ -4,10 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - creds-updated
-      - feat/security-hardening
+      - main
       - active-dev
-      - "codex/**"
+      - "feat/**"
   pull_request:
 
 permissions:
