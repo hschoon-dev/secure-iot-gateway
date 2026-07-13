@@ -22,6 +22,8 @@
                                                     <xs:element name="offset" type="xs:int"/>
                                                     <xs:element name="type" type="xs:string"/>
                                                     <xs:element name="description" type="xs:string"/>
+                                                    <xs:element name="write_target" type="xs:string" minOccurs="0"/>
+                                                    <xs:element name="read_target" type="xs:string" minOccurs="0"/>
                                                 </xs:sequence>
                                             </xs:complexType>
                                         </xs:element>

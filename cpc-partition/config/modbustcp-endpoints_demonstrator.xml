@@ -19,13 +19,14 @@
         <description>Compressor1 status mirror — written by Modbus Write M2 (logo_sim)</description>
       </endpoint>
       <endpoint>
-        <name>Modbus Write M2</name>
+        <name>Compressor1</name>
         <function>Write Single Coil</function>
         <address>8257</address>
         <quantity>1</quantity>
         <offset>-1</offset>
         <type>Coils</type>
         <description>Compressor1 command coil — mirrors to 8193 on write (logo_sim)</description>
+        <read_target>Compressor1_Modbus Read</read_target>
       </endpoint>
       <endpoint>
         <name>Compressor1_Alarm Compressor 1</name>
@@ -149,6 +150,7 @@
         <offset>-1</offset>
         <type>Holding Registers</type>
         <description>Switch-On Pressure write — FC6 (logo_sim)</description>
+        <read_target>Compressor1_Switch-On Pressure</read_target>
       </endpoint>
       <endpoint>
         <name>Compressor1_Switch-Off Pressure</name>
@@ -167,6 +169,7 @@
         <offset>-1</offset>
         <type>Holding Registers</type>
         <description>Switch-Off Pressure write — FC6 (logo_sim)</description>
+        <read_target>Compressor1_Switch-Off Pressure</read_target>
       </endpoint>
 
       <!-- Holding Registers: Ecotec device registers -->

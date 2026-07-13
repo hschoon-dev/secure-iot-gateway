@@ -121,6 +121,7 @@ class OnDemandModbusTCPRegistry:
                 address = int(address_txt)
                 quantity = int(quantity_txt)
                 offset = int(offset_txt) if offset_txt else -1
+                read_target = (ep.findtext("read_target") or "").strip() or None
 
                 per_server_endpoints[name] = {
                     "address": address,
@@ -130,6 +131,7 @@ class OnDemandModbusTCPRegistry:
                     "type": typ,
                     "description": desc,
                     "serveralias": serveralias,
+                    "read_target": read_target,
                 }
 
             client = ModbusTCPClient(ipaddr=ipaddr, port=port, serveralias=serveralias, endpoints=per_server_endpoints)
@@ -231,23 +233,31 @@ class OnDemandModbusTCPRegistry:
             return None
 
         client, meta = hit
+
+        # --- read_target redirect: Write-Endpoints point to their readable mirror ---
+        read_target_name = (meta.get("read_target") or "").strip() or None
+        if read_target_name:
+            serveralias = (meta.get("serveralias") or "").strip()
+            rt_qualified = f"{serveralias}:{read_target_name}" if serveralias else read_target_name
+            rt_hit = self.endpoint_lookup.get(rt_qualified) or self.endpoint_lookup.get(read_target_name)
+            if rt_hit is None:
+                _logger.error("read_target '%s' not found in registry for key '%s'", read_target_name, key)
+                return None
+            _logger.warning("Modbus fetch redirect: '%s' -> read_target '%s'", key, rt_qualified)
+            client, meta = rt_hit
+            key = rt_qualified  # local_name derived from this below
+
         fn = (meta.get("function") or "").strip().lower()
-        # normalize common naming variants
-        # (your XML has mixed: "Read Coils", "Read Coil Status", "Read Discrete Input", etc.)
         try:
             if "read coils" in fn or "read coil status" in fn:
-                # FC01
-                # meta stored under unqualified endpoint name in client.endpoints
                 local_name = key.split(":", 1)[1]
                 return client.fc01_read_coil_status(local_name)
 
             if "read discrete" in fn:
-                # FC02
                 local_name = key.split(":", 1)[1]
                 return client.fc02_read_discrete_inputs(local_name)
 
             if "read holding" in fn:
-                # FC03
                 local_name = key.split(":", 1)[1]
                 v, _dt = client.fc03_read_holding_registers(local_name)
                 return v
@@ -256,7 +266,6 @@ class OnDemandModbusTCPRegistry:
             return None
         except Exception as e:
             _logger.exception("Modbus read failed for %s: %s", key, e)
-            # attempt reconnect throttled
             try:
                 client.retry_connection()
             except Exception:
@@ -279,13 +288,12 @@ class OnDemandModbusTCPRegistry:
         Returns per-key result dict, aligned with OPC UA style:
         {"status": "ok", ...} or {"status": "error", "reason": "...", ...}
 
-        NOTE:
-        We allow writing holding registers even if the XML "function" says
-        "Read Holding Registers" (common in configs that don't model access mode).
-        Decision is based on either:
-            - function containing "write ... registers", OR
-            - endpoint type containing "holding" (Holding Registers), OR
-            - function containing "holding" (read holding registers)
+        Modbus read/write split:
+        In Brownfield devices the write address often differs from the read address
+        (e.g. LOGO!: write FC05 to coil 8257, read back via FC01 from coil 8193).
+        The Write-Endpoint carries an optional <read_target> element naming the
+        corresponding Read-Endpoint.  If present, verify_readback uses that endpoint
+        instead of reading back from the write address itself.
         """
         results: dict[str, dict] = {}
 
@@ -299,6 +307,32 @@ class OnDemandModbusTCPRegistry:
             fn = (meta.get("function") or "").strip().lower()
             typ = (meta.get("type") or "").strip().lower()
             local_name = key.split(":", 1)[1]
+
+            # --- resolve read_target for verify_readback ---
+            read_target_name = (meta.get("read_target") or "").strip() or None
+            rb_client = client
+            rb_local = local_name
+            rb_fn = fn
+            if read_target_name:
+                serveralias = (meta.get("serveralias") or "").strip()
+                rt_qualified = f"{serveralias}:{read_target_name}" if serveralias else read_target_name
+                rt_hit = self.endpoint_lookup.get(rt_qualified) or self.endpoint_lookup.get(read_target_name)
+                if rt_hit is None:
+                    _logger.error(
+                        "read_target '%s' (resolved as '%s') not found in registry for key '%s'",
+                        read_target_name, rt_qualified, key,
+                    )
+                    results[key] = {
+                        "status": "error",
+                        "reason": "read_target_not_found",
+                        "read_target": read_target_name,
+                        "value": raw_val,
+                    }
+                    continue
+                rb_client, rb_meta = rt_hit
+                rb_local = rt_qualified.split(":", 1)[1] if ":" in rt_qualified else read_target_name
+                rb_fn = (rb_meta.get("function") or "").strip().lower()
+                _logger.warning("Modbus verify readback: '%s' -> read_target '%s'", key, rt_qualified)
 
             try:
                 # --- COILS -------------------------------------------------------
@@ -316,7 +350,12 @@ class OnDemandModbusTCPRegistry:
                         continue
 
                     if verify_readback:
-                        rb = client.fc01_read_coil_status(local_name)
+                        if "read coils" in rb_fn or "read coil status" in rb_fn:
+                            rb = rb_client.fc01_read_coil_status(rb_local)
+                        elif "read discrete" in rb_fn:
+                            rb = rb_client.fc02_read_discrete_inputs(rb_local)
+                        else:
+                            rb = rb_client.fc01_read_coil_status(rb_local)
                         if rb == v:
                             results[key] = {"status": "ok", "value": rb}
                         else:
@@ -331,6 +370,28 @@ class OnDemandModbusTCPRegistry:
                     continue
 
                 # --- HOLDING REGISTERS ------------------------------------------
+                # FC06: Write Single Register
+                if "write single register" in fn:
+                    reg_val = int(raw_val) if not isinstance(raw_val, list) else int(raw_val[0])
+                    ok = client.write_single_register(local_name, reg_val)
+                    if not ok:
+                        results[key] = {"status": "error", "reason": "write_failed", "value": reg_val}
+                        continue
+                    if verify_readback:
+                        rb, _dt = rb_client.fc03_read_holding_registers(rb_local)
+                        if rb == reg_val:
+                            results[key] = {"status": "ok", "value": rb}
+                        else:
+                            results[key] = {
+                                "status": "error",
+                                "reason": "verification_failed",
+                                "written": reg_val,
+                                "read_back": rb,
+                            }
+                    else:
+                        results[key] = {"status": "ok", "value": reg_val}
+                    continue
+
                 is_write_regs = (
                     ("write multiple registers" in fn)
                     or ("write registers" in fn)
@@ -354,7 +415,7 @@ class OnDemandModbusTCPRegistry:
                         continue
 
                     if verify_readback:
-                        rb, _dt = client.fc03_read_holding_registers(local_name)
+                        rb, _dt = rb_client.fc03_read_holding_registers(rb_local)
                         expected = regs[0] if regs else None
                         if rb == expected:
                             results[key] = {"status": "ok", "value": rb}
