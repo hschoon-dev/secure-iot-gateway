@@ -100,10 +100,13 @@ services:
       SIOT_CREDENTIALS_DB: /var/lib/siot/credentials.json
       ALLOW_LEGACY_CREDENTIALS: "false"
       AUTHZ_MODE: "${AUTHZ_MODE:-casbin}"
-      OPA_URL: "${OPA_URL:-http://opa:8181/v1/data/siot/authz/allow}"
+      OPA_URL: "${OPA_URL:-https://opa:8181/v1/data/siot/authz/allow}"
       OPA_FAIL_OPEN: "${OPA_FAIL_OPEN:-false}"
       OPA_TIMEOUT_SECONDS: "${OPA_TIMEOUT_SECONDS:-0.75}"
       OPA_PUMP_B_POWER_MAX_KW: "${OPA_PUMP_B_POWER_MAX_KW:-16}"
+      OPA_TLS_CA_CERT: /run/siot-secrets/interface-partition/certificates/grpc/ca/ca.crt
+      OPA_TLS_CLIENT_CERT: /run/siot-secrets/interface-partition/certificates/grpc/client/client.crt
+      OPA_TLS_CLIENT_KEY: /run/siot-secrets/interface-partition/certificates/grpc/client/client.key
       SIOT_DEPLOYMENT_MODE: "${SIOT_DEPLOYMENT_MODE:-production}"
       GRPC_CLIENT_HOST: intermediate-vor-partition
     ports:
@@ -158,6 +161,7 @@ services:
       DB_USER: "vor-2"
       DB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
       DB_HOST: mariadb
+      FLASK_HOST: cpc-partition
     depends_on:
       mariadb:
         condition: service_healthy
@@ -257,11 +261,30 @@ services:
   opa:
     container_name: opa
     image: openpolicyagent/opa@sha256:cba27d3c6af2feba1e4d6e6b5e24df5b53db332420d4148a90acccd12efae6ed
-    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies/policy.rego"]
+    command:
+      - run
+      - --server
+      - --addr=https://0.0.0.0:8181
+      - --min-tls-version=1.3
+      - --tls-cert-file=/run/siot-secrets/opa/certificates/tls/server/server.crt
+      - --tls-private-key-file=/run/siot-secrets/opa/certificates/tls/server/server.key
+      - --tls-ca-cert-file=/run/siot-secrets/opa/certificates/tls/ca/ca.crt
+      - --authentication=tls
+      - --authorization=basic
+      - /policies/policy.rego
+      - /policies/system_api_authz.rego
     volumes:
       - type: bind
         source: ./evaluation/opa-spike/policy.rego
         target: /policies/policy.rego
+        read_only: true
+      - type: bind
+        source: ./evaluation/opa-spike/system_api_authz.rego
+        target: /policies/system_api_authz.rego
+        read_only: true
+      - type: bind
+        source: ./.runtime-secrets/opa
+        target: /run/siot-secrets/opa
         read_only: true
     attach: false
     networks:

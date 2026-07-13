@@ -139,6 +139,31 @@ class DeploymentTransportGuardTests(unittest.TestCase):
             True,
         )
 
+    def test_https_opa_requires_complete_component_tls_material(self):
+        build = self.opa_transport.build_opa_ssl_context
+        build.cache_clear()
+        with self.assertRaisesRegex(ValueError, "OPA_TLS_CA_CERT"):
+            build(
+                "https://opa:8181/v1/data/siot/authz/allow",
+                "production",
+                "",
+                "",
+                "",
+            )
+
+    def test_test_only_http_opa_does_not_create_tls_context(self):
+        build = self.opa_transport.build_opa_ssl_context
+        build.cache_clear()
+        self.assertIsNone(
+            build(
+                "http://opa:8181/v1/data/siot/authz/allow",
+                "test",
+                "",
+                "",
+                "",
+            )
+        )
+
 
 class AdminBootstrapTests(unittest.TestCase):
     @classmethod

@@ -27,6 +27,7 @@ rsync -a \
   --exclude .runtime-secrets \
   --exclude .runtime-data \
   --exclude .e2e-runtime \
+  --exclude .mariadb-e2e-runtime \
   --exclude .secrets-backup \
   --exclude '*.log' \
   "${ROOT_DIR}/" "${COPY_DIR}/"

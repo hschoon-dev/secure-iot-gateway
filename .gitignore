@@ -15,6 +15,7 @@ env/
 .runtime-secrets/
 .runtime-data/
 .e2e-runtime/
+.mariadb-e2e-runtime/
 .secrets-backup/
 .secret-staging/
 **/*.key
@@ -26,6 +27,8 @@ _generated_certificates/grpc/ca/ca.srl
 _generated_certificates/grpc/intermediate-vor-cpc-certs/*.crt
 _generated_certificates/grpc/cpc-certs/server.crt
 _generated_certificates/grpc/intermediate-vor-certs/client.crt
+_generated_certificates/grpc/opa-certs/*.crt
+_generated_certificates/opcua/mo_client/
 interface-partition/user_manager/credentials.json
 
 # Ignore IDE/editor files

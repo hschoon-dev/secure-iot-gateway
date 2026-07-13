@@ -89,6 +89,26 @@ echo "PASS nosecurity-disabled: brownfield port 4841 is closed by default"
 
 "${COMPOSE[@]}" --profile e2e build identity-probe
 
+# T-07: the production OPA endpoint is TLS 1.3 with mutual authentication.
+# No-certificate callers fail during TLS; a valid certificate belonging to a
+# different gateway service reaches OPA but is denied by system.authz.
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  --entrypoint python \
+  -v "${ROOT_DIR}/.runtime-secrets/cpc-partition:/probe-secrets:ro" \
+  identity-probe /probe/opa_mtls_probe.py \
+    missing-client \
+    https://opa:8181/v1/data/siot/authz/allow \
+    /probe-secrets/certs/ca/ca.crt
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  --entrypoint python \
+  -v "${ROOT_DIR}/.runtime-secrets/cpc-partition:/probe-secrets:ro" \
+  identity-probe /probe/opa_mtls_probe.py \
+    foreign-identity \
+    https://opa:8181/v1/data/siot/authz/allow \
+    /probe-secrets/certs/ca/ca.crt \
+    /probe-secrets/certs/client/client.crt \
+    /probe-secrets/certs/client/client.key
+
 probe_wrong_identity() {
   local rpc="$1" target="$2" server_name="$3" source="$4"
   local key="$5" certificate="$6" ca="$7"

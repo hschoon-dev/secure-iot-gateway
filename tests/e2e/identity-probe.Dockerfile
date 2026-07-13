@@ -17,4 +17,5 @@ RUN python -m grpc_tools.protoc \
     ./proto/*.proto
 
 COPY tests/e2e/wrong_identity_probe.py ./wrong_identity_probe.py
+COPY tests/e2e/opa_mtls_probe.py ./opa_mtls_probe.py
 ENTRYPOINT ["python", "/probe/wrong_identity_probe.py"]

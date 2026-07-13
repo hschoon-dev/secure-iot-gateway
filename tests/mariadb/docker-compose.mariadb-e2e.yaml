@@ -1,0 +1,13 @@
+services:
+  intermediate-vor-partition:
+    environment:
+      PIPELINE_MODE: mariadb
+
+  intermediate-vor-partition-cpc:
+    command: ["python3", "-u", "./main.py"]
+    environment:
+      FLASK_HOST: cpc-partition
+      LOG_LEVEL: INFO
+
+  e2e-runner:
+    command: ["python3", "-u", "./mariadb_e2e_runner.py"]

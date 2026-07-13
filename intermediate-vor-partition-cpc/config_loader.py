@@ -147,7 +147,7 @@ def _read_raw(path: Path) -> Dict[str, Any]:
 def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
     """Resolve relative ruleset file paths against base_dir."""
     rulesets = raw.get("acceptance_rulesets", {})
-    for field in ("ruleset", "ruleset_modified"):
+    for field in ("ruleset", "ruleset_with_affected_endpoints"):
         if field in rulesets:
             p = Path(rulesets[field])
             rulesets[field] = str(p if p.is_absolute() else base_dir / p)
@@ -169,7 +169,7 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
     if v := env.get("ACCEPTANCE_RULESET_PATH"):
         ruleset_data["ruleset"] = v
     if v := env.get("ACCEPTANCE_RULESET_MODIFIED_PATH"):
-        ruleset_data["ruleset_modified"] = v
+        ruleset_data["ruleset_with_affected_endpoints"] = v
 
     db_data = config.mariadb.model_dump()
     if v := env.get("DB_HOST"):

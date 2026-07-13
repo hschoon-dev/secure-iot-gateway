@@ -36,6 +36,12 @@ required_runtime_files=(
   "brownfield-opcua-server/opcua_secured_server/certificates/brownfield_server_key.pem"
   "brownfield-opcua-server/opcua_secured_server/certificates/brownfield_server_cert.der"
   "brownfield-opcua-server/opcua_secured_server/certificates/trusted/cpc_client_cert.der"
+  "interface-partition/certificates/grpc/ca/ca.crt"
+  "interface-partition/certificates/grpc/client/client.key"
+  "interface-partition/certificates/grpc/client/client.crt"
+  "opa/certificates/tls/ca/ca.crt"
+  "opa/certificates/tls/server/server.key"
+  "opa/certificates/tls/server/server.crt"
 )
 
 for path in "${required_runtime_files[@]}"; do
