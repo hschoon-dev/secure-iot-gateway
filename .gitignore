@@ -16,6 +16,7 @@ env/
 .runtime-data/
 .e2e-runtime/
 .secrets-backup/
+.secret-staging/
 **/*.key
 **/*_key.pem
 **/*_key.der

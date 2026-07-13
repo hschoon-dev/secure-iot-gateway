@@ -19,6 +19,46 @@ and never deletes a source file. Services fail closed when required runtime
 material is missing. A reviewed, temporary `ALLOW_LEGACY_SECRETS=true` remains
 available only for migration troubleshooting.
 
+## Local initial setup and staged activation
+
+For a local deployment, create a unique, Git-ignored `.env` file first:
+
+```bash
+./setup-local-secrets.sh
+```
+
+The script writes the four Compose passwords with mode `0600`; Docker Compose
+loads `.env` automatically. It refuses to overwrite an existing file unless
+`--force` is supplied. Passwords are deliberately kept out of the repository,
+but an `.env` file is still appropriate only for a protected local machine. A
+production deployment should inject its values from its deployment secret
+manager instead.
+
+A fresh checkout has no private keys. To also generate fresh local
+certificates, externalize them into a staged tree and activate it only after it
+is complete:
+
+```bash
+./setup-local-secrets.sh --generate-runtime
+```
+
+`rotate-secrets.sh` follows the same two-step activation: it builds complete
+runtime secrets under `.secret-staging/` and swaps both runtime directories by
+rename. The preceding active trees remain beneath the timestamped
+`.secrets-backup/` entry. This is a local, cutover-style rotation; it does not
+implement a multi-host CA overlap rollout or certificate revocation.
+
+After every service has been deployed with the new trust material and old
+identities have been negatively tested, a backup may be removed explicitly:
+
+```bash
+./retire-old-secrets.sh --backup 20260713-120000 \
+  --confirm 20260713-120000 --delete
+```
+
+Without both the matching confirmation value and `--delete`, the retirement
+script performs a dry run. It never removes active runtime material.
+
 ## Node-RED master-key migration (T11)
 
 `node-red/settings.js` reads a minimum 32-character key from

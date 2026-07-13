@@ -218,9 +218,23 @@ PY
   echo "           nachgelagerte Credentials muessen separat widerrufen und ersetzt werden."
 fi
 
-# --- 7) Externalisieren ----------------------------------------------------------------
-if [ -x "${ROOT_DIR}/secret_migration.sh" ]; then
-  log "7) Externalisierung (.runtime-secrets)"
+# --- 7) Staging und Aktivierung ---------------------------------------------------------
+# Do not replace the live component-scoped trees while they are incomplete.
+# The staged tree is assembled first, then activated via directory renames. The
+# previous active tree is retained in this rotation's backup for a reviewed
+# rollback or later retirement.
+if [ -x "${ROOT_DIR}/stage-runtime-secrets.sh" ] && \
+   [ -x "${ROOT_DIR}/activate-runtime-secrets.sh" ]; then
+  STAGE_DIR="${ROOT_DIR}/.secret-staging/${TS}"
+  log "7) Runtime-Secrets stagen und aktivieren"
+  bash "${ROOT_DIR}/stage-runtime-secrets.sh" --stage-dir "${STAGE_DIR}"
+  bash "${ROOT_DIR}/activate-runtime-secrets.sh" \
+    --stage-dir "${STAGE_DIR}" \
+    --backup-dir "${BACKUP}/runtime"
+elif [ -x "${ROOT_DIR}/secret_migration.sh" ]; then
+  # Compatibility path for deliberately minimal fixtures. Full deployments
+  # must include the staging helpers above.
+  log "7) Externalisierung (.runtime-secrets; Kompatibilitaetsmodus)"
   bash "${ROOT_DIR}/secret_migration.sh"
 fi
 
@@ -236,6 +250,6 @@ cat <<EOF
    - Container neu bauen/deployen (nur neue Truststores aktiv).
    - Node-RED-Credentials separat rotieren, re-encrypten und per Readback pruefen (T-11).
    - Pro Dienst neue Verbindungen positiv und alte Zertifikate negativ testen.
-   - Optional die weitere Verbreitung des Altmaterials durch Historienbereinigung
-     reduzieren (ersetzt Rotation und Deployment-Nachweise nicht).
+   - Erst nach validiertem Rollout kann der Backup-Satz mit
+     ./retire-old-secrets.sh --backup ${TS} --confirm ${TS} --delete entfernt werden.
 EOF
