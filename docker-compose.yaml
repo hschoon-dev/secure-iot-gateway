@@ -145,8 +145,8 @@ services:
     build: intermediate-vor-partition-cpc/
     volumes:
       - type: bind
-        source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
-        target: /app/config/Acceptance_Ruleset_modified.xml
+        source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_with_affected_endpoints.xml
+        target: /app/config/Acceptance_Ruleset_with_affected_endpoints.xml
       - type: bind
         source: ./intermediate-vor-partition-cpc/logs
         target: /app/logs

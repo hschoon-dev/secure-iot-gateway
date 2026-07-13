@@ -1,3 +1,4 @@
+<!-- Legacy fixture containing affected-endpoint entries. -->
 <ruleset>
     <key_personnel_present>
         <current_value>True</current_value>

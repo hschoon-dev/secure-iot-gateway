@@ -42,9 +42,9 @@ class AcceptanceRulesetConfig(BaseModel):
         Path("config/Acceptance_Ruleset.xml"),
         description="Path to the primary acceptance ruleset XML",
     )
-    ruleset_modified: Path = Field(
-        Path("config/Acceptance_Ruleset_modified.xml"),
-        description="Path where the modified ruleset (with injected endpoints) is written",
+    ruleset_with_affected_endpoints: Path = Field(
+        Path("config/Acceptance_Ruleset_with_affected_endpoints.xml"),
+        description="Path for the ruleset fixture containing affected endpoints",
     )
 
 
