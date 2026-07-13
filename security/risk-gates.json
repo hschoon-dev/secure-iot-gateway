@@ -2,18 +2,18 @@
   "schema_version": 1,
   "policy": "CI gates establish technical evidence. They never change ordinal risk scores automatically; every residual-score change requires a documented human review.",
   "job_classes": {
-    "regression-and-policy": "Unit, secret-hygiene, deployment-guard, Node-RED migration and OPA policy checks",
-    "docker-e2e-and-rotation": "Compose E2E, service identity, Casbin/OPA parity and isolated rotation checks"
+    "security-regressions-and-migration": "Unit, secret-hygiene, deployment-guard, Node-RED migration and OPA policy checks",
+    "docker-integration-and-trust-rotation": "Compose E2E, service identity, Casbin/OPA parity and isolated trust-rotation checks"
   },
   "threats": [
-    {"id": "T-01", "required_jobs": ["regression-and-policy"], "evidence_status": "technical mitigation verified"},
-    {"id": "T-02", "required_jobs": ["regression-and-policy", "docker-e2e-and-rotation"], "evidence_status": "evaluated Compose deployment verified"},
-    {"id": "T-03", "required_jobs": ["regression-and-policy"], "evidence_status": "technical mitigation verified"},
-    {"id": "T-05", "required_jobs": ["regression-and-policy"], "evidence_status": "process-local mitigation verified; crash/multiprocess scope remains"},
-    {"id": "T-06", "required_jobs": ["regression-and-policy"], "evidence_status": "technical mitigation verified"},
-    {"id": "T-08", "required_jobs": ["docker-e2e-and-rotation"], "evidence_status": "evaluated Compose secret scope verified"},
-    {"id": "T-10", "required_jobs": ["regression-and-policy", "docker-e2e-and-rotation"], "evidence_status": "bounded policy path verified"},
-    {"id": "T-11", "required_jobs": ["regression-and-policy"], "evidence_status": "migration mechanism verified; real store migration and downstream revocation remain open"},
-    {"id": "T-12", "required_jobs": ["regression-and-policy"], "evidence_status": "NoSecurity server is test-only and production guard is regression-tested"}
+    {"id": "T-01", "required_jobs": ["security-regressions-and-migration"], "evidence_status": "technical mitigation verified"},
+    {"id": "T-02", "required_jobs": ["security-regressions-and-migration", "docker-integration-and-trust-rotation"], "evidence_status": "evaluated Compose deployment verified"},
+    {"id": "T-03", "required_jobs": ["security-regressions-and-migration"], "evidence_status": "technical mitigation verified"},
+    {"id": "T-05", "required_jobs": ["security-regressions-and-migration"], "evidence_status": "process-local mitigation verified; crash/multiprocess scope remains"},
+    {"id": "T-06", "required_jobs": ["security-regressions-and-migration"], "evidence_status": "technical mitigation verified"},
+    {"id": "T-08", "required_jobs": ["docker-integration-and-trust-rotation"], "evidence_status": "evaluated Compose secret scope verified"},
+    {"id": "T-10", "required_jobs": ["security-regressions-and-migration", "docker-integration-and-trust-rotation"], "evidence_status": "bounded policy path verified"},
+    {"id": "T-11", "required_jobs": ["security-regressions-and-migration"], "evidence_status": "migration mechanism verified; real store migration and downstream revocation remain open"},
+    {"id": "T-12", "required_jobs": ["security-regressions-and-migration"], "evidence_status": "NoSecurity server is test-only and production guard is regression-tested"}
   ]
 }

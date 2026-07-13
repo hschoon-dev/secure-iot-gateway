@@ -1,23 +1,23 @@
-name: Gateway sprint CI
+name: Gateway Security Verification
 
 on:
   workflow_dispatch:
   push:
     branches:
       - creds-updated
-      - codex/e2e-mtls-sprint
       - feat/security-hardening
+      - active-dev
   pull_request:
 
 permissions:
   contents: read
 
 concurrency:
-  group: gateway-sprint-${{ github.workflow }}-${{ github.ref }}
+  group: gateway-security-verification-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  regression-and-policy:
+  security-regressions-and-migration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -27,7 +27,7 @@ jobs:
         run: mkdir -p evidence
 
       - name: Generate ephemeral test identities
-        run: tests/ci/prepare_test_secrets.sh
+        run: tests/ci/prepare_ephemeral_test_material.sh
 
       - name: Python security regressions
         run: python3 -m unittest discover -s tests -p 'test_*.py' 2>&1 | tee evidence/security-regressions.txt
@@ -42,12 +42,7 @@ jobs:
         run: tests/node-red/test_docker_credential_migration.sh 2>&1 | tee evidence/t11-node-red-docker.txt
 
       - name: OPA policy tests
-        run: |
-          docker run --rm \
-            -v "$PWD/evaluation/opa-spike:/policy:ro" \
-            openpolicyagent/opa@sha256:cba27d3c6af2feba1e4d6e6b5e24df5b53db332420d4148a90acccd12efae6ed \
-            test /policy/policy.rego /policy/policy_test.rego \
-            2>&1 | tee evidence/opa-policy.txt
+        run: tests/evaluation/run_opa_policy_evidence.sh 2>&1 | tee evidence/opa-policy.txt
 
       - name: Upload regression evidence
         if: always()
@@ -59,19 +54,19 @@ jobs:
 
   risk-gate-report:
     if: always()
-    needs: [regression-and-policy, docker-e2e-and-rotation]
+    needs: [security-regressions-and-migration, docker-integration-and-trust-rotation]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Render commit-bound risk-gate evidence
         env:
-          REGRESSION_RESULT: ${{ needs.regression-and-policy.result }}
-          DOCKER_RESULT: ${{ needs.docker-e2e-and-rotation.result }}
+          SECURITY_REGRESSION_RESULT: ${{ needs.security-regressions-and-migration.result }}
+          DOCKER_INTEGRATION_RESULT: ${{ needs.docker-integration-and-trust-rotation.result }}
         run: |
           python3 tests/evaluation/render_risk_gate_report.py \
-            --regression-result "${REGRESSION_RESULT}" \
-            --docker-result "${DOCKER_RESULT}" \
+            --security-regression-result "${SECURITY_REGRESSION_RESULT}" \
+            --docker-integration-result "${DOCKER_INTEGRATION_RESULT}" \
             --commit "${GITHUB_SHA}" \
             --output-dir evidence
 
@@ -83,7 +78,7 @@ jobs:
           path: evidence/
           if-no-files-found: error
 
-  docker-e2e-and-rotation:
+  docker-integration-and-trust-rotation:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -95,7 +90,7 @@ jobs:
         run: mkdir -p evidence
 
       - name: Generate ephemeral test identities
-        run: tests/ci/prepare_test_secrets.sh
+        run: tests/ci/prepare_ephemeral_test_material.sh
 
       - name: Build and run Docker E2E on clean runner
         run: tests/e2e/run.sh 2>&1 | tee evidence/docker-e2e.txt

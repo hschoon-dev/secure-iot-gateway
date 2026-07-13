@@ -14,7 +14,7 @@ fail() {
 case "${MODE}" in
   test)
     [[ -f "${TEST_MARKER}" ]] || fail \
-      "test mode requires ${TEST_MARKER}; generate ephemeral identities with tests/ci/prepare_test_secrets.sh"
+      "test mode requires ${TEST_MARKER}; generate ephemeral test material with tests/ci/prepare_ephemeral_test_material.sh"
     echo "PASS deployment secret guard: explicitly marked test profile"
     exit 0
     ;;

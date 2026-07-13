@@ -19,7 +19,7 @@ execution.
 
 ## Recorded comparison
 
-`comparison-result.json` records the reproducible sprint run with 1,000
+`comparison-result.json` records a reproducible comparison run with 1,000
 iterations. All five decisions matched. In this Docker Desktop run, Casbin's
 median in-process enforcement was `0.0380 ms`; OPA's median HTTP path was
 `2.6410 ms`. This is an architectural path comparison, not a claim about the

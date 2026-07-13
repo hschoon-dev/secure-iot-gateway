@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 REGISTER = ROOT / "security" / "risk-gates.json"
 
 
-def render(regression_result: str, docker_result: str, commit: str) -> dict:
+def render(security_regression_result: str, docker_integration_result: str, commit: str) -> dict:
     job_results = {
-        "regression-and-policy": regression_result,
-        "docker-e2e-and-rotation": docker_result,
+        "security-regressions-and-migration": security_regression_result,
+        "docker-integration-and-trust-rotation": docker_integration_result,
     }
     register = json.loads(REGISTER.read_text(encoding="utf-8"))
     threats = []
@@ -34,13 +34,17 @@ def render(regression_result: str, docker_result: str, commit: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--regression-result", required=True)
-    parser.add_argument("--docker-result", required=True)
+    parser.add_argument("--security-regression-result", required=True)
+    parser.add_argument("--docker-integration-result", required=True)
     parser.add_argument("--commit", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
 
-    report = render(args.regression_result, args.docker_result, args.commit)
+    report = render(
+        args.security_regression_result,
+        args.docker_integration_result,
+        args.commit,
+    )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "risk-gates.json").write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8"

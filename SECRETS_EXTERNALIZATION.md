@@ -134,7 +134,7 @@ that operational revocation cannot be automated from this repository.
 
 The repository shares only `.env.example` and generators for ephemeral test
 identities. It never shares a reusable private key or a production password.
-`tests/ci/prepare_test_secrets.sh` marks its output with
+`tests/ci/prepare_ephemeral_test_material.sh` marks its output with
 `.runtime-secrets/.siot-test-only`. Before a production start, run:
 
 ```bash
