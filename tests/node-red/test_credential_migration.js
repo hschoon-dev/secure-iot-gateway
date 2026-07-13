@@ -29,6 +29,7 @@ try {
 
     migrate(runtimeConfig, input, secretFile, output, sanitized);
     assert.deepStrictEqual(decryptCredentials(newSecret, JSON.parse(fs.readFileSync(output))), fixture);
+    assert.throws(() => decryptCredentials(oldSecret, JSON.parse(fs.readFileSync(output))));
     assert.strictEqual(JSON.parse(fs.readFileSync(sanitized))._credentialSecret, undefined);
     assert.notStrictEqual(JSON.parse(fs.readFileSync(output)).$, JSON.parse(fs.readFileSync(input)).$);
     assert.strictEqual(fs.statSync(output).mode & 0o777, 0o600);

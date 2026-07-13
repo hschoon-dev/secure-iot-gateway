@@ -13,6 +13,7 @@
     {"id": "T-06", "required_jobs": ["regression-and-policy"], "evidence_status": "technical mitigation verified"},
     {"id": "T-08", "required_jobs": ["docker-e2e-and-rotation"], "evidence_status": "evaluated Compose secret scope verified"},
     {"id": "T-10", "required_jobs": ["regression-and-policy", "docker-e2e-and-rotation"], "evidence_status": "bounded policy path verified"},
-    {"id": "T-11", "required_jobs": ["regression-and-policy"], "evidence_status": "migration mechanism verified; real store migration and downstream revocation remain open"}
+    {"id": "T-11", "required_jobs": ["regression-and-policy"], "evidence_status": "migration mechanism verified; real store migration and downstream revocation remain open"},
+    {"id": "T-12", "required_jobs": ["regression-and-policy"], "evidence_status": "NoSecurity server is test-only and production guard is regression-tested"}
   ]
 }

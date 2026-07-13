@@ -59,6 +59,18 @@ function migrate(runtimeConfigFile, inputFile, newSecretFile, outputFile, saniti
     if (JSON.stringify(decryptCredentials(newSecret, reencrypted)) !== JSON.stringify(cleartext)) {
         throw new Error("post-migration readback verification failed");
     }
+    try {
+        const legacyReadback = decryptCredentials(oldSecret, reencrypted);
+        if (JSON.stringify(legacyReadback) === JSON.stringify(cleartext)) {
+            throw new Error("legacy credential secret still decrypts migrated store");
+        }
+    } catch (error) {
+        if (error.message === "legacy credential secret still decrypts migrated store") {
+            throw error;
+        }
+        // A different AES-CTR key normally produces invalid JSON, which is the
+        // expected proof that the legacy key no longer opens the new store.
+    }
     writePrivate(outputFile, reencrypted);
 
     const sanitized = {...runtimeConfig};

@@ -71,6 +71,14 @@ def _load_authorization_handler_module():
     return module
 
 
+def _load_pure_module(name: str, module_path: Path):
+    spec = importlib.util.spec_from_file_location(name, module_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 class NumericOpaInputTests(unittest.TestCase):
     def test_accepts_protocol_numeric_strings(self):
         self.assertEqual(parse_numeric_value("15"), 15.0)
@@ -83,6 +91,53 @@ class NumericOpaInputTests(unittest.TestCase):
             with self.subTest(value=value):
                 with self.assertRaises(ValueError):
                     parse_numeric_value(value)
+
+
+class DeploymentTransportGuardTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.brownfield_mode = _load_pure_module(
+            "brownfield_security_mode",
+            ROOT / "brownfield-opcua-server" / "security_mode.py",
+        )
+        cls.opa_transport = _load_pure_module(
+            "opa_transport",
+            AUTHORIZATION / "opa_transport.py",
+        )
+
+    def test_no_security_server_requires_explicit_test_mode(self):
+        enabled = self.brownfield_mode.insecure_opcua_test_server_enabled
+        self.assertFalse(enabled({}))
+        self.assertTrue(
+            enabled(
+                {
+                    "SIOT_DEPLOYMENT_MODE": "test",
+                    "ENABLE_INSECURE_OPCUA_TEST_SERVER": "true",
+                }
+            )
+        )
+        with self.assertRaisesRegex(RuntimeError, "only when SIOT_DEPLOYMENT_MODE=test"):
+            enabled(
+                {
+                    "SIOT_DEPLOYMENT_MODE": "production",
+                    "ENABLE_INSECURE_OPCUA_TEST_SERVER": "true",
+                }
+            )
+
+    def test_production_opa_enforcement_requires_https(self):
+        allowed = self.opa_transport.opa_transport_allowed
+        self.assertEqual(
+            allowed("http://opa:8181/v1/data/siot/authz/allow", "production")[0],
+            False,
+        )
+        self.assertEqual(
+            allowed("https://opa.example/v1/data/siot/authz/allow", "production")[0],
+            True,
+        )
+        self.assertEqual(
+            allowed("http://opa:8181/v1/data/siot/authz/allow", "test")[0],
+            True,
+        )
 
 
 class AdminBootstrapTests(unittest.TestCase):

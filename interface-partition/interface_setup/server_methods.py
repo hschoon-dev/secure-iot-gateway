@@ -36,7 +36,11 @@ from asyncua.ua import StatusCode, StatusCodes
 from typing import Any
 
 from user_manager import UserManagerTinyDB
-from authorization_handler import AuthorizationHandler, parse_numeric_value
+from authorization_handler import (
+    AuthorizationHandler,
+    opa_transport_allowed,
+    parse_numeric_value,
+)
 from grpc_request_handler import send_request_as_grpc
 
 _logger = logging.getLogger(__name__)
@@ -91,6 +95,7 @@ _OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/siot/authz/allow")
 _OPA_FAIL_OPEN = os.getenv("OPA_FAIL_OPEN", "false").strip().lower() in ("1", "true", "yes", "on")
 _OPA_TIMEOUT_SECONDS = float(os.getenv("OPA_TIMEOUT_SECONDS", "0.75"))
 _OPA_PUMP_B_POWER_MAX_KW = float(os.getenv("OPA_PUMP_B_POWER_MAX_KW", "16"))
+_DEPLOYMENT_MODE = os.getenv("SIOT_DEPLOYMENT_MODE", "production")
 
 
 def _resolve_authz_mode() -> str:
@@ -108,6 +113,13 @@ def _authorize_with_opa(
     priority: int,
     timestamp: str,
 ) -> tuple[bool, str]:
+    transport_allowed, transport_message = opa_transport_allowed(
+        _OPA_URL, _DEPLOYMENT_MODE
+    )
+    if not transport_allowed:
+        _logger.error("OPA authorization denied: %s", transport_message)
+        return False, transport_message
+
     roles = _rbac_authorization_handler.get_roles_for_user(issuer_id)
     input_payload = {
         "user": {

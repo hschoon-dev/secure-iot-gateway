@@ -50,6 +50,19 @@ cleanup
   interface-partition cpc-partition intermediate-vor-partition \
   intermediate-vor-partition-cpc
 
+wait_for_service() {
+  local service="$1"
+  local attempt
+  for attempt in $(seq 1 30); do
+    if "${COMPOSE[@]}" --profile e2e exec -T "${service}" true >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "ERROR: ${service} did not become ready within 30 seconds" >&2
+  return 1
+}
+
 for service_component in \
   "brownfield-opcua-server:brownfield-opcua-server" \
   "interface-partition:interface-partition" \
@@ -60,11 +73,19 @@ for service_component in \
 do
   service="${service_component%%:*}"
   component="${service_component#*:}"
+  wait_for_service "${service}"
   "${COMPOSE[@]}" --profile e2e exec -T "${service}" \
     python3 -c 'import pathlib,sys; root=pathlib.Path("/run/siot-secrets"); visible=sorted(p.name for p in root.iterdir()); expected=[sys.argv[1]]; assert visible == expected, f"expected {expected}, got {visible}"' \
     "${component}"
   echo "PASS secret-scope: ${service} sees ${component} only"
 done
+
+# T-12: The NoSecurity brownfield endpoint must not exist in the ordinary E2E
+# test profile. Its implementation is available only after a separate explicit
+# test opt-in, never by default or in production.
+"${COMPOSE[@]}" --profile e2e exec -T brownfield-opcua-server \
+  python3 -c 'import socket; probe = socket.socket(); probe.settimeout(1); result = probe.connect_ex(("127.0.0.1", 4841)); probe.close(); assert result != 0, "NoSecurity endpoint unexpectedly listens on 4841"'
+echo "PASS nosecurity-disabled: brownfield port 4841 is closed by default"
 
 "${COMPOSE[@]}" --profile e2e build identity-probe
 

@@ -6,6 +6,11 @@ services:
         target: /var/lib/siot
     environment:
       GRPC_CLIENT_TIMEOUT: "20"
+      SIOT_DEPLOYMENT_MODE: test
+
+  brownfield-opcua-server:
+    environment:
+      SIOT_DEPLOYMENT_MODE: test
 
   intermediate-vor-partition:
     environment:

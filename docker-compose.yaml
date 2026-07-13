@@ -58,6 +58,9 @@ services:
         target: /run/siot-secrets/brownfield-opcua-server
         read_only: true
     attach: false
+    environment:
+      SIOT_DEPLOYMENT_MODE: "${SIOT_DEPLOYMENT_MODE:-production}"
+      ENABLE_INSECURE_OPCUA_TEST_SERVER: "${ENABLE_INSECURE_OPCUA_TEST_SERVER:-false}"
     networks:
       static-network:
         ipv4_address: 192.168.178.118
@@ -101,6 +104,7 @@ services:
       OPA_FAIL_OPEN: "${OPA_FAIL_OPEN:-false}"
       OPA_TIMEOUT_SECONDS: "${OPA_TIMEOUT_SECONDS:-0.75}"
       OPA_PUMP_B_POWER_MAX_KW: "${OPA_PUMP_B_POWER_MAX_KW:-16}"
+      SIOT_DEPLOYMENT_MODE: "${SIOT_DEPLOYMENT_MODE:-production}"
       GRPC_CLIENT_HOST: intermediate-vor-partition
     ports:
       - 4840:4840
