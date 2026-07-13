@@ -44,3 +44,7 @@ handling without inventing production credentials. Item 4 and revocation of
 every downstream credential exposed through the historic store remain an
 operational acceptance step on the actual Node-RED deployment. CI runs that set
 `SKIP_NODE_RED_ROTATION=true` exercise PKI rotation independently of T-11.
+
+The target-deployment procedure and evidence boundary are specified in
+`tests/transfer/PIKEOS_ELINOS_ACCEPTANCE.md`. A completed transfer record must contain only
+fingerprints and redacted results, never key material or decrypted credentials.

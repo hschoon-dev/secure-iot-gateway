@@ -9,7 +9,8 @@ services:
 # ---------------------------------------------------------------
 
   nodered:
-    image: nodered/node-red:latest
+    # Exact upstream release: intentional upgrades require a reviewed diff.
+    image: nodered/node-red:4.1.11-22
     container_name: nodered
     restart: unless-stopped
     ports:
