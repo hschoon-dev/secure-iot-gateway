@@ -38,6 +38,9 @@ jobs:
       - name: Node-RED credential-key migration (synthetic fixture)
         run: node tests/node-red/test_credential_migration.js 2>&1 | tee evidence/t11-node-red-migration.txt
 
+      - name: Node-RED container migration and credential readback (synthetic fixture)
+        run: tests/node-red/test_docker_credential_migration.sh 2>&1 | tee evidence/t11-node-red-docker.txt
+
       - name: OPA policy tests
         run: |
           docker run --rm \
