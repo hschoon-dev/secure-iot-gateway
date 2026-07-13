@@ -342,7 +342,7 @@ class OnDemandModbusTCPRegistry:
                         v = raw_val
                     else:
                         s = str(raw_val).strip().lower()
-                        v = s in ("1", "true", "yes", "y", "on")
+                        v = s in ("1", "1.0", "true", "yes", "y", "on")
 
                     ok = client.write_coils(local_name, v)
                     if not ok:

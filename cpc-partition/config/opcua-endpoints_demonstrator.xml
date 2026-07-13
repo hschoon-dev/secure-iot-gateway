@@ -3,7 +3,7 @@
 
   <!-- RPi 4B OPC UA Server secured with Aes256Sha256RsaPss -->
   <server>
-    <server_app_uri>opc.tcp://192.168.178.118:4840/freeopcua/server/</server_app_uri>
+    <server_app_uri>opc.tcp://10.200.1.122:4840/freeopcua/server/</server_app_uri>
     <client_app_uri>urn:freeopcua:cpc_client</client_app_uri>
     <alias>secured-brownfield-opcua-server</alias>
     <security>
@@ -83,7 +83,7 @@
 
   <!-- RPi 4B OPC UA Server, no security -->
   <server>
-    <server_app_uri>opc.tcp://192.168.178.118:4841/freeopcua/server/</server_app_uri>
+    <server_app_uri>opc.tcp://10.200.1.122:4841/freeopcua/server/</server_app_uri>
     <client_app_uri>urn:freeopcua:cpc_client</client_app_uri>
     <alias>unsecured-brownfield-opcua-server</alias>
     <security>

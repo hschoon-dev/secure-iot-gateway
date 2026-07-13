@@ -318,12 +318,16 @@ def acceptance_verification(xml_data):
 
 def mapping_verification(request, xml_data):
     """Verify mapping constraints and calculate effective endpoint values."""
+    def _float(s):
+        s = str(s).strip().lower()
+        return 1.0 if s == "true" else 0.0 if s == "false" else float(s)
+
     root = ET.fromstring(xml_data)
 
     affected_endpoints_values = {}
     for endpoint in root.findall(".//affected_endpoint"):
         name = endpoint.find("name").text
-        value = float(endpoint.find("value").text)
+        value = _float(endpoint.find("value").text)
         _logger.debug(f"\n name: {name}, value: {value}")
         affected_endpoints_values[name] = value
 
@@ -338,38 +342,38 @@ def mapping_verification(request, xml_data):
 
         if value is not None:
             if "relative" in change_type:
-                percent_change = float(change_type.split(",")[1].strip().replace("%", ""))
+                percent_change = _float(change_type.split(",")[1].strip().replace("%", ""))
                 process_value = value * (1 + percent_change / 100)
                 affected_endpoint_dict[name] = process_value
             else:
-                process_value = float(change_type.split(",")[1].strip())
+                process_value = _float(change_type.split(",")[1].strip())
                 affected_endpoint_dict[name] = process_value
         else:
             all_passed = False
             break
 
         if "==" in condition:
-            check_value = float(condition.split("==")[1].strip())
+            check_value = _float(condition.split("==")[1].strip())
             if process_value != check_value:
                 all_passed = False
                 break
         elif "<=" in condition:
-            check_value = float(condition.split("<=")[1].strip())
+            check_value = _float(condition.split("<=")[1].strip())
             if process_value > check_value:
                 all_passed = False
                 break
         elif ">=" in condition:
-            check_value = float(condition.split(">=")[1].strip())
+            check_value = _float(condition.split(">=")[1].strip())
             if process_value < check_value:
                 all_passed = False
                 break
         elif "<" in condition:
-            check_value = float(condition.split("<")[1].strip())
+            check_value = _float(condition.split("<")[1].strip())
             if process_value >= check_value:
                 all_passed = False
                 break
         elif ">" in condition:
-            check_value = float(condition.split(">")[1].strip())
+            check_value = _float(condition.split(">")[1].strip())
             if process_value <= check_value:
                 all_passed = False
                 break

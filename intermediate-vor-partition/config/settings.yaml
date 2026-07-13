@@ -5,7 +5,7 @@ rulesets:
   mapping_ruleset: config/Mapping_Rulesets.xml
 
 mariadb:
-  host: "192.168.178.117"
+  host: "10.200.1.150"
   port: 3306
   user: "vor-1"
   password: "VoR-1-Password"

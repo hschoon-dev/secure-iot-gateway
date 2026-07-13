@@ -4,7 +4,7 @@
     <!-- Ecotec LOGO -->
   <server>
     <ipaddr>10.200.1.142</ipaddr>
-    <port>503</port>
+    <port>510</port>
     <serveralias>Ecotec</serveralias>
     <endpoints>
 
@@ -12,7 +12,7 @@
       <endpoint>
         <name>Compressor1_Modbus Read</name>
         <function>Read Coils</function>
-        <address>8193</address>
+        <address>8266</address>
         <quantity>1</quantity>
         <offset>-1</offset>
         <type>Coils</type>

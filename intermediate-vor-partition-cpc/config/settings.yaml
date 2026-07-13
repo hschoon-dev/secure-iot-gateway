@@ -5,7 +5,7 @@ acceptance_rulesets:
   ruleset_modified: config/Acceptance_Ruleset_modified.xml
 
 mariadb:
-  host: "192.168.178.117"
+  host: "10.200.1.150"
   port: 3306
   user: "vor-2"
   password: "VoR-2-Password"
@@ -26,6 +26,6 @@ processing:
 
 logging:
   log_file: logs/app.log
-  log_level: INFO
+  log_level: DEBUG
   max_bytes: 1048576   # 1 MB
   backup_count: 3
