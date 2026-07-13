@@ -87,6 +87,13 @@ done
   python3 -c 'import socket; probe = socket.socket(); probe.settimeout(1); result = probe.connect_ex(("127.0.0.1", 4841)); probe.close(); assert result != 0, "NoSecurity endpoint unexpectedly listens on 4841"'
 echo "PASS nosecurity-disabled: brownfield port 4841 is closed by default"
 
+# The legacy unauthenticated CPC Flask bridge is compatibility-only. Both the
+# synchronous and MariaDB-backed production paths use the typed gRPC/mTLS CPC
+# service, so port 5000 must remain closed by default.
+"${COMPOSE[@]}" --profile e2e exec -T cpc-partition \
+  python3 -c 'import socket; probe=socket.socket(); probe.settimeout(1); result=probe.connect_ex(("127.0.0.1",5000)); probe.close(); assert result != 0, "legacy CPC Flask bridge unexpectedly listens on 5000"'
+echo "PASS legacy-http-disabled: CPC port 5000 is closed by default"
+
 "${COMPOSE[@]}" --profile e2e build identity-probe
 
 # T-07: the production OPA endpoint is TLS 1.3 with mutual authentication.

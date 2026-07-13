@@ -68,6 +68,10 @@ for service in mariadb interface-partition intermediate-vor-partition \
   wait_for_service "${service}"
 done
 
+"${COMPOSE[@]}" --profile e2e exec -T cpc-partition \
+  python3 -c 'import socket; probe=socket.socket(); probe.settimeout(1); result=probe.connect_ex(("127.0.0.1",5000)); probe.close(); assert result != 0, "legacy CPC Flask bridge unexpectedly listens on 5000"'
+echo "PASS legacy-http-disabled: MariaDB pipeline uses CPC gRPC/mTLS; port 5000 is closed"
+
 mysql_as() {
   local user="$1" password="$2" sql="$3"
   "${COMPOSE[@]}" --profile e2e exec -T mariadb \
@@ -83,6 +87,17 @@ expect_sql_denied() {
   fi
   echo "PASS least-privilege: ${label} denied"
 }
+
+# Guard the effective three-file Compose merge. A missing override silently
+# starts pipeline_main.py from the generic E2E profile and bypasses the
+# persisted consumer even though every image builds successfully.
+resolved_consumer_command="$("${COMPOSE[@]}" --profile e2e config --format json | \
+  python3 -c 'import json,sys; command=json.load(sys.stdin)["services"]["intermediate-vor-partition-cpc"]["command"]; print(" ".join(command))')"
+if [[ "${resolved_consumer_command}" != "python3 -u ./mariadb_pipeline_main.py" ]]; then
+  echo "ERROR: resolved MariaDB consumer command is ${resolved_consumer_command}" >&2
+  exit 1
+fi
+echo "PASS compose-profile: MariaDB overlay selects the gRPC/mTLS consumer"
 
 # Runtime authorization is verified by actual permitted and prohibited SQL,
 # not by parsing SHOW GRANTS text.
@@ -129,5 +144,5 @@ if [[ "${pending}" != "0" ]]; then
   echo "ERROR: expected empty queue after processing, got ${pending}" >&2
   exit 1
 fi
-echo "PASS mariadb-e2e: OPC-UA -> gRPC -> MariaDB -> consumer -> CPC -> Modbus readback = 9"
+echo "PASS mariadb-e2e: OPC-UA -> gRPC -> MariaDB -> consumer -> gRPC/mTLS -> CPC -> Modbus readback = 9"
 echo "PASS mariadb-e2e: request queue drained atomically"

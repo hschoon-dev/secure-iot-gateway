@@ -21,6 +21,7 @@
 
 import asyncio
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -200,8 +201,14 @@ async def main():
     threads.append(opcua_thread)
     modbus_thread = threading.Thread(target=modbus_tcp_service_thread)
     threads.append(modbus_thread)
-    flask_thread = threading.Thread(target=run_flask_server, args=(bridge,))
-    threads.append(flask_thread)
+    if os.getenv("ENABLE_LEGACY_FLASK_BRIDGE", "false").strip().lower() in (
+        "1", "true", "yes", "on"
+    ):
+        flask_thread = threading.Thread(target=run_flask_server, args=(bridge,))
+        threads.append(flask_thread)
+        _logger.warning("Legacy unauthenticated Flask bridge explicitly enabled")
+    else:
+        _logger.info("Legacy Flask bridge disabled; CPC accepts typed gRPC/mTLS only")
 
     try:
         print("CPC-Partition is running.")

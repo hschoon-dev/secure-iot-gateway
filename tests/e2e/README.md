@@ -19,6 +19,10 @@ transport: TLS 1.3 and a client certificate are mandatory, and the fail-closed
 `system.authz` policy denies a valid CPC certificate because only the Interface
 identity may call the gateway decision path.
 
+The CPC legacy Flask bridge is disabled by default and port 5000 is checked as
+closed. Both the synchronous evaluation path and the default MariaDB consumer
+use the typed CPC gRPC/mTLS service.
+
 - Casbin and OPA allow `Pump_B_Power=9`; both downstream mTLS hops complete
   and the CPC confirms the write by reading the endpoint back.
 - OPA denies the exclusive upper boundary `Pump_B_Power=16`.

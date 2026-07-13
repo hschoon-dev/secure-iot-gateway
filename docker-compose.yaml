@@ -146,6 +146,7 @@ services:
   intermediate-vor-partition-cpc:
     container_name: intermediate-vor-partition-cpc
     build: intermediate-vor-partition-cpc/
+    command: ["python3", "-u", "./mariadb_pipeline_main.py"]
     volumes:
       - type: bind
         source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_with_affected_endpoints.xml
@@ -161,7 +162,6 @@ services:
       DB_USER: "vor-2"
       DB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
       DB_HOST: mariadb
-      FLASK_HOST: cpc-partition
     depends_on:
       mariadb:
         condition: service_healthy
@@ -212,6 +212,8 @@ services:
       interface-partition:
         condition: service_started
     attach: false
+    environment:
+      ENABLE_LEGACY_FLASK_BRIDGE: "${ENABLE_LEGACY_FLASK_BRIDGE:-false}"
     networks:
       static-network:
         ipv4_address: 192.168.178.114
