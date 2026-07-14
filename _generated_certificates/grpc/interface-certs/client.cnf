@@ -10,7 +10,7 @@ CN = grpc-client-interface
 
 [ v3_req ]
 subjectAltName = @alt_names
-extendedKeyUsage = serverAuth
+extendedKeyUsage = clientAuth
 keyUsage = digitalSignature, keyEncipherment
 
 [ alt_names ]
@@ -19,5 +19,6 @@ DNS.2 = localhost
 IP.1  = 127.0.0.1
 IP.2  = 172.20.128.7
 IP.3  = 192.168.0.121
-IP.4 = 192.168.178.112
-IP.5 = 10.200.1.174
+IP.4  = 192.168.178.112
+IP.5  = 10.200.1.174
+IP.6  = 192.168.156.12

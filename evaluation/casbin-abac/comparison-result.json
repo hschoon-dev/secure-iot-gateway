@@ -1,0 +1,24 @@
+{
+  "context": {
+    "casbin_path": "in-process Python enforcement",
+    "date": "2026-07-12",
+    "iterations": 1000,
+    "opa_path": "OPA REST API over Docker Desktop networking"
+  },
+  "decision_parity": {
+    "cases": 5,
+    "mismatches": 0
+  },
+  "latency_ms": {
+    "casbin": {
+      "max": 2.0579,
+      "median": 0.0380,
+      "p95": 0.0764
+    },
+    "opa_http": {
+      "max": 18.1886,
+      "median": 2.6410,
+      "p95": 4.2964
+    }
+  }
+}

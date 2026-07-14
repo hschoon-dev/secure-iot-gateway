@@ -21,6 +21,7 @@
 from threading import Thread, Event
 import json
 import logging
+import os
 from queue import Queue, Full, Empty
 from pathlib import Path
 
@@ -33,18 +34,56 @@ import jsontransfer_pb2_grpc
 from config_loader import GrpcServerConfig, GrpcServerCerts  # only sub-model needed
 
 _logger = logging.getLogger(__name__)
+EXPECTED_CLIENT_CN = os.getenv("PSMO_JSON_EXPECTED_CLIENT_CN", "grpc-client-cpc")
 
+def _require_client_identity(context, expected_cn: str) -> None:
+    common_names = {
+        value.decode("utf-8", errors="strict")
+        for value in context.auth_context().get("x509_common_name", ())
+    }
+    if expected_cn not in common_names:
+        _logger.warning("Rejected mTLS client identities: %s", sorted(common_names))
+        context.abort(
+            grpc.StatusCode.PERMISSION_DENIED,
+            "client certificate is valid but not authorized for this service",
+        )
 
+def _resolve_grpc_cert_base() -> Path | None:
+    secrets_root = Path(os.getenv("SIOT_SECRETS_ROOT", "/run/siot-secrets"))
+    runtime_base = Path(
+        os.getenv(
+            "PSMO_GRPC_CERT_BASE",
+            str(secrets_root / "psmo-partition" / "certs"),
+        )
+    )
+
+    if runtime_base.exists():
+        return runtime_base
+    if os.getenv("ALLOW_LEGACY_SECRETS", "false").lower() in ("1", "true", "yes", "on"):
+        return None
+    raise FileNotFoundError(
+        f"Runtime gRPC certificate directory not found: {runtime_base}. "
+        "Legacy fallback is disabled."
+    )
 def _load_server_credentials(certs: "GrpcServerCerts") -> grpc.ServerCredentials:
     """
     Build server credentials for mTLS from a GrpcServerCerts config instance:
       - server_key / server_cert: server identity
       - ca_cert: CA trusted for client certificates
     """
+    cert_base = _resolve_grpc_cert_base()
+    if cert_base is not None:
+        server_key = cert_base / "server" / "server.key"
+        server_cert = cert_base / "server" / "server.crt"
+        ca_cert = cert_base / "ca" / "ca.crt"
+    else:
+        server_key = Path(certs.server_key)
+        server_cert = Path(certs.server_cert)
+        ca_cert = Path(certs.ca_cert)
     try:
-        private_key       = Path(certs.server_key).read_bytes()
-        certificate_chain = Path(certs.server_cert).read_bytes()
-        root_certificates = Path(certs.ca_cert).read_bytes()
+        private_key = server_key.read_bytes()
+        certificate_chain = server_cert.read_bytes()
+        root_certificates = ca_cert.read_bytes()
     except FileNotFoundError as e:
         _logger.error("TLS file not found: %s", e)
         raise
@@ -82,6 +121,7 @@ class JsonSenderServicer(jsontransfer_pb2_grpc.JsonSenderServicer):
             queue.put_nowait(item)
 
     def SendJson(self, request, context):
+        _require_client_identity(context, EXPECTED_CLIENT_CN)
         _logger.debug("Received JSON message: source=%s ts=%s", getattr(request, "source", None), getattr(request, "id", None))
 
         try:

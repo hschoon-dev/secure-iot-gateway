@@ -122,7 +122,7 @@ class MappedRequest:
         priority,
         tags,
         affected_endpoint_list,
-        db_manager: DatabaseManager,
+        db_manager: DatabaseManager | None,
     ):
         self.request_id = request_id
         self.generation_timestamp = generation_timestamp
@@ -181,7 +181,7 @@ class RequestMapper:
         self.feedback_system: FeedbackSystem = feedback_system
         self.db_manager = db_manager
  
-    def map_requests(self, request: Request) -> bool:
+    def map_requests(self, request: Request) -> bool | dict:
         """
         Map an incoming request to affected endpoints based on mapping rules.
         
@@ -246,6 +246,23 @@ class RequestMapper:
             _logger.error("Mapping Rule Sets not found")
             return False
  
+        mapped_payload = {
+            "request_id": request.id,
+            "generation_timestamp": str(request.timestamp),
+            "description": list(request.description),
+            "impact": request.impact,
+            "priority": int(request.priority),
+            "affected_endpoint_list": affected_endpoint_list,
+        }
+
+        # In the typed gRPC mode the next stage acknowledges application before
+        # the interface receives an ACK. The production default continues to
+        # persist the same payload in MariaDB for the existing polling stage.
+        if self.db_manager is None:
+            mapping_feedback["Mapping Result"] = "Mapping completed"
+            self.feedback_system.submit_feedback(mapping_feedback)
+            return mapped_payload
+
         # Create and save the mapped request
         mapped_request = MappedRequest(
             request.id,

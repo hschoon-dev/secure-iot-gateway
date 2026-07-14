@@ -1,0 +1,124 @@
+name: Gateway Security Verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - active-dev
+      - "feat/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gateway-security-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-regressions-and-migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Prepare evidence directory
+        run: mkdir -p evidence
+
+      - name: Generate ephemeral test identities
+        run: tests/ci/prepare_ephemeral_test_material.sh
+
+      - name: Python security regressions
+        run: python3 -m unittest discover -s tests -p 'test_*.py' 2>&1 | tee evidence/security-regressions.txt
+
+      - name: Secret hygiene and migration
+        run: tests/test_secret_hygiene.sh 2>&1 | tee evidence/secret-hygiene.txt
+
+      - name: Node-RED credential-key migration (synthetic fixture)
+        run: node tests/node-red/test_credential_migration.js 2>&1 | tee evidence/t11-node-red-migration.txt
+
+      - name: Node-RED container migration and credential readback (synthetic fixture)
+        run: tests/node-red/test_docker_credential_migration.sh 2>&1 | tee evidence/t11-node-red-docker.txt
+
+      - name: OPA policy tests
+        run: tests/evaluation/run_opa_policy_evidence.sh 2>&1 | tee evidence/opa-policy.txt
+
+      - name: Upload regression evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: regression-evidence-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error
+
+  risk-gate-report:
+    if: always()
+    needs: [security-regressions-and-migration, docker-integration-and-trust-rotation]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Render commit-bound risk-gate evidence
+        env:
+          SECURITY_REGRESSION_RESULT: ${{ needs.security-regressions-and-migration.result }}
+          DOCKER_INTEGRATION_RESULT: ${{ needs.docker-integration-and-trust-rotation.result }}
+        run: |
+          python3 tests/evaluation/render_risk_gate_report.py \
+            --security-regression-result "${SECURITY_REGRESSION_RESULT}" \
+            --docker-integration-result "${DOCKER_INTEGRATION_RESULT}" \
+            --commit "${GITHUB_SHA}" \
+            --output-dir evidence
+
+      - name: Upload risk-gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: risk-gates-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error
+
+  docker-integration-and-trust-rotation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      ADMIN_PASSWORD: CI-Only-Admin-Password-2026-Strong
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Prepare evidence directory
+        run: mkdir -p evidence
+
+      - name: Generate ephemeral test identities
+        run: tests/ci/prepare_ephemeral_test_material.sh
+
+      - name: Build and run Docker E2E on clean runner
+        run: tests/e2e/run.sh 2>&1 | tee evidence/docker-e2e.txt
+
+      - name: Default MariaDB pipeline E2E and least-privilege database roles
+        run: tests/mariadb/run.sh 2>&1 | tee evidence/mariadb-e2e.txt
+
+      - name: Casbin ABAC and OPA decision parity
+        run: tests/evaluation/run_casbin_opa_comparison.sh 2>&1 | tee evidence/casbin-opa-parity.txt
+
+      - name: Isolated mTLS rotation
+        run: tests/rotation/run_isolated.sh 2>&1 | tee evidence/t02-rotation.txt
+
+      - name: Record immutable run context
+        if: always()
+        run: |
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "commit=${GITHUB_SHA}"
+            echo "workflow=${GITHUB_WORKFLOW}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+          } > evidence/run-context.txt
+
+      - name: Upload Docker and rotation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: docker-rotation-evidence-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error

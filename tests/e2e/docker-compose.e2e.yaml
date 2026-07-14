@@ -1,0 +1,40 @@
+services:
+  interface-partition:
+    volumes:
+      - type: bind
+        source: ${E2E_CREDENTIALS_DIR}
+        target: /var/lib/siot
+    environment:
+      GRPC_CLIENT_TIMEOUT: "20"
+      SIOT_DEPLOYMENT_MODE: test
+
+  brownfield-opcua-server:
+    environment:
+      SIOT_DEPLOYMENT_MODE: test
+
+  intermediate-vor-partition:
+    environment:
+      PIPELINE_MODE: grpc
+
+  intermediate-vor-partition-cpc:
+    command: ["python3", "-u", "./pipeline_main.py"]
+
+  cpc-partition:
+    volumes:
+      - type: bind
+        source: ${E2E_MODBUS_CONFIG}
+        target: /app/config/modbustcp-endpoints_demonstrator.xml
+        read_only: true
+
+  e2e-runner:
+    depends_on:
+      interface-partition:
+        condition: service_started
+
+  identity-probe:
+    build:
+      context: .
+      dockerfile: tests/e2e/identity-probe.Dockerfile
+    profiles: ["e2e"]
+    networks:
+      static-network: {}

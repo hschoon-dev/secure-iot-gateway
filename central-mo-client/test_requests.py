@@ -30,24 +30,33 @@ import os
 
 _logger = logging.getLogger(__name__)
 
-# Global dictionaries for test data
-USER_PASSWORD_MAP = {
-    # authenticated users, partially authorized
-    #"admin": os.getenv("ADMIN_PASSWORD"),    # pre-existing user with Admin-role
-    "admin": "SuperDuperRandomPassword2025",    # pre-existing user with Admin-role
-    "sarah": "Sarah123_secure_password_2025",   # pre-existing user with PlantOperator-role
-    #"mike": "Mike123_secure_password_2025",     # this user does not exist by default in the user-manager, but in rbac as MaintenancePersonnel
-    #"david": "David123_secure_password_2025",   # this user does not exist by default in the user-manager, but in rbac as PlantOperator
-    #"lisa": "Lisa123_secure_password_2025",     # this user does not exist by default in the user-manager, but in rbac as MaintenancePersonnel
-    #"horst": "WSkjcrv73&$bde",                  # this user does not exist in the rbac
-    # unauthenticated and unauthorized users
-    #"gunter": "UZUD875$$§jbojob37530",
-    #"Python-M+O-Client": "MyPassword",
-    #"UA-Expert-Client": "AdminAdmin",
-    #"Workflow-Optimizer-Service": "SecurePassword",
-    #"Historian-Service": "WSkjcrviedjvbejvb",
-    #"Data-Analyzer-Service": "WSkjcrv73&$bde"
-}
+def _load_user_password_map() -> dict[str, str]:
+    """
+    Load test credentials from environment variables.
+    Hardcoded passwords are intentionally avoided.
+    """
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    if not admin_password:
+        raise RuntimeError(
+            "ADMIN_PASSWORD environment variable is required for central-mo-client tests."
+        )
+
+    users = {
+        "admin": admin_password,  # pre-existing user with Admin role
+    }
+
+    # Optional extra demo user (only if explicitly provided by environment)
+    sarah_password = os.getenv("SARAH_PASSWORD")
+    if sarah_password:
+        users["sarah"] = sarah_password
+    else:
+        _logger.warning("SARAH_PASSWORD not set; running with admin user only.")
+
+    return users
+
+
+# Global dictionary for test data
+USER_PASSWORD_MAP = _load_user_password_map()
 
 ISSURER_CHARACTERISTICS_EXAMPLES = [
     "Lorem ipsum dolor sit amet",

@@ -29,6 +29,7 @@ import os
 
 from opcua_unsecured_server import start_unsecured_server
 from opcua_secured_server import start_secured_server
+from security_mode import insecure_opcua_test_server_enabled
 
 path = os.path.dirname(os.path.abspath(__file__))
 logging_path = os.path.join(path, "logs/app.log")
@@ -78,16 +79,22 @@ def run_secured_server():
     asyncio.run(start_secured_server())
 
 if __name__ == "__main__":
-    unsecured_process = multiprocessing.Process(target=run_unsecured_server)
     secured_process = multiprocessing.Process(target=run_secured_server)
+    processes = [secured_process]
+
+    if insecure_opcua_test_server_enabled():
+        _logger.warning("Starting the NoSecurity OPC UA server in explicit test mode.")
+        processes.append(multiprocessing.Process(target=run_unsecured_server))
+    else:
+        _logger.info("NoSecurity OPC UA server is disabled.")
 
     try:
-        unsecured_process.start()
-        secured_process.start()
-        print("Brownfield OPC UA Servers started successfully.")
-        unsecured_process.join()
-        secured_process.join()
+        for process in processes:
+            process.start()
+        print("Brownfield secured OPC UA server started successfully.")
+        for process in processes:
+            process.join()
     except KeyboardInterrupt:
         print("Shutting down servers...")
-        unsecured_process.terminate()
-        secured_process.terminate()
+        for process in processes:
+            process.terminate()

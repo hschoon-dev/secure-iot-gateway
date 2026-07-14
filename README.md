@@ -61,16 +61,15 @@ This section provides steps and recommendations for developers working with the 
      - `secure-iot-gateway/intermediate-vor-partition-cpc/config/`
 
 4. **Update OPC UA Certificates**
-   - Add trusted client certificates (`.der` format) to:
-     - `secure-iot-gateway/interface-partition/certificates/trusted/certs/`
+   - Provision trusted client certificates outside Git and mount them under the component-specific runtime-secret directory, for example:
+     - `/run/siot-secrets/interface-partition/certificates/trusted/certs/`
    - Register new clients in the OPC UA server setup:
      - Edit `secure-iot-gateway/interface-partition/interface_setup/interface_setup.py` (see line 140+)
      - Use the `add_user` method to add new client certificates.
 
 5. **Central M+O Services Development**
    - Program your own Central M+O services as needed.
-   - The OPC UA server certificate for client authentication is located at:
-     - `secure-iot-gateway/interface-partition/certificates/python-server/server_cert.der`
+   - Use only the component-specific runtime-secret mount. Do not copy certificates or private keys back into the repository.
 
 ## General Recommendations
 - **Configuration Management**: Always document changes to configuration files and certificates.
@@ -91,8 +90,11 @@ cd secure-iot-gateway
 ```
 Building, (re)creating, starting:
 ```bash
-docker-compose -f docker-compose.yaml up --build
+SIOT_DEPLOYMENT_MODE=production ./validate-deployment-secrets.sh
+docker compose -f docker-compose.yaml up --build
 ```
+
+The production preflight requires externally provisioned runtime secrets and strong environment passwords. The repository contains no reusable default password, private key, or credential database. The optional OPA integration requires an HTTPS endpoint in production; the HTTP endpoint is limited to the labelled test deployment.
 
 ### UAExpert view of the aggregated endpoints from CPC
 ![alt text](./doc/uaexpert_interface_opcua_server.png)
@@ -183,7 +185,8 @@ The setup script for the database can be found [here](./maria-db/01_init.sh).
 | vor-2            | %         |
 +------------------+-----------+
 ```
-Default passwords for the users are: VoR-X-Password with 'X' as the partition number.
+Passwords are supplied at runtime through `MARIADB_VOR1_PASSWORD` and
+`MARIADB_VOR2_PASSWORD`; the repository deliberately defines no default passwords.
 
 ### User-Management
 ```terminal

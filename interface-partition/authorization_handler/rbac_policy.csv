@@ -1,0 +1,57 @@
+// Define policies (p): who can do what on which resource
+// Format: p, user/role, resource, action
+
+// Admin has full access to all resources
+p, Admin, Ejector, extend
+p, Admin, Ejector, retract
+p, Admin, Drill, turn_on
+p, Admin, Drill, turn_off
+p, Admin, Motor, turn_on
+p, Admin, Motor, turn_off
+p, Admin, FumeExtractionSystem, turn_on
+p, Admin, FumeExtractionSystem, turn_off
+
+p, Admin, MotorSpeed_SP, "Motor Speed Configuration"
+p, Admin, Mixer_SP, "mixing adjustment"
+p, Admin, Pump_A_Power, "flow rate adjustment"
+p, Admin, Pump_B_Power, "flow rate adjustment"
+p, Admin, Heater_Power, "heat output adjustment"
+
+// PlantOperator can operate basic machinery
+p, PlantOperator, Motor, turn_on
+p, PlantOperator, Motor, turn_off
+p, PlantOperator, FumeExtractionSystem, turn_on
+p, PlantOperator, FumeExtractionSystem, turn_off
+
+p, PlantOperator, MotorSpeed_SP, "Motor Speed Configuration"
+p, PlantOperator, Mixer_SP, "mixing adjustment"
+p, PlantOperator, Pump_A_Power, "flow rate adjustment"
+p, PlantOperator, Pump_B_Power, "flow rate adjustment"
+p, PlantOperator, Heater_Power, "heat output adjustment"
+
+// MaintenancePersonnel can operate all machinery for maintenance
+p, MaintenancePersonnel, Ejector, extend
+p, MaintenancePersonnel, Ejector, retract
+p, MaintenancePersonnel, Drill, turn_on
+p, MaintenancePersonnel, Drill, turn_off
+
+p, MaintenancePersonnel, MotorSpeed_SP, "mixing adjustment"
+p, MaintenancePersonnel, MotorSpeed_SP, "Motor Speed Configuration"
+p, MaintenancePersonnel, Mixer_SP, "mixing adjustment"
+p, MaintenancePersonnel, Pump_A_Power, "flow rate adjustment"
+p, MaintenancePersonnel, Pump_B_Power, "flow rate adjustment"
+p, MaintenancePersonnel, Heater_Power, "heat output adjustment"
+
+// Define resource groups (g2): resource grouping
+g2, Ejector, MachineryGroup
+g2, Drill, MachineryGroup
+g2, Motor, MachineryGroup
+g2, FumeExtractionSystem, SafetyGroup
+
+// Define user-role assignments (g): user inheritance
+g, admin, Admin
+
+// Role-role inheritance
+g, PlantOperator, SafetyOperator
+p, SafetyOperator, SafetyGroup, turn_on
+p, SafetyOperator, SafetyGroup, turn_off

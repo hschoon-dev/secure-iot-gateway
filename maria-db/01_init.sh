@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # =============================================================================
 # /docker-entrypoint-initdb.d/01_init.sh
 #
@@ -46,16 +46,6 @@ ALTER DATABASE secure_iot_gateway
 CREATE USER IF NOT EXISTS 'vor-1'@'%' IDENTIFIED BY '${MARIADB_VOR1_PASSWORD}';
 CREATE USER IF NOT EXISTS 'vor-2'@'%' IDENTIFIED BY '${MARIADB_VOR2_PASSWORD}';
 
--- Full privileges on the database for both users.
--- vor-1 (intermediate-vor-partition): writes and reads requests.
--- vor-2 (intermediate-vor-partition-cpc): reads and deletes requests via stored procedure.
--- EXECUTE on stored procedures is NOT covered by table-level grants and must
--- be stated explicitly even with ALL PRIVILEGES on the schema.
-GRANT ALL PRIVILEGES ON secure_iot_gateway.* TO 'vor-1'@'%';
-GRANT ALL PRIVILEGES ON secure_iot_gateway.* TO 'vor-2'@'%';
-
-FLUSH PRIVILEGES;
-
 -- -------------------------------------------------------------
 -- Table: mapped_requests
 -- -------------------------------------------------------------
@@ -77,6 +67,17 @@ CREATE TABLE IF NOT EXISTS mapped_requests (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
+
+-- Least privilege for the two one-purpose runtime identities. Revoke first
+-- so re-running the initializer cannot retain broader historical grants.
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'vor-1'@'%';
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'vor-2'@'%';
+GRANT SELECT, INSERT, UPDATE
+    ON secure_iot_gateway.mapped_requests TO 'vor-1'@'%';
+GRANT SELECT
+    ON secure_iot_gateway.mapped_requests TO 'vor-2'@'%';
+
+FLUSH PRIVILEGES;
 
 SQL
 

@@ -5,11 +5,8 @@
 ------------------------------------------------------------
  Beschreibung:
     This module is the main entry point for the CPC partition
-    of the Secure IoT Gateway. It initializes and starts the
-    OPC UA and Modbus TCP clients, sets up shared memory
-    and semaphores for inter-process communication, and runs
-    a Flask server to bridge (temporary) communication with 
-    other VoR components.
+    of the Secure IoT Gateway. It initializes the OPC UA and Modbus TCP
+    clients and exposes the typed CPC pipeline through gRPC with mutual TLS.
 
  Autor(en):
     - Heiko Schoon
@@ -24,6 +21,7 @@
 
 import asyncio
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -35,6 +33,7 @@ from modbus_tcp_client_manager import ModbusClientManager
 from flask_server_bridge.flask_server_bridge import FlaskServerBridge
 from config_loader import load_config, CPCConfig
 from grpc_sender import init_ssl_credentials
+from pipeline_server import build_pipeline_server
 
 #sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -150,17 +149,13 @@ def modbus_tcp_service_thread() -> None:
     loop.run_until_complete(modbus_tcp_service())
     loop.close()
 
-def run_flask_server() -> None:
+def run_flask_server(bridge: FlaskServerBridge) -> None:
     """
     This function starts the Flask server.
     """
     #bridge = FlaskServerBridge()
     #bridge.run(debug=False, threaded=True)
 
-    bridge = FlaskServerBridge(
-       opcua_files=CONFIG.opcua.files,
-       modbustcp_files=CONFIG.modbustcp.files
-    )
     bridge.run(
         host=CONFIG.flask_bridge.host,
         port=CONFIG.flask_bridge.port,
@@ -193,15 +188,27 @@ async def main():
     
     await asyncio.sleep(3)
 
+    bridge = FlaskServerBridge(
+        opcua_files=CONFIG.opcua.files,
+        modbustcp_files=CONFIG.modbustcp.files,
+    )
+    pipeline_server = build_pipeline_server(bridge)
+    pipeline_server.start()
+    _logger.warning("CPC typed gRPC server listening on 50053 (mTLS)")
+
     threads = []
     opcua_thread = threading.Thread(target=opcua_service_thread)
     threads.append(opcua_thread)
     modbus_thread = threading.Thread(target=modbus_tcp_service_thread)
     threads.append(modbus_thread)
-
-    # NEW
-    flask_thread = threading.Thread(target=run_flask_server)
-    threads.append(flask_thread)
+    if os.getenv("ENABLE_LEGACY_FLASK_BRIDGE", "false").strip().lower() in (
+        "1", "true", "yes", "on"
+    ):
+        flask_thread = threading.Thread(target=run_flask_server, args=(bridge,))
+        threads.append(flask_thread)
+        _logger.warning("Legacy unauthenticated Flask bridge explicitly enabled")
+    else:
+        _logger.info("Legacy Flask bridge disabled; CPC accepts typed gRPC/mTLS only")
 
     try:
         print("CPC-Partition is running.")
@@ -213,6 +220,7 @@ async def main():
     except KeyboardInterrupt:
         pass
     finally:
+        pipeline_server.stop(grace=5).wait()
         _logger.info("Clients stopped")
 
 if __name__ == "__main__":

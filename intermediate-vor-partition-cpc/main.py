@@ -187,7 +187,7 @@ def add_affected_endpoints_to_xml(xml_data, affected_endpoints) -> str:
     The result is returned as an in-memory string; no file is written.
 
     Previously this function wrote to the fixed path
-    `config/Acceptance_Ruleset_modified.xml` before returning. Writing to a
+    `config/Acceptance_Ruleset_with_affected_endpoints.xml` before returning. Writing to a
     fixed path is a latent race condition: if two requests are ever processed
     concurrently (e.g. after the processing loop is parallelised), the second
     write corrupts the XML being consumed by the first request. Passing the
@@ -447,9 +447,8 @@ def main():
         path=Path(__file__).parent / "config/settings.yaml",
         base_dir=Path(__file__).parent,
     )
-    global acceptance_ruleset_path, acceptance_ruleset_path_modified
+    global acceptance_ruleset_path
     acceptance_ruleset_path          = CONFIG.acceptance_rulesets.ruleset
-    acceptance_ruleset_path_modified = CONFIG.acceptance_rulesets.ruleset_modified
 
     # Configure the root logger exactly once, as early as possible in the
     # process lifetime. All other modules obtain child loggers via

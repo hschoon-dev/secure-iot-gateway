@@ -32,6 +32,7 @@ from asyncua.crypto.truststore import TrustStore
 from pathlib import Path
 import logging
 import time
+import os
 from typing import Optional
 
 _logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ class OpcUaClient:
         self._last_connection_attempt_time = 0
 
     async def connect(self) -> None:
-        cert_base = Path(__file__).parent
+        cert_base = self._resolve_cert_base()
 
         policy = self.security_settings['policy']
         # BUG: User authentication via username and password is not implemented for FreeOpcUa Server. This is supported by other OSS or commercial OPC UA servers.
@@ -103,6 +104,35 @@ class OpcUaClient:
             except Exception as e:
                 self.connected = False
                 _logger.error(f"Error connecting to {self.server_app_uri}.")
+
+    @staticmethod
+    def _resolve_cert_base() -> Path:
+        """
+        Resolve OPC UA cert base for CPC client.
+        Preferred: external runtime secret dir.
+        Fallback: legacy in-repo cert dir for compatibility.
+        """
+        secrets_root = Path(os.getenv("SIOT_SECRETS_ROOT", "/run/siot-secrets"))
+        runtime_base = Path(
+            os.getenv(
+                "CPC_OPCUA_CERT_BASE",
+                str(secrets_root / "cpc-partition" / "opcua_client"),
+            )
+        )
+        legacy_base = Path(__file__).parent
+
+        if runtime_base.exists():
+            return runtime_base
+        if os.getenv("ALLOW_LEGACY_SECRETS", "false").lower() in ("1", "true", "yes", "on"):
+            _logger.warning(
+                "Using legacy cpc OPC UA cert path because "
+                "ALLOW_LEGACY_SECRETS=true: %s", legacy_base,
+            )
+            return legacy_base
+        raise FileNotFoundError(
+            f"Runtime certificate directory not found: {runtime_base}. "
+            "Legacy fallback is disabled."
+        )
 
 
     async def retry_connection(self) -> None:

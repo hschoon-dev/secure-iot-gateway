@@ -184,6 +184,13 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
         grpc_data["port"] = int(v)
     if v := env.get("GRPC_MAX_WORKERS"):
         grpc_data["max_workers"] = int(v)
+    if v := env.get("INTERMEDIATE_VOR_GRPC_CERT_BASE"):
+        cert_base = Path(v)
+        grpc_data["certs"] = {
+            "ca_cert": cert_base / "ca" / "ca.crt",
+            "server_cert": cert_base / "server" / "server.crt",
+            "server_key": cert_base / "server" / "server.key",
+        }
 
     log_data = config.logging.model_dump()
     if v := env.get("LOG_LEVEL"):

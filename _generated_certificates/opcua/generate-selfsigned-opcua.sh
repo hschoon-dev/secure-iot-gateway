@@ -38,10 +38,10 @@ generate_selfsigned() {
 
 echo "== Generating OPC UA Self-Signed Certificates =="
 
-#generate_selfsigned "${OPCUA_DIR}/brownfield_server" "brownfield_server"
-#generate_selfsigned "${OPCUA_DIR}/interface_server" "interface_server"
-#generate_selfsigned "${OPCUA_DIR}/cpc_client" "cpc_client"
-generate_selfsigned "${OPCUA_DIR}/central-mo" "central-mo"
+generate_selfsigned "${OPCUA_DIR}/brownfield_server" "brownfield_server"
+generate_selfsigned "${OPCUA_DIR}/interface_server" "interface_server"
+generate_selfsigned "${OPCUA_DIR}/mo_client" "mo_client"
+generate_selfsigned "${OPCUA_DIR}/cpc_client" "cpc_client"
 
 echo ""
 echo "== Finished =="
