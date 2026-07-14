@@ -1,8 +1,7 @@
-"""Optional typed mTLS processing path between mapping and the CPC.
+"""Shared verified rule processing for synchronous and persisted pipelines.
 
-The existing MariaDB polling path remains the production default in main.py.
-This server is selected explicitly with PIPELINE_MODE=grpc (used by the E2E
-acceptance test) and acknowledges only after CPC write/readback succeeds.
+Both deployment paths use the typed CPC gRPC/mTLS service and acknowledge a
+change only after the CPC has completed write/readback verification.
 """
 
 from __future__ import annotations
@@ -115,6 +114,49 @@ def _effective_value(current: float, change_type: str) -> float:
     raise ValueError(f"unsupported change type: {change_type!r}")
 
 
+def _endpoint_field(endpoint, index: int, name: str):
+    """Read one field from a protobuf endpoint or persisted list/tuple."""
+    if hasattr(endpoint, name):
+        return getattr(endpoint, name)
+    return endpoint[index]
+
+
+def process_endpoint_rules(
+    cpc: CpcClient,
+    request_id: str,
+    endpoints,
+) -> dict[str, float]:
+    """Verify mapped endpoint rules and apply them through CPC mTLS."""
+
+    endpoint_names = sorted({_endpoint_field(item, 0, "name") for item in endpoints})
+    if not endpoint_names:
+        raise ValueError("mapped request contains no endpoints")
+    values = cpc.read_values(list(_FIXED_REQUIREMENTS) + endpoint_names)
+    for name, required in _FIXED_REQUIREMENTS.items():
+        if values.get(name) != required:
+            raise ValueError(f"acceptance requirement failed for {name}")
+
+    applied: dict[str, float] = {}
+    for endpoint in endpoints:
+        name = _endpoint_field(endpoint, 0, "name")
+        change_type = _endpoint_field(endpoint, 1, "change_type")
+        condition = _endpoint_field(endpoint, 3, "condition")
+        if name not in values:
+            raise ValueError(f"CPC returned no value for {name}")
+        effective = _effective_value(float(values[name]), change_type)
+        match = _CONDITION.fullmatch(condition)
+        if match is None or not _OPERATORS[match.group(1)](
+            effective, float(match.group(2))
+        ):
+            raise ValueError(f"mapping constraint failed for {name}")
+        if name in applied and applied[name] != effective:
+            raise ValueError(f"conflicting mapped values for {name}")
+        applied[name] = effective
+
+    cpc.apply(request_id, applied)
+    return applied
+
+
 class ProcessingService(pipeline_pb2_grpc.ProcessingServiceServicer):
     def __init__(self, cpc: CpcClient):
         self._cpc = cpc
@@ -122,29 +164,9 @@ class ProcessingService(pipeline_pb2_grpc.ProcessingServiceServicer):
     def Process(self, request, context):
         _require_client_identity(context, EXPECTED_CLIENT_CN)
         try:
-            endpoint_names = sorted({item.name for item in request.endpoints})
-            if not endpoint_names:
-                raise ValueError("mapped request contains no endpoints")
-            values = self._cpc.read_values(list(_FIXED_REQUIREMENTS) + endpoint_names)
-            for name, required in _FIXED_REQUIREMENTS.items():
-                if values.get(name) != required:
-                    raise ValueError(f"acceptance requirement failed for {name}")
-
-            applied: dict[str, float] = {}
-            for endpoint in request.endpoints:
-                if endpoint.name not in values:
-                    raise ValueError(f"CPC returned no value for {endpoint.name}")
-                effective = _effective_value(float(values[endpoint.name]), endpoint.change_type)
-                match = _CONDITION.fullmatch(endpoint.condition)
-                if match is None or not _OPERATORS[match.group(1)](
-                    effective, float(match.group(2))
-                ):
-                    raise ValueError(f"mapping constraint failed for {endpoint.name}")
-                if endpoint.name in applied and applied[endpoint.name] != effective:
-                    raise ValueError(f"conflicting mapped values for {endpoint.name}")
-                applied[endpoint.name] = effective
-
-            self._cpc.apply(request.request_id, applied)
+            applied = process_endpoint_rules(
+                self._cpc, request.request_id, request.endpoints
+            )
             return pipeline_pb2.ProcessResponse(
                 success=True,
                 message="request accepted, verified, and applied",

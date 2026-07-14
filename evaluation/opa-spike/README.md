@@ -18,6 +18,9 @@ unabhängige Safety-Funktion ist sie **kein Nachweis funktionaler Sicherheit**.
 
 - `policy.rego`: OPA-Regeln
 - `policy_test.rego`: ausführbare Positiv-, Grenzwert- und Negativtests
+- `system_api_authz.rego`: fail-closed OPA-API-Policy; nur die mTLS-Identität der
+  Interface-Partition darf den Gateway-Entscheidungspfad per POST auswerten
+- `system_api_authz_test.rego`: Positiv- und Negativtests für Identität, Pfad und Methode
 - `inputs/*.json`: Testfaelle
 - `run_spike.sh`: Auswertung der Testfaelle gegen die Policy
 
@@ -29,6 +32,12 @@ bash run_spike.sh
 
 Wenn `opa` nicht installiert ist, endet das Skript mit einem Fehlercode. Ein
 fehlendes Prüfwerkzeug darf in der Evaluation nicht als bestandener Test gelten.
+
+Der versionierte Standard-Compose startet OPA ausschließlich über TLS~1.3 mit
+Client-Zertifikatspflicht. `tests/e2e/run.sh` prüft den legitimen Interface-Aufruf, die
+TLS-Ablehnung ohne Client-Zertifikat und die API-Ablehnung eines gültigen, aber dienstfremden
+CPC-Zertifikats. Dieser Nachweis gilt für den Compose-Stand; die Zielplattform benötigt die
+separate Transferabnahme unter `tests/transfer/`.
 
 ## Erwartete Entscheidungstendenz
 

@@ -1,0 +1,16 @@
+services:
+  intermediate-vor-partition:
+    environment:
+      PIPELINE_MODE: mariadb
+
+  intermediate-vor-partition-cpc:
+    # Explicitly override the synchronous E2E profile command. Compose keeps
+    # command values from earlier override files unless a later file replaces
+    # them, so relying on the base deployment command would exercise the wrong
+    # consumer in this three-file test stack.
+    command: ["python3", "-u", "./mariadb_pipeline_main.py"]
+    environment:
+      LOG_LEVEL: INFO
+
+  e2e-runner:
+    command: ["python3", "-u", "./mariadb_e2e_runner.py"]

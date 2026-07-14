@@ -50,27 +50,60 @@ async def run() -> None:
     if not password:
         raise RuntimeError("ADMIN_PASSWORD is required")
 
+    scenario = os.environ.get("E2E_SCENARIO", "full").strip().lower()
+    max_request_seconds_raw = os.environ.get("E2E_MAX_REQUEST_SECONDS", "").strip()
+    max_request_seconds = (
+        float(max_request_seconds_raw) if max_request_seconds_raw else None
+    )
+    if max_request_seconds is not None and max_request_seconds <= 0:
+        raise ValueError("E2E_MAX_REQUEST_SECONDS must be positive")
     _assert_secret_scope()
     client = await setup_client(max_retries=12, retry_delay=2)
     try:
-        cases = (
-            # 9 satisfies the complete mapping ruleset (including < 12 and < 16).
-            ("allowed", _arguments(password, "9"), "Submission received"),
-            ("opa-boundary-deny", _arguments(password, "16"), "authorization failed (opa)"),
-            ("malformed-deny", _arguments(password, "not-a-number"), "Invalid input for modification."),
-            (
-                "authentication-deny",
-                _arguments(password, "15", valid_credentials=False),
-                "Authentication failed",
-            ),
-        )
+        if scenario == "full":
+            cases = (
+                # 9 satisfies the complete mapping ruleset (including < 12 and < 16).
+                ("allowed", _arguments(password, "9"), "Submission received"),
+                ("opa-boundary-deny", _arguments(password, "16"), "authorization failed (opa)"),
+                ("malformed-deny", _arguments(password, "not-a-number"), "Invalid input for modification."),
+                (
+                    "authentication-deny",
+                    _arguments(password, "15", valid_credentials=False),
+                    "Authentication failed",
+                ),
+            )
+        elif scenario in {"opa-outage", "opa-timeout"}:
+            cases = (
+                (
+                    f"{scenario}-fail-closed",
+                    _arguments(password, "9"),
+                    "authorization failed (opa)",
+                ),
+            )
+        elif scenario == "opa-recovery":
+            cases = (
+                (
+                    "opa-recovery-allow",
+                    _arguments(password, "9"),
+                    "Submission received",
+                ),
+            )
+        else:
+            raise ValueError(f"unknown E2E_SCENARIO: {scenario}")
         for name, arguments, expected in cases:
+            started = asyncio.get_running_loop().time()
             notification = await _submit(client, arguments)
+            elapsed = asyncio.get_running_loop().time() - started
+            if max_request_seconds is not None and elapsed > max_request_seconds:
+                raise AssertionError(
+                    f"{name}: request took {elapsed:.3f}s, "
+                    f"limit is {max_request_seconds:.3f}s"
+                )
             if expected not in notification:
                 raise AssertionError(
                     f"{name}: expected {expected!r}, got {notification!r}"
                 )
-            print(f"PASS {name}: {notification}", flush=True)
+            print(f"PASS {name} ({elapsed:.3f}s): {notification}", flush=True)
     finally:
         await client.disconnect()
 

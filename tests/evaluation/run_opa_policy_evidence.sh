@@ -23,6 +23,13 @@ echo "Policy assertions"
 run_opa test /policy/policy.rego /policy/policy_test.rego --verbose
 echo
 
+echo "OPA API authorization assertions"
+run_opa test \
+  /policy/system_api_authz.rego \
+  /policy/system_api_authz_test.rego \
+  --verbose
+echo
+
 echo "Input scenarios"
 for input_file in "${POLICY_DIR}"/inputs/*.json; do
   case_name="$(basename "${input_file}")"

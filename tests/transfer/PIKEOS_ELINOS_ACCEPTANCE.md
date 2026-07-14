@@ -25,8 +25,10 @@ service logs.
 5. Present the formerly intended identity from the retired CA; expect TLS rejection.
 6. Bracket every negative probe with a successful new-peer probe so an unavailable service cannot
    be mistaken for rejection.
-7. Verify the configured OPA endpoint uses HTTPS in production and validate its server identity;
-   plain HTTP must fail closed.
+7. Verify the configured OPA endpoint uses TLS 1.3 with mutual certificate validation and
+   validate its server identity; plain HTTP and callers without a client certificate must fail.
+8. Present a valid trust-domain certificate belonging to another gateway service to OPA; its
+   decision request must be rejected by the `system.authz` API policy.
 
 ## T-08: partition secret scope
 

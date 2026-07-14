@@ -139,6 +139,48 @@ class DeploymentTransportGuardTests(unittest.TestCase):
             True,
         )
 
+    def test_opa_fail_open_is_test_only(self):
+        allowed = self.opa_transport.opa_fail_open_allowed
+        self.assertFalse(allowed(False, "test"))
+        self.assertTrue(allowed(True, "test"))
+        self.assertFalse(allowed(True, "production"))
+        self.assertFalse(allowed(True, "staging"))
+        self.assertFalse(allowed(True, "typo"))
+
+    def test_opa_timeout_is_positive_finite_and_bounded(self):
+        parse = self.opa_transport.parse_opa_timeout_seconds
+        self.assertEqual(parse("0.75"), 0.75)
+        self.assertEqual(parse(10), 10.0)
+        for invalid in (None, "", "not-a-number", "nan", "inf", 0, -1, 10.01):
+            with self.subTest(value=invalid):
+                with self.assertRaisesRegex(ValueError, "OPA_TIMEOUT_SECONDS"):
+                    parse(invalid)
+
+    def test_https_opa_requires_complete_component_tls_material(self):
+        build = self.opa_transport.build_opa_ssl_context
+        build.cache_clear()
+        with self.assertRaisesRegex(ValueError, "OPA_TLS_CA_CERT"):
+            build(
+                "https://opa:8181/v1/data/siot/authz/allow",
+                "production",
+                "",
+                "",
+                "",
+            )
+
+    def test_test_only_http_opa_does_not_create_tls_context(self):
+        build = self.opa_transport.build_opa_ssl_context
+        build.cache_clear()
+        self.assertIsNone(
+            build(
+                "http://opa:8181/v1/data/siot/authz/allow",
+                "test",
+                "",
+                "",
+                "",
+            )
+        )
+
 
 class AdminBootstrapTests(unittest.TestCase):
     @classmethod
