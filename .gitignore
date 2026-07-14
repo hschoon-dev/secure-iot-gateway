@@ -12,6 +12,24 @@ env/
 
 # Generated test ceritifcates
 # ....
+.runtime-secrets/
+.runtime-data/
+.e2e-runtime/
+.mariadb-e2e-runtime/
+.secrets-backup/
+.secret-staging/
+**/*.key
+**/*_key.pem
+**/*_key.der
+**/ca.key
+_generated_certificates/**/*.csr
+_generated_certificates/grpc/ca/ca.srl
+_generated_certificates/grpc/intermediate-vor-cpc-certs/*.crt
+_generated_certificates/grpc/cpc-certs/server.crt
+_generated_certificates/grpc/intermediate-vor-certs/client.crt
+_generated_certificates/grpc/opa-certs/*.crt
+_generated_certificates/opcua/mo_client/
+interface-partition/user_manager/credentials.json
 
 # Ignore IDE/editor files
 .vscode/
@@ -80,4 +98,6 @@ node_modules
 flows_cred.json
 flows.json.backup
 .flow_cred.json.backup
+.flows.json.backup
 package-lock.json
+flow_cred.json

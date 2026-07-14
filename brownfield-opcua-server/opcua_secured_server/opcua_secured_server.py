@@ -24,6 +24,7 @@ import asyncio
 import sys
 #import argparse
 import logging
+import os
 from pathlib import Path
 import random
 
@@ -39,7 +40,35 @@ sys.path.insert(0, "..")
 
 _logger = logging.getLogger(__name__)
 
-cert_base =             Path(__file__).parent
+def _resolve_cert_base() -> Path:
+    """
+    Resolve brownfield OPC UA cert base.
+    Preferred: external runtime secret dir.
+    Fallback: legacy in-repo cert dir for compatibility.
+    """
+    secrets_root = Path(os.getenv("SIOT_SECRETS_ROOT", "/run/siot-secrets"))
+    runtime_base = Path(
+        os.getenv(
+            "BROWNFIELD_CERT_BASE",
+            str(secrets_root / "brownfield-opcua-server" / "opcua_secured_server"),
+        )
+    )
+    legacy_base = Path(__file__).parent
+
+    if runtime_base.exists():
+        return runtime_base
+    if os.getenv("ALLOW_LEGACY_SECRETS", "false").lower() in ("1", "true", "yes", "on"):
+        _logger.warning(
+            "Using legacy brownfield certificate path because "
+            "ALLOW_LEGACY_SECRETS=true: %s", legacy_base,
+        )
+        return legacy_base
+    raise FileNotFoundError(
+        f"Runtime certificate directory not found: {runtime_base}. "
+        "Legacy fallback is disabled."
+    )
+
+cert_base =             _resolve_cert_base()
 server_cert =           Path(cert_base / "certificates/brownfield_server_cert.der")
 server_private_key =    Path(cert_base / "certificates/brownfield_server_key.pem")
 client_cert =           Path(cert_base / "certificates/trusted/cpc_client_cert.der")

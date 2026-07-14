@@ -2,7 +2,7 @@
 
 acceptance_rulesets:
   ruleset: config/Acceptance_Ruleset.xml
-  ruleset_modified: config/Acceptance_Ruleset_modified.xml
+  ruleset_with_affected_endpoints: config/Acceptance_Ruleset_with_affected_endpoints.xml
 
 mariadb:
   host: "10.200.1.150"

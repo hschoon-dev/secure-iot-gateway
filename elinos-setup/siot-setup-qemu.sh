@@ -14,8 +14,12 @@ vm12() {
 
     echo "Setze Systemzeit... WORKAROUND!"
     date -s "2026-02-12 12:00:00"
-    echo "Setze Admin-Passwort... DEV!"
-    export ADMIN_PASSWORD="SuperDuperRandomPassword2025"
+    if [ -z "${ADMIN_PASSWORD:-}" ]; then
+        echo "ERROR: ADMIN_PASSWORD ist nicht gesetzt. Bitte vorher exportieren."
+        exit 1
+    fi
+    echo "Admin-Passwort wird aus der Umgebung verwendet."
+    export ADMIN_PASSWORD
 
     python3 -m grpc_tools.protoc -I ./grpc_json_handler/proto --python_out=. --grpc_python_out=. ./grpc_json_handler/proto/*.proto
     python3 -m grpc_tools.protoc -I ./grpc_request_handler/proto --python_out=. --grpc_python_out=. ./grpc_request_handler/proto/*.proto

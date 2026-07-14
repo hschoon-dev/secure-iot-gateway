@@ -6,15 +6,12 @@ This folder contains the implementation of OPC UA servers for brownfield devices
 
 ### `main.py`
 
-This script is responsible for starting both secured and unsecured OPC UA servers using multiprocessing. It imports the following functions:
-- `start_unsecured_server` from `opcua_unsecured_server`
-- `start_secured_server` from `opcua_secured_server`
+This script starts the secured OPC UA server. The `NoSecurity` implementation is retained solely for isolated compatibility tests and is disabled by default.
 
 The script defines two functions:
-- `run_unsecured_server()`: Runs the unsecured OPC UA server using `asyncio.run()`.
 - `run_secured_server()`: Runs the secured OPC UA server using `asyncio.run()`.
 
-In the `__main__` block, the script creates two processes to run the unsecured and secured servers concurrently. It handles `KeyboardInterrupt` to gracefully shut down the servers.
+The `NoSecurity` server can be started only with both `SIOT_DEPLOYMENT_MODE=test` and `ENABLE_INSECURE_OPCUA_TEST_SERVER=true`. Any other mode rejects that opt-in. The `__main__` block handles `KeyboardInterrupt` to gracefully shut down all started processes.
 
 ### Libraries
 
@@ -36,8 +33,10 @@ The `Dockerfile` in this folder is used to create a Docker image for the brownfi
 
 ## Usage
 
-To run the OPC UA servers, execute the `main.py` script:
+To run the secured OPC UA server, execute `main.py` with the normal runtime-secret configuration:
 
 ```sh
 python main.py
 ```
+
+Do not enable the `NoSecurity` server outside an isolated test environment.

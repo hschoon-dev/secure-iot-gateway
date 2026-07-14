@@ -1,0 +1,40 @@
+# Optional remote Node-RED deployment profile.
+# Author: Heiko Schoon
+# Organization: Hochschule Emden/Leer
+# Date: 23. September 2025
+
+services:
+
+# ---------------------------------------------------------------
+# Node-RED OPC UA client
+# ---------------------------------------------------------------
+
+  nodered:
+    # Exact upstream release: intentional upgrades require a reviewed diff.
+    image: nodered/node-red:4.1.11-22
+    container_name: nodered
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      # Persistent Node-RED data
+      - ./node-red:/data
+    networks:
+      static-network:
+        ipv4_address: 192.168.178.30
+
+# ---------------------------------------------------------------
+# Volumes and networks
+# ---------------------------------------------------------------
+
+volumes:
+  nodered_data:
+
+networks:
+  static-network:
+    ipam:
+      config:
+        - subnet: 192.168.178.0/24
+          gateway: 192.168.178.1

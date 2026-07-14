@@ -1,0 +1,7 @@
+{
+  "user": {"id": "bob", "roles": ["PlantOperator"]},
+  "action": "manage_users",
+  "parameter": "UserManagement",
+  "value": 0,
+  "limits": {"pump_b_power_max_kw": 16.0}
+}

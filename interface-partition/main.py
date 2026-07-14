@@ -179,9 +179,14 @@ async def main():
             # Wait for both concurrently
             opcua_variables, modbustcp_variables = await asyncio.gather(opcua_task, modbustcp_task)
 
-            # If both timed out -> raise error
+            # Field-device feeds may become available after the initial
+            # population window. Keep OPC UA and the JSON gRPC ingress alive
+            # instead of terminating the whole container (and its gRPC thread).
             if opcua_variables is None and modbustcp_variables is None:
-                raise asyncio.TimeoutError("Both OPC UA and ModbusTCP initial population timed out (20s).")
+                _logger.warning(
+                    "Both initial populations timed out; continuing in degraded mode."
+                )
+                await asyncio.Event().wait()
 
             # Start only the successful periodic updates
             update_tasks = []

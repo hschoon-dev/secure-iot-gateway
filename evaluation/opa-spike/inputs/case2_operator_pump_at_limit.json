@@ -1,0 +1,7 @@
+{
+  "user": {"id": "alice", "roles": ["PlantOperator"]},
+  "action": "flow rate adjustment",
+  "parameter": "Pump_B_Power",
+  "value": 16.0,
+  "limits": {"pump_b_power_max_kw": 16.0}
+}

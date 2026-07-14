@@ -29,12 +29,22 @@ import logging
 import os
 import re
 import json
+import ssl
+import urllib.error
+import urllib.request
 from asyncua import uamethod
 from asyncua.ua import StatusCode, StatusCodes
 from typing import Any
 
 from user_manager import UserManagerTinyDB
-from authorization_handler import AuthorizationHandler
+from authorization_handler import (
+    AuthorizationHandler,
+    build_opa_ssl_context,
+    opa_fail_open_allowed,
+    opa_transport_allowed,
+    parse_opa_timeout_seconds,
+    parse_numeric_value,
+)
 from grpc_request_handler import send_request_as_grpc
 
 _logger = logging.getLogger(__name__)
@@ -42,7 +52,26 @@ _logger = logging.getLogger(__name__)
 path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(path)
 #credentials_db_path = os.path.join(parent_path, "user_manager/credentials.db")
-credentials_db_path = os.path.join(parent_path, "user_manager/credentials.json")
+_credentials_runtime = os.getenv(
+    "SIOT_CREDENTIALS_DB", "/var/lib/siot/credentials.json"
+)
+_credentials_fallback = os.path.join(parent_path, "user_manager", "credentials.json")
+_allow_legacy_credentials = os.getenv(
+    "ALLOW_LEGACY_CREDENTIALS", "false"
+).strip().lower() in ("1", "true", "yes", "on")
+
+if os.path.isfile(_credentials_runtime):
+    credentials_db_path = _credentials_runtime
+elif _allow_legacy_credentials and os.path.isfile(_credentials_fallback):
+    _logger.warning(
+        "Using legacy credential database because ALLOW_LEGACY_CREDENTIALS=true"
+    )
+    credentials_db_path = _credentials_fallback
+else:
+    raise RuntimeError(
+        f"Credential database not found at {_credentials_runtime}. "
+        "Run secret_migration.sh before startup; legacy fallback is disabled."
+    )
 _user_manager = UserManagerTinyDB(credentials_db_path, max_connections=10)
 
 """try:
@@ -56,41 +85,122 @@ from pathlib import Path
 path = Path(__file__).resolve().parent
 parent_path = path.parent
 casbin_model_path_res = Path(parent_path / "authorization_handler" / "rbac_with_resource_roles_model.conf")
-casbin_policy_path_res = Path(parent_path / "authorization_handler" / "rbac_test_with_impacts.csv") 
+casbin_policy_path_res = Path(parent_path / "authorization_handler" / "rbac_policy.csv")
 
 
 # Log resolved Casbin paths for debugging
 _logger.debug(f"Casbin model path: {casbin_model_path_res}")
 _logger.debug(f"Casbin policy path: {casbin_policy_path_res}")
 _rbac_authorization_handler = AuthorizationHandler(str(casbin_model_path_res), str(casbin_policy_path_res))
+_DEFAULT_NEW_USER_ROLE = os.getenv("DEFAULT_NEW_USER_ROLE", "PlantOperator")
 
-# When True, a failed authorization response tells the caller which actions
-# the issuer IS allowed to perform on the requested resource. Set to False
-# in environments where leaking allowed actions is a security concern.
-RETURN_ALLOWED_IMPACTS_ON_AUTHZ_FAILURE: bool = os.getenv(
-    "VOR1_RETURN_ALLOWED_IMPACTS_ON_AUTHZ_FAILURE", "true"
-).strip().lower() in ("1", "true", "yes", "on")
+_AUTHZ_MODE = os.getenv("AUTHZ_MODE", "casbin").strip().lower()
+_OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/siot/authz/allow")
+_OPA_FAIL_OPEN_REQUESTED = os.getenv("OPA_FAIL_OPEN", "false").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+_OPA_TIMEOUT_SECONDS = parse_opa_timeout_seconds(
+    os.getenv("OPA_TIMEOUT_SECONDS", "0.75")
+)
+_OPA_PUMP_B_POWER_MAX_KW = float(os.getenv("OPA_PUMP_B_POWER_MAX_KW", "16"))
+_OPA_TLS_CA_CERT = os.getenv("OPA_TLS_CA_CERT", "")
+_OPA_TLS_CLIENT_CERT = os.getenv("OPA_TLS_CLIENT_CERT", "")
+_OPA_TLS_CLIENT_KEY = os.getenv("OPA_TLS_CLIENT_KEY", "")
+_DEPLOYMENT_MODE = os.getenv("SIOT_DEPLOYMENT_MODE", "production")
+_OPA_FAIL_OPEN = opa_fail_open_allowed(_OPA_FAIL_OPEN_REQUESTED, _DEPLOYMENT_MODE)
+if _OPA_FAIL_OPEN_REQUESTED and not _OPA_FAIL_OPEN:
+    _logger.warning(
+        "Ignoring OPA_FAIL_OPEN outside the explicitly labelled test deployment"
+    )
 
 
-def get_allowed_actions_for_user(issuer_id: str, parameters: str) -> list[str]:
-    """
-    Return the sorted list of impacts the given issuer is permitted to request
-    for the given parameter, according to the Casbin policy.
-    Used to populate the authorization-failure message with actionable guidance.
-    """
-    allowed: list[str] = []
-    for policy in _rbac_authorization_handler.enforcer.get_policy():
-        if len(policy) < 3:
-            continue
-        _, policy_resource, policy_action = policy[:3]
-        if policy_resource != parameters:
-            continue
-        if _rbac_authorization_handler.verify_authorization(
-            issuer_id, parameter_name=parameters, action=policy_action
-        ):
-            allowed.append(policy_action)
-    return sorted(set(allowed))
+def _resolve_authz_mode() -> str:
+    if _AUTHZ_MODE in ("casbin", "casbin_and_opa", "opa_only"):
+        return _AUTHZ_MODE
+    _logger.warning("Unknown AUTHZ_MODE '%s'. Falling back to 'casbin'.", _AUTHZ_MODE)
+    return "casbin"
 
+
+def _authorize_with_opa(
+    issuer_id: str,
+    impact: str,
+    parameters: str,
+    value: float,
+    priority: int,
+    timestamp: str,
+) -> tuple[bool, str]:
+    transport_allowed, transport_message = opa_transport_allowed(
+        _OPA_URL, _DEPLOYMENT_MODE
+    )
+    if not transport_allowed:
+        _logger.error("OPA authorization denied: %s", transport_message)
+        return False, transport_message
+
+    roles = _rbac_authorization_handler.get_roles_for_user(issuer_id)
+    input_payload = {
+        "user": {
+            "id": issuer_id,
+            "roles": roles,
+        },
+        "action": impact,
+        "parameter": parameters,
+        "value": value,
+        "limits": {
+            "pump_b_power_max_kw": _OPA_PUMP_B_POWER_MAX_KW,
+        },
+        "request": {
+            # asyncua supplies DateTime method arguments as ``datetime``
+            # instances although the public method annotation says ``str``.
+            # Keep the OPA wire format deterministic and JSON serializable.
+            "timestamp": str(timestamp),
+            "priority": priority,
+        },
+    }
+    request_body = json.dumps({"input": input_payload}).encode("utf-8")
+    request = urllib.request.Request(
+        _OPA_URL,
+        data=request_body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        tls_context = build_opa_ssl_context(
+            _OPA_URL,
+            _DEPLOYMENT_MODE,
+            _OPA_TLS_CA_CERT,
+            _OPA_TLS_CLIENT_CERT,
+            _OPA_TLS_CLIENT_KEY,
+        )
+        open_kwargs = {"timeout": _OPA_TIMEOUT_SECONDS}
+        if tls_context is not None:
+            open_kwargs["context"] = tls_context
+        with urllib.request.urlopen(request, **open_kwargs) as response:
+            raw_body = response.read().decode("utf-8")
+        parsed = json.loads(raw_body) if raw_body else {}
+        result = parsed.get("result")
+
+        if isinstance(result, bool):
+            return result, "OPA response bool"
+        if isinstance(result, dict) and isinstance(result.get("allow"), bool):
+            return result["allow"], "OPA response object.allow"
+
+        message = f"Malformed OPA response: {parsed}"
+        if _OPA_FAIL_OPEN:
+            _logger.warning("%s (OPA_FAIL_OPEN=true)", message)
+            return True, message
+        _logger.error(message)
+        return False, message
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError, ssl.SSLError) as exc:
+        message = f"OPA authorization request failed: {exc}"
+        if _OPA_FAIL_OPEN:
+            _logger.warning("%s (OPA_FAIL_OPEN=true)", message)
+            return True, message
+        _logger.error(message)
+        return False, message
 
 #@uamethod  #TODO: test...
 # TODO: Update method parameters according the project/NOA-standard requirements and yuanchens additional developments
@@ -183,17 +293,50 @@ async def submit_request(
     # 2) Authorize the request issuer
     # TODO: Create first a list of parameters and actions to be authorized .csv file and .conf file
     # TODO: Create documentation of parameters/actions, users/credentials, roles, and policies (initial users/credentials e.g., Admin etc.)
-    if not _rbac_authorization_handler.verify_authorization(issuer_id, parameter_name=parameters, action=f'"{impact}"'):
-        _logger.error(f"Authorization failed for {issuer_id} with parameters {parameters} and action {impact}")
-        if RETURN_ALLOWED_IMPACTS_ON_AUTHZ_FAILURE: #BUG: Sec vuln, REMOVE
-            allowed = get_allowed_actions_for_user(issuer_id, parameters)
-            return (
-                request_id,
-                server_timestamp,
-                f"Request authorization failed: {issuer_id}. "
-                f"Allowed actions for '{parameters}': {json.dumps(allowed, ensure_ascii=False)}",
+    authz_mode = _resolve_authz_mode()
+
+    if authz_mode in ("casbin", "casbin_and_opa"):
+        if not _rbac_authorization_handler.verify_authorization(
+            issuer_id,
+            parameter_name=parameters,
+            action=f'"{impact}"',
+        ):
+            _logger.error(
+                "Casbin authorization failed for %s with parameters %s and action %s",
+                issuer_id,
+                parameters,
+                impact,
             )
-        return request_id, server_timestamp, f"Request authorization failed: {issuer_id}"
+            return request_id, server_timestamp, f"Request authorization failed (casbin): {issuer_id}"
+
+    if authz_mode in ("opa_only", "casbin_and_opa"):
+        try:
+            opa_value = parse_numeric_value(modification)
+        except ValueError as exc:
+            _logger.error(
+                "OPA input validation failed for %s: %s", issuer_id, exc
+            )
+            return request_id, server_timestamp, (
+                f"Request authorization failed (invalid modification): {issuer_id}"
+            )
+
+        opa_allowed, opa_reason = _authorize_with_opa(
+            issuer_id=issuer_id,
+            impact=impact,
+            parameters=parameters,
+            value=opa_value,
+            priority=priority,
+            timestamp=timestamp,
+        )
+        if not opa_allowed:
+            _logger.error(
+                "OPA authorization failed for %s with parameters %s and action %s (%s)",
+                issuer_id,
+                parameters,
+                impact,
+                opa_reason,
+            )
+            return request_id, server_timestamp, f"Request authorization failed (opa): {issuer_id}"
     
     # 3) Submit the request to the intermediate VoR partition
     # Setup POSIX message queue for ipc with the intermediate VoR partition
@@ -210,7 +353,6 @@ async def submit_request(
 @uamethod
 def add_user(parent: Any, admin_id: str, admin_secret: str, 
              user_id: str, secret: str) -> tuple[StatusCode, str]: 
-    # TODO: add_user / add_user_to_role methods, add new rules directly via method and retain the new config file!, give user two roles? @casbin, methoden kombinieren
     """
     Add a new user to the system.
     
@@ -228,24 +370,35 @@ def add_user(parent: Any, admin_id: str, admin_secret: str,
         return StatusCode(StatusCodes.BadUserAccessDenied), f"Authentication failed for admin {admin_id}."
     if not _rbac_authorization_handler.check_admin_role(admin_id):
         return StatusCode(StatusCodes.BadUserAccessDenied), f"Admin role required for adding users."
-    if  not _rbac_authorization_handler.check_user_exists(user_id):
-        return StatusCode(StatusCodes.BadUserAccessDenied), f"User {user_id} is not part of RBAC policy."
     try:
-        res = _user_manager.create_user(username=user_id, password=secret)
-        #user_exists_rbac = _rbac_authorization_handler.check_user_exists(user_id)
-        #_logger.error(f"User exists in RBAC: {user_exists_rbac}")
-        if res:
-            return StatusCode(StatusCodes.Good), f"User {user_id} added successfully and already exists within RBAC."
-        # if res and not user_exists_rbac:
-        #     # TODO: Add user to RBAC
-        #     #res_rbac = _rbac_authorization_handler.add_user(user_id)
-        #     res_rbac = False
-        #     if res_rbac:
-        #         return StatusCode(StatusCodes.Good), f"User {user_id} added successfully to UserManager and RBAC."
-        #     else:
-        #         return StatusCode(StatusCodes.BadUnexpectedError), f"NOT_IMPLEMENTED: Failed to add user {user_id} to RBAC."
-        else:
-            return StatusCode(StatusCodes.BadUnexpectedError), f"Failed to add user {user_id}."
+        if _user_manager.user_exists(user_id):
+            return StatusCode(StatusCodes.BadUnexpectedError), f"User {user_id} already exists in user manager."
+
+        if not _rbac_authorization_handler.role_exists(_DEFAULT_NEW_USER_ROLE):
+            return StatusCode(StatusCodes.BadNoMatch), (
+                f"Default role '{_DEFAULT_NEW_USER_ROLE}' does not exist in RBAC policy."
+            )
+
+        created = _user_manager.create_user(username=user_id, password=secret)
+        if not created:
+            return StatusCode(StatusCodes.BadUnexpectedError), f"Failed to add user {user_id} to user manager."
+
+        success, message = _rbac_authorization_handler.set_single_role_for_user(
+            user=user_id,
+            role=_DEFAULT_NEW_USER_ROLE,
+        )
+        if not success:
+            # Roll back user-manager insert to keep both stores consistent.
+            res, user_record = _user_manager.retrieve_user(user_id)
+            if res and user_record is not None:
+                _user_manager.delete_user(user_record[0])
+            return StatusCode(StatusCodes.BadUnexpectedError), (
+                f"RBAC role assignment failed for {user_id}. Rolled back user creation. Details: {message}"
+            )
+
+        return StatusCode(StatusCodes.Good), (
+            f"User {user_id} added successfully with role '{_DEFAULT_NEW_USER_ROLE}'."
+        )
     except Exception as e:
         _logger.error(f"Error adding user: {e}")
         return StatusCode(StatusCodes.BadInternalError), f"Error: {str(e)}"
@@ -266,34 +419,45 @@ def remove_user(parent: Any, admin_id: str, admin_secret: str,
         tuple: Status code and result message.
     """
     try:
-        # Check if User is really Admin (Roleset, Authorization)!
         if not _user_manager.verify_credentials(username=admin_id, password=admin_secret):
             return StatusCode(StatusCodes.BadUserAccessDenied), f"Authentication failed for admin {admin_id}."
         if not _rbac_authorization_handler.check_admin_role(admin_id):
             return StatusCode(StatusCodes.BadUserAccessDenied), f"Admin role required for user deletion."
         
-        # Check if user is last admin and prevent deletion
-        if len(_rbac_authorization_handler.get_all_admins()) == 1 and _rbac_authorization_handler.check_admin_role(user_id):
+        user_roles = _rbac_authorization_handler.get_roles_for_user(user_id)
+
+        # Check if user is last admin and prevent deletion.
+        if len(_rbac_authorization_handler.get_all_admins()) == 1 and "Admin" in user_roles:
             return StatusCode(StatusCodes.BadUserAccessDenied), f"Cannot delete last admin user."
 
-        # Get the user record first to get their ID
+        # Get user record from user-manager first.
         res, user_record = _user_manager.retrieve_user(user_id)
         if not res or user_record is None:
             return StatusCode(StatusCodes.BadNoMatch), f"User {user_id} not found."
-        
-        # Check if User exists in the RBAC policy
-        # TODO: How to add new users to the RBAC policy?
-        # if not _rbac_authorization_handler.check_user_exists(user_id):
-        #     return StatusCode(StatusCodes.BadNoMatch), f"User {user_id} not found in RBAC policy."
-        
-        # Delete using the user's ID from the record
-        user_db_id = user_record[0]  # First field is the ID
-        res = _user_manager.delete_user(user_db_id)
-        res_rbac = _rbac_authorization_handler.remove_user(user_id)
-        if res and res_rbac:
+
+        # Phase 1: remove RBAC assignments (if present), persist immediately.
+        # We keep a snapshot for rollback if user-manager deletion fails.
+        rbac_had_roles = len(user_roles) > 0
+        if rbac_had_roles:
+            if not _rbac_authorization_handler.remove_user(user_id):
+                return StatusCode(StatusCodes.BadUnexpectedError), (
+                    f"Failed to remove RBAC assignments for user {user_id}."
+                )
+
+        # Phase 2: remove from user-manager.
+        user_db_id = user_record[0]
+        deleted = _user_manager.delete_user(user_db_id)
+        if deleted:
             return StatusCode(StatusCodes.Good), f"User {user_id} deleted successfully."
-        else:
-            return StatusCode(StatusCodes.BadNoMatch), f"User {user_id} not found or could not be deleted."
+
+        # Rollback RBAC if user-manager deletion failed.
+        if rbac_had_roles:
+            for role in user_roles:
+                _rbac_authorization_handler.add_role_for_user(user_id, role)
+            _rbac_authorization_handler.save_policy()
+        return StatusCode(StatusCodes.BadUnexpectedError), (
+            f"Failed to delete user {user_id} from user manager. RBAC rollback applied."
+        )
     except Exception as e:
         _logger.error(f"Error removing user: {e}")
         return StatusCode(StatusCodes.BadInternalError), f"Error: {str(e)}"
@@ -374,7 +538,7 @@ def list_users(parent: Any, admin_id: str, admin_secret: str) -> tuple[StatusCod
         # directly and returns a list[str] of usernames.
         # The old code called _get_connection()/_return_connection() which belonged
         # to a previous SQLite-backed implementation and no longer exists.
-        users = _user_manager.get_all_users() 
+        users = _user_manager.get_all_users()
         return StatusCode(StatusCodes.Good), users, f"Successfully retrieved {len(users)} users."
     
     except Exception as e:
@@ -397,7 +561,6 @@ def set_user_role(parent: Any, admin_id: str, admin_secret: str,
     Returns:
         tuple: Status code and result message.
     """
-    # TODO: Implementation requires active updating of the casbin-policy.csv file and potentially the model.conf file
     try:
         if not _user_manager.verify_credentials(username=admin_id, password=admin_secret):
             return StatusCode(StatusCodes.BadUserAccessDenied), f"Authentication failed for admin {admin_id}."
@@ -405,10 +568,16 @@ def set_user_role(parent: Any, admin_id: str, admin_secret: str,
         if not _rbac_authorization_handler.check_admin_role(admin_id):
             return StatusCode(StatusCodes.BadUserAccessDenied), f"Admin role required for user role management."
 
-        # The current UserManager doesn't have role management
-        # This would need to be implemented in the UserManager class
-        # For now, return a message indicating this isn't implemented
-        return StatusCode(StatusCodes.BadNotImplemented), f"Role management is not implemented yet."
+        if not _user_manager.user_exists(user_id):
+            return StatusCode(StatusCodes.BadNoMatch), f"User {user_id} does not exist in user manager."
+
+        success, message = _rbac_authorization_handler.set_single_role_for_user(user_id, role)
+        if success:
+            return StatusCode(StatusCodes.Good), message
+
+        if "does not exist" in message:
+            return StatusCode(StatusCodes.BadNoMatch), message
+        return StatusCode(StatusCodes.BadUnexpectedError), message
     except Exception as e:
         _logger.error(f"Error setting user role: {e}")
         return StatusCode(StatusCodes.BadInternalError), f"Error: {str(e)}"

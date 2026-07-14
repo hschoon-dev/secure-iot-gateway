@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional, Sequence
 
 from request import Request
@@ -6,6 +7,7 @@ from request_verification import RequestVerifier, RuleSet
 from mapping_verification import RequestMapper, Mapping_RuleSets
 from feedback_system import FeedbackSystem
 from db_manager import DatabaseManager
+from pipeline_client import process_mapped_request
 
 _logger = logging.getLogger(__name__)
 
@@ -22,16 +24,24 @@ class RequestMessageHandler:
         verification_ruleset: RuleSet,
         mapping_ruleset: Mapping_RuleSets,
         feedback_system: FeedbackSystem,
-        db_manager: DatabaseManager,          # ← was db_path: str
+        db_manager: DatabaseManager,
     ) -> None:
         self._verification_ruleset = verification_ruleset
         self._mapping_ruleset = mapping_ruleset
         self._feedback_system = feedback_system
         self._db_manager = db_manager         # ← was self._db_path
+        self._pipeline_mode = os.getenv("PIPELINE_MODE", "mariadb").strip().lower()
+        if self._pipeline_mode not in ("mariadb", "grpc"):
+            raise ValueError("PIPELINE_MODE must be either 'mariadb' or 'grpc'")
 
         self._verifier = RequestVerifier(self._verification_ruleset, self._feedback_system)
         if self._mapping_ruleset.rulesets is not None:
-            self._mapper = RequestMapper(self._mapping_ruleset.rulesets, self._feedback_system, self._db_manager)
+            mapper_db = self._db_manager if self._pipeline_mode == "mariadb" else None
+            self._mapper = RequestMapper(
+                self._mapping_ruleset.rulesets,
+                self._feedback_system,
+                mapper_db,
+            )
             # ← passes DatabaseManager, matching RequestMapper.__init__(db_manager: DatabaseManager)
         else:
             _logger.error("INIT: Mapping ruleset is None")
@@ -81,5 +91,9 @@ class RequestMessageHandler:
         # Map
         if self._mapper is None:
             raise RuntimeError("Mapping ruleset not available (None)")
-        self._mapper.map_requests(verified_rq)
+        mapped = self._mapper.map_requests(verified_rq)
+        if not mapped:
+            raise ValueError("request did not match a mapping rule set")
+        if self._pipeline_mode == "grpc":
+            process_mapped_request(mapped)
         _logger.info("Mapped request successfully")
