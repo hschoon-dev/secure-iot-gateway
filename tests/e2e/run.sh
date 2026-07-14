@@ -18,6 +18,7 @@ if [[ "${#ADMIN_PASSWORD}" -lt 21 || ! "${ADMIN_PASSWORD}" =~ [[:upper:]] || ! "
 fi
 
 cleanup() {
+  "${COMPOSE[@]}" --profile e2e unpause opa >/dev/null 2>&1 || true
   "${COMPOSE[@]}" --profile e2e down --remove-orphans >/dev/null 2>&1 || true
 }
 
@@ -87,7 +88,34 @@ done
   python3 -c 'import socket; probe = socket.socket(); probe.settimeout(1); result = probe.connect_ex(("127.0.0.1", 4841)); probe.close(); assert result != 0, "NoSecurity endpoint unexpectedly listens on 4841"'
 echo "PASS nosecurity-disabled: brownfield port 4841 is closed by default"
 
+# The legacy unauthenticated CPC Flask bridge is compatibility-only. Both the
+# synchronous and MariaDB-backed production paths use the typed gRPC/mTLS CPC
+# service, so port 5000 must remain closed by default.
+"${COMPOSE[@]}" --profile e2e exec -T cpc-partition \
+  python3 -c 'import socket; probe=socket.socket(); probe.settimeout(1); result=probe.connect_ex(("127.0.0.1",5000)); probe.close(); assert result != 0, "legacy CPC Flask bridge unexpectedly listens on 5000"'
+echo "PASS legacy-http-disabled: CPC port 5000 is closed by default"
+
 "${COMPOSE[@]}" --profile e2e build identity-probe
+
+# T-07: the production OPA endpoint is TLS 1.3 with mutual authentication.
+# No-certificate callers fail during TLS; a valid certificate belonging to a
+# different gateway service reaches OPA but is denied by system.authz.
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  --entrypoint python \
+  -v "${ROOT_DIR}/.runtime-secrets/cpc-partition:/probe-secrets:ro" \
+  identity-probe /probe/opa_mtls_probe.py \
+    missing-client \
+    https://opa:8181/v1/data/siot/authz/allow \
+    /probe-secrets/certs/ca/ca.crt
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  --entrypoint python \
+  -v "${ROOT_DIR}/.runtime-secrets/cpc-partition:/probe-secrets:ro" \
+  identity-probe /probe/opa_mtls_probe.py \
+    foreign-identity \
+    https://opa:8181/v1/data/siot/authz/allow \
+    /probe-secrets/certs/ca/ca.crt \
+    /probe-secrets/certs/client/client.crt \
+    /probe-secrets/certs/client/client.key
 
 probe_wrong_identity() {
   local rpc="$1" target="$2" server_name="$3" source="$4"
@@ -134,3 +162,29 @@ probe_wrong_identity json \
   certificates/pipeline/ca/ca.crt
 
 "${COMPOSE[@]}" --profile e2e run --build --rm --no-deps e2e-runner
+
+# A reachable but non-responsive PDP is different from a stopped container:
+# the TCP connection remains present while the policy response never arrives.
+# The interface must enforce its configured timeout, deny the request within a
+# bounded interval, and resume normal authorization after the PDP is unpaused.
+"${COMPOSE[@]}" --profile e2e pause opa
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  -e E2E_SCENARIO=opa-timeout \
+  -e E2E_MAX_REQUEST_SECONDS=5 \
+  e2e-runner
+echo "PASS opa-timeout: non-responsive PDP denied within 5 seconds"
+"${COMPOSE[@]}" --profile e2e unpause opa
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  -e E2E_SCENARIO=opa-recovery \
+  -e E2E_MAX_REQUEST_SECONDS=5 \
+  e2e-runner
+echo "PASS opa-recovery: authorization recovered after PDP unpause"
+
+# A valid request that normally passes Casbin and OPA must be denied when the
+# external PDP disappears. This exercises the real OPC UA entry point and
+# network failure path, not only a mocked helper.
+"${COMPOSE[@]}" --profile e2e stop opa
+"${COMPOSE[@]}" --profile e2e run --rm --no-deps \
+  -e E2E_SCENARIO=opa-outage \
+  e2e-runner
+echo "PASS opa-outage: valid request denied after PDP shutdown"

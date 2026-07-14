@@ -443,9 +443,8 @@ def main():
         path=Path(__file__).parent / "config/settings.yaml",
         base_dir=Path(__file__).parent,
     )
-    global acceptance_ruleset_path, acceptance_ruleset_path_modified
+    global acceptance_ruleset_path
     acceptance_ruleset_path          = CONFIG.acceptance_rulesets.ruleset
-    acceptance_ruleset_path_modified = CONFIG.acceptance_rulesets.ruleset_modified
 
     # Configure the root logger exactly once, as early as possible in the
     # process lifetime. All other modules obtain child loggers via

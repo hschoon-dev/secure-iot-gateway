@@ -132,6 +132,13 @@ copy_tree "${ROOT_DIR}/cpc-partition/opcua_client/certificates" \
 copy_tree "${ROOT_DIR}/brownfield-opcua-server/opcua_secured_server/certificates" \
           "${RUNTIME_DIR}/brownfield-opcua-server/opcua_secured_server/certificates"
 
+# OPA HTTPS/mTLS server. It receives only its server key and the CA trust
+# anchor; the interface client key remains scoped to interface-partition.
+copy_file "${ROOT_DIR}/_generated_certificates/grpc/ca/ca.crt" \
+          "${RUNTIME_DIR}/opa/certificates/tls/ca/ca.crt"
+install_grpc_identity "opa-certs" server \
+  "opa" "certificates/tls/server"
+
 # Restrict copied material independently of the source-tree permissions.
 find "${RUNTIME_DIR}" -type d -exec chmod 700 {} +
 find "${RUNTIME_DIR}" -type f -exec chmod 600 {} +

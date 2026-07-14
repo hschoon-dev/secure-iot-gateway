@@ -6,8 +6,7 @@
  Beschreibung:
     Pydantic configuration model for the Intermediate VoR-CPC
     partition. Covers acceptance ruleset paths, the MariaDB
-    database connection, the Flask bridge HTTP client, and
-    logging.
+    database connection, legacy bridge compatibility, and logging.
 
  Usage:
     from config_loader import load_config, VoRCPCConfig
@@ -64,13 +63,15 @@ class MariaDBConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Flask bridge HTTP client (temporary)
+# Flask bridge HTTP client (explicit legacy compatibility only)
 # ---------------------------------------------------------------------------
 
 class FlaskBridgeClientConfig(BaseModel):
     """
-    HTTP client settings for the temporary Flask server bridge on the CPC side.
-    Will be replaced by a gRPC/mTLS channel in a future iteration.
+    Legacy HTTP bridge settings retained for explicit compatibility mode.
+
+    The standard synchronous and MariaDB-backed deployment paths use the
+    typed gRPC/mTLS CPC service and do not consume these values.
     """
     host: str = Field("192.168.156.14", description="IP address of the Flask bridge server")
     port: int = Field(5000, description="Port of the Flask bridge server")
@@ -147,7 +148,7 @@ def _read_raw(path: Path) -> Dict[str, Any]:
 def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
     """Resolve relative ruleset file paths against base_dir."""
     rulesets = raw.get("acceptance_rulesets", {})
-    for field in ("ruleset", "ruleset_modified"):
+    for field in ("ruleset", "ruleset_with_affected_endpoints"):
         if field in rulesets:
             p = Path(rulesets[field])
             rulesets[field] = str(p if p.is_absolute() else base_dir / p)
@@ -169,7 +170,7 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
     if v := env.get("ACCEPTANCE_RULESET_PATH"):
         ruleset_data["ruleset"] = v
     if v := env.get("ACCEPTANCE_RULESET_MODIFIED_PATH"):
-        ruleset_data["ruleset_modified"] = v
+        ruleset_data["ruleset_with_affected_endpoints"] = v
 
     db_data = config.mariadb.model_dump()
     if v := env.get("DB_HOST"):

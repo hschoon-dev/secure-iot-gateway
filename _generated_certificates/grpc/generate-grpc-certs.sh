@@ -182,5 +182,10 @@ generate_client_cert "${ROOT_DIR}/intermediate-vor-cpc-certs" "client"
 # psmo-certs: nur Server
 generate_server_cert "${ROOT_DIR}/psmo-certs" "server"
 
+# OPA policy decision point: HTTPS server identity. The interface partition
+# reuses its component-bound client identity; system.authz restricts API access
+# to that exact certificate subject.
+generate_server_cert "${ROOT_DIR}/opa-certs" "server"
+
 echo ""
 echo "== Fertig =="

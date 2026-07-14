@@ -17,6 +17,9 @@ class RiskGateReportTests(unittest.TestCase):
         self.assertFalse(report["ordinal_scores_automatically_changed"])
         t11 = next(item for item in report["threats"] if item["id"] == "T-11")
         self.assertIn("remain open", t11["evidence_status"])
+        t07 = next(item for item in report["threats"] if item["id"] == "T-07")
+        self.assertIn("TLS 1.3", t07["evidence_status"])
+        self.assertIn("transfer remains", t07["evidence_status"])
 
     def test_missing_docker_job_leaves_e2e_gates_unproven(self):
         report = MODULE.render("success", "failure", "test-commit")

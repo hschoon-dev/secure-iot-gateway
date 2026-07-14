@@ -2,7 +2,44 @@
 
 from __future__ import annotations
 
+import math
+import ssl
+from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urlparse
+
+
+def opa_fail_open_allowed(requested: bool, deployment_mode: str) -> bool:
+    """Permit fail-open behavior only in an explicitly labelled test deployment.
+
+    A production or misspelled deployment mode must never turn an unavailable or
+    malformed external policy decision into an authorization grant.
+    """
+
+    return bool(requested) and deployment_mode.strip().lower() == "test"
+
+
+def parse_opa_timeout_seconds(
+    raw_value: str | float,
+    *,
+    max_seconds: float = 10.0,
+) -> float:
+    """Validate the PDP timeout as a finite, bounded positive duration.
+
+    An unavailable policy decision point must fail closed promptly.  Invalid,
+    non-finite or operationally excessive values therefore abort service
+    startup instead of silently creating an unbounded authorization wait.
+    """
+
+    try:
+        timeout = float(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("OPA_TIMEOUT_SECONDS must be a number") from exc
+    if not math.isfinite(timeout) or timeout <= 0 or timeout > max_seconds:
+        raise ValueError(
+            f"OPA_TIMEOUT_SECONDS must be finite and in (0, {max_seconds}]"
+        )
+    return timeout
 
 
 def opa_transport_allowed(url: str, deployment_mode: str) -> tuple[bool, str]:
@@ -20,3 +57,41 @@ def opa_transport_allowed(url: str, deployment_mode: str) -> tuple[bool, str]:
     if deployment_mode.strip().lower() == "production" and parsed.scheme != "https":
         return False, "production OPA enforcement requires an HTTPS OPA_URL"
     return True, "OPA transport accepted"
+
+
+@lru_cache(maxsize=4)
+def build_opa_ssl_context(
+    url: str,
+    deployment_mode: str,
+    ca_cert: str,
+    client_cert: str,
+    client_key: str,
+) -> ssl.SSLContext | None:
+    """Build a mutually authenticated TLS context for an HTTPS OPA endpoint.
+
+    Plain HTTP is retained only for explicitly labelled test-only callers.
+    HTTPS never falls back to the host trust store or to unauthenticated TLS:
+    all three component-scoped certificate paths are mandatory.
+    """
+
+    allowed, reason = opa_transport_allowed(url, deployment_mode)
+    if not allowed:
+        raise ValueError(reason)
+
+    if urlparse(url).scheme == "http":
+        return None
+
+    material = {
+        "OPA_TLS_CA_CERT": ca_cert,
+        "OPA_TLS_CLIENT_CERT": client_cert,
+        "OPA_TLS_CLIENT_KEY": client_key,
+    }
+    for label, raw_path in material.items():
+        if not raw_path or not Path(raw_path).is_file():
+            raise ValueError(f"{label} must reference a readable file for HTTPS OPA")
+
+    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=ca_cert)
+    context.minimum_version = ssl.TLSVersion.TLSv1_3
+    context.check_hostname = True
+    context.load_cert_chain(certfile=client_cert, keyfile=client_key)
+    return context

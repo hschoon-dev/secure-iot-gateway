@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - creds-updated
-      - feat/security-hardening
+      - main
       - active-dev
+      - "feat/**"
   pull_request:
 
 permissions:
@@ -94,6 +94,9 @@ jobs:
 
       - name: Build and run Docker E2E on clean runner
         run: tests/e2e/run.sh 2>&1 | tee evidence/docker-e2e.txt
+
+      - name: Default MariaDB pipeline E2E and least-privilege database roles
+        run: tests/mariadb/run.sh 2>&1 | tee evidence/mariadb-e2e.txt
 
       - name: Casbin ABAC and OPA decision parity
         run: tests/evaluation/run_casbin_opa_comparison.sh 2>&1 | tee evidence/casbin-opa-parity.txt
