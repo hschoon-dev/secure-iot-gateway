@@ -4,15 +4,6 @@ rulesets:
   verification_ruleset: config/Request_Verification_Ruleset.xml
   mapping_ruleset: config/Mapping_Rulesets.xml
 
-mariadb:
-  host: "10.200.1.150"
-  port: 3306
-  user: "vor-1"
-  password: "VoR-1-Password"
-  database: "secure_iot_gateway"
-  pool_name: "iot_gateway_pool"
-  pool_size: 5
-
 grpc_server:
   port: 50051
   max_workers: 10
@@ -21,6 +12,19 @@ grpc_server:
     ca_cert: certificates/grpc/ca/ca.crt
     server_cert: certificates/grpc/server/server.crt
     server_key: certificates/grpc/server/server.key
+
+# Outbound mTLS gRPC client that forwards mapped requests directly to
+# intermediate-vor-partition-cpc. Replaces the previous shared-database
+# write (MariaDB, then a shared SQLite file) — this partition no longer
+# stores anything itself.
+mapped_request_client:
+  host: "192.168.178.116"
+  port: 50052
+  timeout_seconds: 5.0
+  certs:
+    ca_cert: certificates/grpc/mapped_request_ca/ca.crt
+    client_cert: certificates/grpc/mapped_request_client/client.crt
+    client_key: certificates/grpc/mapped_request_client/client.key
 
 logging:
   log_file: logs/app.log

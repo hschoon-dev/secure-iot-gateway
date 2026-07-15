@@ -1,0 +1,31 @@
+syntax = "proto3";
+package mapped_request;
+
+// A mapped request produced by intermediate-vor-partition (verification +
+// mapping already completed) and forwarded directly to
+// intermediate-vor-partition-cpc, which stores it in its own local-only
+// SQLite database for the pull/process loop to pick up.
+//
+// This replaces the previous design where both partitions wrote to and
+// read from a shared MariaDB/SQLite database. Complex fields (description,
+// tags, affected_endpoint_list) are JSON-encoded strings, mirroring how
+// they were serialized for storage before this migration, so the
+// receiving side's storage code did not need to change.
+message MappedRequestMessage {
+  string request_id            = 1;
+  string generation_timestamp  = 2; // ISO-8601 string
+  string description           = 3; // JSON-encoded; empty string if null
+  string impact                = 4;
+  int32  priority               = 5;
+  string tags                   = 6; // JSON-encoded; empty string if null
+  string affected_endpoint_list = 7; // JSON-encoded array of endpoint tuples
+}
+
+message MappedRequestAck {
+  bool   accepted = 1;
+  string detail   = 2;
+}
+
+service MappedRequestService {
+  rpc Submit(MappedRequestMessage) returns (MappedRequestAck);
+}

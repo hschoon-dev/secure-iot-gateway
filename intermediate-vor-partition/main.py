@@ -38,7 +38,7 @@ from mapping_verification import Mapping_RuleSets
 from feedback_system import FeedbackSystem
 from grpc_request_handler import build_grpc_server
 from request_message_handler import RequestMessageHandler
-from db_manager import DatabaseManager
+from mapped_request_client import MappedRequestClient
 from config_loader import load_config, VoRConfig
 
 # CONFIG is populated inside main() after logging is set up, so that any
@@ -88,10 +88,11 @@ _logger = logging.getLogger(__name__)
 # Global flag for controlled shutdown
 _running = True
 _grpc_server = None
+_mapped_request_client = None
 
 
 def signal_handler(sig, frame):
-    global _running, _grpc_server
+    global _running, _grpc_server, _mapped_request_client
     _logger.info("Shutdown signal received, exiting gracefully...")
     _running = False
     if _grpc_server is not None:
@@ -100,33 +101,33 @@ def signal_handler(sig, frame):
             _grpc_server.stop(grace=CONFIG.grpc_server.grace_period_seconds)
         except Exception as e:
             _logger.error(f"Error stopping gRPC server: {e}")
+    if _mapped_request_client is not None:
+        _logger.info("Closing mapped-request gRPC client channel...")
+        _mapped_request_client.close()
 
 
-def initialize_database() -> DatabaseManager:
+def initialize_mapped_request_client() -> MappedRequestClient:
     """
-    Initialize the MariaDB connection pool from CONFIG.mariadb.
+    Initialize the mTLS gRPC client used to forward mapped requests to
+    intermediate-vor-partition-cpc, from CONFIG.mapped_request_client.
+
+    This partition no longer stores anything in a database itself;
+    intermediate-vor-partition-cpc owns storage and is reached only via
+    this client.
 
     Returns:
-        DatabaseManager instance
+        MappedRequestClient instance
 
     Raises:
-        Exception if database connection fails
+        Exception if the client (certificate loading, channel setup) fails
+        to initialize
     """
     try:
-        db = CONFIG.mariadb
-        db_manager = DatabaseManager(
-            host=db.host,
-            port=db.port,
-            user=db.user,
-            password=db.password,
-            database=db.database,
-            pool_name=db.pool_name,
-            pool_size=db.pool_size,
-        )
-        _logger.info("Database manager initialized successfully")
-        return db_manager
+        client = MappedRequestClient(CONFIG.mapped_request_client)
+        _logger.info("Mapped-request gRPC client initialized successfully")
+        return client
     except Exception as e:
-        _logger.critical(f"Failed to initialize database: {e}")
+        _logger.critical(f"Failed to initialize mapped-request gRPC client: {e}")
         raise
 
 
@@ -155,13 +156,14 @@ def main() -> None:
         backup_count=CONFIG.logging.backup_count,
     )
     
-    global _grpc_server
+    global _grpc_server, _mapped_request_client
 
-    # (1) Init database
+    # (1) Init the outbound gRPC client to intermediate-vor-partition-cpc
     try:
-        db_manager = initialize_database()
+        mapped_request_client = initialize_mapped_request_client()
+        _mapped_request_client = mapped_request_client
     except Exception:
-        _logger.critical("Cannot start without database connection.")
+        _logger.critical("Cannot start without a working mapped-request gRPC client.")
         sys.exit(1)
 
     # (2) Init rules & systems
@@ -174,7 +176,7 @@ def main() -> None:
         verification_ruleset=verification_ruleset,
         mapping_ruleset=mapping_ruleset,
         feedback_system=feedback_system,
-        db_manager=db_manager,
+        mapped_request_client=mapped_request_client,
     )
 
     # (4) Start the gRPC server that invokes the handler synchronously
@@ -199,6 +201,9 @@ def main() -> None:
         if _grpc_server is not None:
             _logger.info("Finalizing gRPC server shutdown...")
             _grpc_server.stop(grace=CONFIG.grpc_server.grace_period_seconds)
+        if _mapped_request_client is not None:
+            _logger.info("Closing mapped-request gRPC client channel...")
+            _mapped_request_client.close()
         _logger.info("Intermediate VoR Partition shutdown complete.")
 
 

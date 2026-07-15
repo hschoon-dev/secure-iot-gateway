@@ -5,9 +5,11 @@
 ------------------------------------------------------------
  Beschreibung:
     Pydantic configuration model for the Intermediate VoR-CPC
-    partition. Covers acceptance ruleset paths, the MariaDB
-    database connection, the Flask bridge HTTP client, and
-    logging.
+    partition. Covers acceptance ruleset paths, the inbound
+    mapped-request gRPC server (mTLS) that receives mapped
+    requests from intermediate-vor-partition, the local-only
+    SQLite database those requests are stored in, the Flask
+    bridge HTTP client, and logging.
 
  Usage:
     from config_loader import load_config, VoRCPCConfig
@@ -49,18 +51,62 @@ class AcceptanceRulesetConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# MariaDB connection
+# Inbound gRPC server (intermediate-vor-partition -> this partition)
 # ---------------------------------------------------------------------------
 
-class MariaDBConfig(BaseModel):
-    """MariaDB connection parameters for the VoR-CPC partition."""
-    host:      str = Field("192.168.178.117",    description="MariaDB host address")
-    port:      int = Field(3306,                 description="MariaDB port")
-    user:      str = Field("vor-2",              description="Database user")
-    password:  str = Field("VoR-2-Password",     description="Database password")
-    database:  str = Field("secure_iot_gateway", description="Database name")
-    pool_name: str = Field("iot_gateway_pool",   description="Connection pool name")
-    pool_size: int = Field(5,                    description="Connection pool size")
+class MappedRequestServerCerts(BaseModel):
+    """mTLS certificate paths for the inbound mapped-request gRPC server."""
+    ca_cert: Path = Field(
+        Path("certificates/grpc/mapped_request_ca/ca.crt"),
+        description="CA certificate used to verify intermediate-vor-partition's client cert",
+    )
+    server_cert: Path = Field(
+        Path("certificates/grpc/mapped_request_server/server.crt"),
+        description="Server certificate for mTLS",
+    )
+    server_key: Path = Field(
+        Path("certificates/grpc/mapped_request_server/server.key"),
+        description="Server private key for mTLS",
+    )
+
+
+class MappedRequestServerConfig(BaseModel):
+    """
+    gRPC server that receives mapped requests forwarded directly by
+    intermediate-vor-partition. Replaces the previous shared-database read
+    (MariaDB, then a shared SQLite file): intermediate-vor-partition no
+    longer touches any database and only ever talks to this server.
+    """
+    port: int = Field(50052, description="Port the mapped-request gRPC server listens on")
+    max_workers: int = Field(10, description="Thread pool size for the gRPC server")
+    grace_period_seconds: int = Field(5, description="Seconds to wait during graceful shutdown")
+    certs: MappedRequestServerCerts = Field(default_factory=MappedRequestServerCerts)
+
+
+# ---------------------------------------------------------------------------
+# SQLite (local-only)
+# ---------------------------------------------------------------------------
+
+class SQLiteConfig(BaseModel):
+    """
+    SQLite connection parameters for the VoR-CPC partition.
+
+    This database is local and private to this partition: no other
+    process or container ever opens it, and there is no dedicated Docker
+    volume for it. Mapped requests arrive over gRPC (see
+    MappedRequestServerConfig above) and are stored here as a plain file
+    on disk, relative to the application directory (the same "python code
+    + data file side by side" layout this runs with directly on a Linux
+    VM). The existing pull/process loop in main.py reads and deletes them.
+    """
+    database: str = Field(
+        "data/mapped_requests.db",
+        description="Path to the local-only SQLite database file, relative to the app directory",
+    )
+    busy_timeout_ms: int = Field(
+        10000,
+        description="Milliseconds to wait for a lock held by another thread in this process before raising an error",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -121,11 +167,12 @@ class LoggingConfig(BaseModel):
 
 class VoRCPCConfig(BaseModel):
     """Root configuration for the Intermediate VoR-CPC partition."""
-    acceptance_rulesets: AcceptanceRulesetConfig = Field(default_factory=AcceptanceRulesetConfig)
-    mariadb:             MariaDBConfig            = Field(default_factory=MariaDBConfig)
-    flask_bridge:        FlaskBridgeClientConfig  = Field(default_factory=FlaskBridgeClientConfig)
-    processing:          ProcessingConfig         = Field(default_factory=ProcessingConfig)
-    logging:             LoggingConfig            = Field(default_factory=LoggingConfig)
+    acceptance_rulesets:  AcceptanceRulesetConfig  = Field(default_factory=AcceptanceRulesetConfig)
+    mapped_request_server: MappedRequestServerConfig = Field(default_factory=MappedRequestServerConfig)
+    sqlite:               SQLiteConfig              = Field(default_factory=SQLiteConfig)
+    flask_bridge:         FlaskBridgeClientConfig   = Field(default_factory=FlaskBridgeClientConfig)
+    processing:           ProcessingConfig          = Field(default_factory=ProcessingConfig)
+    logging:              LoggingConfig             = Field(default_factory=LoggingConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -145,12 +192,24 @@ def _read_raw(path: Path) -> Dict[str, Any]:
 
 
 def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
-    """Resolve relative ruleset file paths against base_dir."""
+    """Resolve relative ruleset, mapped_request_server.certs, and sqlite.database paths against base_dir."""
     rulesets = raw.get("acceptance_rulesets", {})
     for field in ("ruleset", "ruleset_modified"):
         if field in rulesets:
             p = Path(rulesets[field])
             rulesets[field] = str(p if p.is_absolute() else base_dir / p)
+
+    server_certs = raw.get("mapped_request_server", {}).get("certs", {})
+    for field in ("ca_cert", "server_cert", "server_key"):
+        if field in server_certs:
+            p = Path(server_certs[field])
+            server_certs[field] = str(p if p.is_absolute() else base_dir / p)
+
+    sqlite_data = raw.get("sqlite", {})
+    if "database" in sqlite_data:
+        p = Path(sqlite_data["database"])
+        sqlite_data["database"] = str(p if p.is_absolute() else base_dir / p)
+
     return raw
 
 
@@ -158,10 +217,11 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
     """
     Optional environment-variable overrides.
 
-    Rulesets     : ACCEPTANCE_RULESET_PATH, ACCEPTANCE_RULESET_MODIFIED_PATH
-    MariaDB      : DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_POOL_SIZE
-    Flask bridge : FLASK_HOST, FLASK_PORT, FLASK_TIMEOUT
-    Logging      : LOG_LEVEL, LOG_FILE
+    Rulesets              : ACCEPTANCE_RULESET_PATH, ACCEPTANCE_RULESET_MODIFIED_PATH
+    Mapped-request server : MAPPED_REQUEST_SERVER_PORT, MAPPED_REQUEST_SERVER_MAX_WORKERS
+    SQLite (local-only)   : DB_PATH, DB_BUSY_TIMEOUT_MS
+    Flask bridge          : FLASK_HOST, FLASK_PORT, FLASK_TIMEOUT
+    Logging               : LOG_LEVEL, LOG_FILE
     """
     env = os.environ
 
@@ -171,19 +231,17 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
     if v := env.get("ACCEPTANCE_RULESET_MODIFIED_PATH"):
         ruleset_data["ruleset_modified"] = v
 
-    db_data = config.mariadb.model_dump()
-    if v := env.get("DB_HOST"):
-        db_data["host"] = v
-    if v := env.get("DB_PORT"):
-        db_data["port"] = int(v)
-    if v := env.get("DB_USER"):
-        db_data["user"] = v
-    if v := env.get("DB_PASSWORD"):
-        db_data["password"] = v
-    if v := env.get("DB_NAME"):
+    server_data = config.mapped_request_server.model_dump()
+    if v := env.get("MAPPED_REQUEST_SERVER_PORT"):
+        server_data["port"] = int(v)
+    if v := env.get("MAPPED_REQUEST_SERVER_MAX_WORKERS"):
+        server_data["max_workers"] = int(v)
+
+    db_data = config.sqlite.model_dump()
+    if v := env.get("DB_PATH"):
         db_data["database"] = v
-    if v := env.get("DB_POOL_SIZE"):
-        db_data["pool_size"] = int(v)
+    if v := env.get("DB_BUSY_TIMEOUT_MS"):
+        db_data["busy_timeout_ms"] = int(v)
 
     flask_data = config.flask_bridge.model_dump()
     if v := env.get("FLASK_HOST"):
@@ -201,7 +259,8 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
 
     return VoRCPCConfig(
         acceptance_rulesets=AcceptanceRulesetConfig.model_validate(ruleset_data),
-        mariadb=MariaDBConfig.model_validate(db_data),
+        mapped_request_server=MappedRequestServerConfig.model_validate(server_data),
+        sqlite=SQLiteConfig.model_validate(db_data),
         flask_bridge=FlaskBridgeClientConfig.model_validate(flask_data),
         processing=config.processing,
         logging=LoggingConfig.model_validate(log_data),
@@ -237,7 +296,8 @@ def load_config(
 
     raw = _read_raw(cfg_path) if cfg_path.exists() else {}
     raw.setdefault("acceptance_rulesets", {})
-    raw.setdefault("mariadb", {})
+    raw.setdefault("mapped_request_server", {})
+    raw.setdefault("sqlite", {})
     raw.setdefault("flask_bridge", {})
     raw.setdefault("processing", {})
     raw.setdefault("logging", {})

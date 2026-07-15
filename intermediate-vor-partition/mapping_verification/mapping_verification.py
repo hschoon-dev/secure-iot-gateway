@@ -31,14 +31,7 @@ from typing import Optional
 # local imports
 from request import Request
 from feedback_system import FeedbackSystem
-from db_manager import DatabaseManager
-
-# TODO: should be in .env
-DB_HOST="192.168.178.117"
-DB_PORT=3306
-DB_USER="iot_gateway"
-DB_PASSWORD="your_secure_password"
-DB_NAME="secure_iot_gateway"
+from mapped_request_client import MappedRequestClient
 
 _logger = logging.getLogger(__name__)
 
@@ -98,10 +91,11 @@ class Mapping_RuleSets:
         _logger.debug(f"Loaded Mapping Rule Sets: {self.rulesets}")
  
  
-# Template of Mapped Requests, Save Mapped Requests to MariaDB
+# Template of Mapped Requests, forwarded via gRPC to intermediate-vor-partition-cpc
 class MappedRequest:
     """
-    MariaDB storage schema (one row per mapped request):
+    Wire schema sent to intermediate-vor-partition-cpc over gRPC (one
+    MappedRequestMessage per mapped request):
         {
             "request_id": str (UNIQUE),
             "generation_timestamp": datetime,
@@ -111,8 +105,12 @@ class MappedRequest:
             "tags": JSON,
             "affected_endpoint_list": JSON (array of endpoint tuples)
         }
+
+    intermediate-vor-partition-cpc stores this in its own local-only
+    SQLite database on receipt; this partition no longer touches a
+    database itself.
     """
- 
+
     def __init__(
         self,
         request_id,
@@ -122,7 +120,7 @@ class MappedRequest:
         priority,
         tags,
         affected_endpoint_list,
-        db_manager: DatabaseManager,
+        mapped_request_client: MappedRequestClient,
     ):
         self.request_id = request_id
         self.generation_timestamp = generation_timestamp
@@ -131,23 +129,23 @@ class MappedRequest:
         self.priority = priority
         self.tags = tags
         self.affected_endpoint_list = affected_endpoint_list
-        self.db_manager = db_manager
- 
-    def save_to_db(self) -> bool:
+        self.mapped_request_client = mapped_request_client
+
+    def submit(self) -> bool:
         """
-        Upsert mapped request to MariaDB (INSERT ON DUPLICATE KEY UPDATE).
-        
-        Thread-safe and handles concurrent writes from multiple systems.
-        
+        Forward the mapped request to intermediate-vor-partition-cpc via
+        gRPC, where it is upserted into the local SQLite database
+        (INSERT ... ON CONFLICT DO UPDATE).
+
         Returns:
             True if successful, False otherwise
         """
-        if self.db_manager is None:
-            _logger.error("Database manager not initialized; cannot save mapped request.")
+        if self.mapped_request_client is None:
+            _logger.error("Mapped-request gRPC client not initialized; cannot forward mapped request.")
             return False
- 
+
         try:
-            success = self.db_manager.insert_or_update_request(
+            success = self.mapped_request_client.submit_mapped_request(
                 request_id=self.request_id,
                 generation_timestamp=self.generation_timestamp,
                 description=self.description,
@@ -156,16 +154,16 @@ class MappedRequest:
                 tags=self.tags,
                 affected_endpoint_list=self.affected_endpoint_list,
             )
- 
+
             if success:
-                _logger.info(f"Mapped Request saved to DB: {self.request_id}")
+                _logger.info(f"Mapped Request forwarded to CPC partition: {self.request_id}")
             else:
-                _logger.error(f"Failed to save Mapped Request to DB: {self.request_id}")
- 
+                _logger.error(f"Failed to forward Mapped Request to CPC partition: {self.request_id}")
+
             return success
- 
+
         except Exception as e:
-            _logger.error(f"Unexpected error saving mapped request: {e}")
+            _logger.error(f"Unexpected error forwarding mapped request: {e}")
             return False
  
  
@@ -174,12 +172,12 @@ class RequestMapper:
         self,
         mapping_rule_sets,
         feedback_system: FeedbackSystem,
-        db_manager: DatabaseManager,
+        mapped_request_client: MappedRequestClient,
     ):
         # dictonary, key = MappingRuleSet.'name', value = list of Mapping_Rule objects
         self.mapping_rule_sets = mapping_rule_sets
         self.feedback_system: FeedbackSystem = feedback_system
-        self.db_manager = db_manager
+        self.mapped_request_client = mapped_request_client
  
     def map_requests(self, request: Request) -> bool:
         """
@@ -246,7 +244,7 @@ class RequestMapper:
             _logger.error("Mapping Rule Sets not found")
             return False
  
-        # Create and save the mapped request
+        # Create and forward the mapped request
         mapped_request = MappedRequest(
             request.id,
             request.timestamp,
@@ -255,16 +253,16 @@ class RequestMapper:
             request.priority,
             None,
             affected_endpoint_list,
-            self.db_manager,
+            self.mapped_request_client,
         )
- 
-        if mapped_request.save_to_db():
+
+        if mapped_request.submit():
             mapping_feedback["Mapping Result"] = "Mapping completed"
             _logger.info(f"Mapping completed for request ID: {request.id}")
             self.feedback_system.submit_feedback(mapping_feedback)
             return True
         else:
-            _logger.error(f"Failed to save Mapped Request to DB: {mapped_request.request_id}")
-            mapping_feedback["Mapping Result"] = "Mapping failed: database error"
+            _logger.error(f"Failed to forward Mapped Request to CPC partition: {mapped_request.request_id}")
+            mapping_feedback["Mapping Result"] = "Mapping failed: could not reach CPC partition"
             self.feedback_system.submit_feedback(mapping_feedback)
             return False

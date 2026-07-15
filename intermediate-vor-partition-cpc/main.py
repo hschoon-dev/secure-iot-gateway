@@ -5,13 +5,19 @@
 ------------------------------------------------------------
  Beschreibung:
     This script serves as the main entry point for the
-    intermediate VoR partition of the Secure IoT Gateway.
-    It handles pulling requests from a MariaDB database,
-    processing them through acceptance and mapping verification,
-    and providing feedback to the interface partition.
+    intermediate VoR-CPC partition of the Secure IoT Gateway.
+    It runs an mTLS gRPC server that receives mapped requests
+    forwarded directly by intermediate-vor-partition and stores
+    them in a local-only SQLite database, then processes them
+    through acceptance and mapping verification, providing
+    feedback to the interface partition.
     
-    MIGRATION: Replaced TinyDB (JSON on NFS) with MariaDB for
-    safe concurrent access from multiple virtualized systems.
+    MIGRATION: Replaced TinyDB (JSON on NFS), then MariaDB, then
+    a SQLite file shared with intermediate-vor-partition over a
+    Docker volume, with a direct mTLS gRPC channel:
+    intermediate-vor-partition no longer touches a database at
+    all — it calls mapped_request_server's Submit RPC, which
+    upserts into this partition's local-only SQLite database.
 
  Autor(en):
     - Yuanchen Zhao (developer for the VoR framework)
@@ -22,7 +28,9 @@
     - tbd
 
  Hinweis:
-    Ongoing development. Now uses MariaDB for safer concurrent access.
+    Ongoing development. Now receives mapped requests over a direct mTLS
+    gRPC channel from intermediate-vor-partition and stores them in a
+    local-only SQLite database, replacing the previous shared database.
 ------------------------------------------------------------
 """
 
@@ -38,12 +46,14 @@ from defusedxml import ElementTree as ET     # read-side (fromstring / parse)
 import sys
 import threading
 import time
+import signal
 import logging
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
 # local imports
 from db_manager import DatabaseManager
+from mapped_request_server import build_grpc_server
 from config_loader import load_config
 
 # ---------------------------------------------------------------------------
@@ -63,7 +73,7 @@ CONFIG = None  # type: ignore[assignment]  # assigned in main() before use
 #acceptance_ruleset_path_modified = CONFIG.acceptance_rulesets.ruleset_modified
 
 # ---------------------------------------------------------------------------
-# MariaDB credentials — all from CONFIG.mariadb (env vars override via
+# SQLite path — all from CONFIG.sqlite (env vars override via
 # _apply_env_overrides in config_loader.py)
 # ---------------------------------------------------------------------------
 
@@ -104,6 +114,22 @@ def setup_logging(
 
 _logger = logging.getLogger(__name__)
 
+# Global state for controlled shutdown
+_running = True
+_grpc_server = None
+
+
+def signal_handler(sig, frame):
+    global _running, _grpc_server
+    _logger.info("Shutdown signal received, exiting gracefully...")
+    _running = False
+    if _grpc_server is not None:
+        try:
+            _logger.info("Stopping mapped-request gRPC server...")
+            _grpc_server.stop(grace=CONFIG.mapped_request_server.grace_period_seconds)
+        except Exception as e:
+            _logger.error(f"Error stopping mapped-request gRPC server: {e}")
+
 
 # ---------------------------------------------------------------------------
 # Database
@@ -111,24 +137,22 @@ _logger = logging.getLogger(__name__)
 
 def initialize_database() -> DatabaseManager:
     """
-    Initialize the database manager with MariaDB connection pool.
+    Initialize the database manager against the local-only SQLite file.
+
+    The database file is private to this partition/container (no shared
+    volume); the schema is created here if it doesn't already exist.
 
     Returns:
         DatabaseManager instance
 
     Raises:
-        Exception if database connection fails
+        Exception if database initialization fails
     """
     try:
-        db = CONFIG.mariadb
+        db = CONFIG.sqlite
         db_manager = DatabaseManager(
-            host=db.host,
-            port=db.port,
-            user=db.user,
-            password=db.password,
             database=db.database,
-            pool_name=db.pool_name,
-            pool_size=db.pool_size,
+            busy_timeout_ms=db.busy_timeout_ms,
         )
         _logger.info("Database manager initialized successfully")
         return db_manager
@@ -139,10 +163,12 @@ def initialize_database() -> DatabaseManager:
 
 def pull_request(db_manager: DatabaseManager) -> dict | None:
     """
-    Pull the highest priority request from MariaDB database.
+    Pull the highest priority request from the local-only SQLite database.
 
-    The stored procedure `get_next_request()` ensures atomic retrieval
-    and deletion, preventing data corruption under concurrent access.
+    `DatabaseManager.pull_next_request()` wraps the SELECT and DELETE in a
+    single transaction, ensuring atomic retrieval and deletion so no
+    request is processed twice, even with the mapped_request_server gRPC
+    thread inserting concurrently.
 
     Args:
         db_manager: DatabaseManager instance
@@ -396,7 +422,7 @@ def mapping_verification(request, xml_data):
 # ---------------------------------------------------------------------------
 
 def pull_request_and_process(db_manager: DatabaseManager):
-    """Main processing loop: pull requests from MariaDB and process them."""
+    """Main processing loop: pull requests from the local SQLite database and process them."""
     time.sleep(CONFIG.processing.startup_delay_seconds)
 
     while True:
@@ -437,7 +463,10 @@ def pull_request_and_process(db_manager: DatabaseManager):
 
 
 def main():
-    """Main entry point that initializes the database and starts the request processor."""
+    """
+    Main entry point: initializes the local database, starts the inbound
+    mapped-request gRPC server, and starts the request processor.
+    """
     # Load config before setup_logging() so the log file path is available,
     # but after the import block so module-level symbols are resolved.
     # Pydantic validation errors here will go to stderr (acceptable: the
@@ -462,6 +491,9 @@ def main():
         backup_count=CONFIG.logging.backup_count,
     )
 
+    global _grpc_server
+
+    # (1) Init the local-only database
     try:
         db_manager = initialize_database()
         _logger.info("Database connection pool initialized")
@@ -469,6 +501,19 @@ def main():
         _logger.critical(f"Failed to initialize database: {e}")
         sys.exit(1)
 
+    # (2) Start the inbound mapped-request gRPC server (receives from
+    #     intermediate-vor-partition and upserts into db_manager)
+    try:
+        srv, addr = build_grpc_server(db_manager=db_manager, config=CONFIG.mapped_request_server)
+        srv.start()
+        _grpc_server = srv
+        _logger.info(f"Mapped-request gRPC server started on {addr} (mTLS).")
+    except Exception as e:
+        _logger.critical(f"Failed to start mapped-request gRPC server: {e}")
+        sys.exit(1)
+
+    # (3) Start the background pull/process loop (reads from the same
+    #     local db_manager the gRPC server writes to)
     processor_thread = threading.Thread(
         target=pull_request_and_process,
         args=(db_manager,),
@@ -477,12 +522,19 @@ def main():
     processor_thread.start()
     _logger.info("Request processor started in background thread")
 
+    # (4) Lifecycle
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    _logger.info("Intermediate VoR-CPC Partition running. Press Ctrl+C to exit.")
     try:
-        while True:
+        while _running:
             time.sleep(1)
-    except KeyboardInterrupt:
-        _logger.info("Shutting down gracefully...")
-        sys.exit(0)
+    finally:
+        if _grpc_server is not None:
+            _logger.info("Finalizing mapped-request gRPC server shutdown...")
+            _grpc_server.stop(grace=CONFIG.mapped_request_server.grace_period_seconds)
+        _logger.info("Intermediate VoR-CPC Partition shutdown complete.")
 
 
 if __name__ == "__main__":

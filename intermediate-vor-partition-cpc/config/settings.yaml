@@ -4,14 +4,25 @@ acceptance_rulesets:
   ruleset: config/Acceptance_Ruleset.xml
   ruleset_modified: config/Acceptance_Ruleset_modified.xml
 
-mariadb:
-  host: "10.200.1.150"
-  port: 3306
-  user: "vor-2"
-  password: "VoR-2-Password"
-  database: "secure_iot_gateway"
-  pool_name: "iot_gateway_pool"
-  pool_size: 5
+# Inbound mTLS gRPC server that receives mapped requests forwarded directly
+# by intermediate-vor-partition. Replaces the previous shared-database read
+# (MariaDB, then a shared SQLite file).
+mapped_request_server:
+  port: 50052
+  max_workers: 10
+  grace_period_seconds: 5
+  certs:
+    ca_cert: certificates/grpc/mapped_request_ca/ca.crt
+    server_cert: certificates/grpc/mapped_request_server/server.crt
+    server_key: certificates/grpc/mapped_request_server/server.key
+
+sqlite:
+  # Local-only: private to this partition, no Docker volume. Plain file on
+  # disk, relative to this app directory — same layout when running
+  # directly on a Linux VM. Requests arrive via mapped_request_server
+  # above and are stored here.
+  database: "data/mapped_requests.db"
+  busy_timeout_ms: 10000
 
 flask_bridge:
   host: "10.200.1.176"

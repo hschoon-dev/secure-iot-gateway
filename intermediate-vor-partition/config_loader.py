@@ -5,8 +5,10 @@
 ------------------------------------------------------------
  Beschreibung:
     Pydantic configuration model for the Intermediate VoR
-    partition. Covers ruleset file paths, the MariaDB
-    database connection, the inbound gRPC server (mTLS), and
+    partition. Covers ruleset file paths, the inbound gRPC
+    server (mTLS) that receives requests from the Interface
+    partition, the outbound gRPC client (mTLS) that forwards
+    mapped requests to intermediate-vor-partition-cpc, and
     logging.
 
  Usage:
@@ -49,22 +51,7 @@ class RulesetConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# MariaDB connection
-# ---------------------------------------------------------------------------
-
-class MariaDBConfig(BaseModel):
-    """MariaDB connection parameters for the VoR partition."""
-    host:      str = Field("192.168.178.117",    description="MariaDB host address")
-    port:      int = Field(3306,                 description="MariaDB port")
-    user:      str = Field("vor-1",              description="Database user")
-    password:  str = Field("VoR-1-Password",     description="Database password")
-    database:  str = Field("secure_iot_gateway", description="Database name")
-    pool_name: str = Field("iot_gateway_pool",   description="Connection pool name")
-    pool_size: int = Field(5,                    description="Connection pool size")
-
-
-# ---------------------------------------------------------------------------
-# Inbound gRPC server
+# Inbound gRPC server (Interface partition -> this partition)
 # ---------------------------------------------------------------------------
 
 class GrpcServerCerts(BaseModel):
@@ -92,6 +79,43 @@ class GrpcServerConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Outbound gRPC client (this partition -> intermediate-vor-partition-cpc)
+# ---------------------------------------------------------------------------
+
+class GrpcClientCerts(BaseModel):
+    """mTLS certificate paths for the outbound mapped-request gRPC client."""
+    ca_cert: Path = Field(
+        Path("certificates/grpc/mapped_request_ca/ca.crt"),
+        description="CA certificate used to verify the CPC partition's server cert",
+    )
+    client_cert: Path = Field(
+        Path("certificates/grpc/mapped_request_client/client.crt"),
+        description="Client certificate for mTLS",
+    )
+    client_key: Path = Field(
+        Path("certificates/grpc/mapped_request_client/client.key"),
+        description="Client private key for mTLS",
+    )
+
+
+class MappedRequestClientConfig(BaseModel):
+    """
+    gRPC client used to forward mapped requests directly to
+    intermediate-vor-partition-cpc, replacing the previous shared-database
+    write (MariaDB, then a shared SQLite file). This partition no longer
+    stores anything itself; intermediate-vor-partition-cpc owns storage
+    (its own local-only SQLite database) and is reached only via this stub.
+    """
+    host: str = Field(
+        "192.168.178.116",
+        description="Hostname/IP of intermediate-vor-partition-cpc's mapped-request gRPC server",
+    )
+    port: int = Field(50052, description="Port of the mapped-request gRPC server")
+    timeout_seconds: float = Field(5.0, description="RPC timeout in seconds")
+    certs: GrpcClientCerts = Field(default_factory=GrpcClientCerts)
+
+
+# ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 
@@ -109,10 +133,10 @@ class LoggingConfig(BaseModel):
 
 class VoRConfig(BaseModel):
     """Root configuration for the Intermediate VoR partition."""
-    rulesets:   RulesetConfig   = Field(default_factory=RulesetConfig)
-    mariadb:    MariaDBConfig   = Field(default_factory=MariaDBConfig)
-    grpc_server: GrpcServerConfig = Field(default_factory=GrpcServerConfig)
-    logging:    LoggingConfig   = Field(default_factory=LoggingConfig)
+    rulesets:              RulesetConfig             = Field(default_factory=RulesetConfig)
+    grpc_server:           GrpcServerConfig           = Field(default_factory=GrpcServerConfig)
+    mapped_request_client: MappedRequestClientConfig  = Field(default_factory=MappedRequestClientConfig)
+    logging:               LoggingConfig              = Field(default_factory=LoggingConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -132,18 +156,25 @@ def _read_raw(path: Path) -> Dict[str, Any]:
 
 
 def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
-    """Resolve relative paths in rulesets and grpc_server.certs."""
+    """Resolve relative paths in rulesets, grpc_server.certs, and
+    mapped_request_client.certs."""
     rulesets = raw.get("rulesets", {})
     for field in ("verification_ruleset", "mapping_ruleset"):
         if field in rulesets:
             p = Path(rulesets[field])
             rulesets[field] = str(p if p.is_absolute() else base_dir / p)
 
-    certs = raw.get("grpc_server", {}).get("certs", {})
+    server_certs = raw.get("grpc_server", {}).get("certs", {})
     for field in ("ca_cert", "server_cert", "server_key"):
-        if field in certs:
-            p = Path(certs[field])
-            certs[field] = str(p if p.is_absolute() else base_dir / p)
+        if field in server_certs:
+            p = Path(server_certs[field])
+            server_certs[field] = str(p if p.is_absolute() else base_dir / p)
+
+    client_certs = raw.get("mapped_request_client", {}).get("certs", {})
+    for field in ("ca_cert", "client_cert", "client_key"):
+        if field in client_certs:
+            p = Path(client_certs[field])
+            client_certs[field] = str(p if p.is_absolute() else base_dir / p)
 
     return raw
 
@@ -152,10 +183,11 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
     """
     Optional environment-variable overrides.
 
-    Rulesets : VERIFICATION_RULESET_PATH, MAPPING_RULESET_PATH
-    MariaDB  : DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_POOL_SIZE
-    gRPC     : GRPC_PORT, GRPC_MAX_WORKERS
-    Logging  : LOG_LEVEL, LOG_FILE
+    Rulesets       : VERIFICATION_RULESET_PATH, MAPPING_RULESET_PATH
+    gRPC (inbound) : GRPC_PORT, GRPC_MAX_WORKERS
+    Mapped-request client (outbound) : MAPPED_REQUEST_HOST, MAPPED_REQUEST_PORT,
+                                        MAPPED_REQUEST_TIMEOUT
+    Logging        : LOG_LEVEL, LOG_FILE
     """
     env = os.environ
 
@@ -165,25 +197,19 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
     if v := env.get("MAPPING_RULESET_PATH"):
         ruleset_data["mapping_ruleset"] = v
 
-    db_data = config.mariadb.model_dump()
-    if v := env.get("DB_HOST"):
-        db_data["host"] = v
-    if v := env.get("DB_PORT"):
-        db_data["port"] = int(v)
-    if v := env.get("DB_USER"):
-        db_data["user"] = v
-    if v := env.get("DB_PASSWORD"):
-        db_data["password"] = v
-    if v := env.get("DB_NAME"):
-        db_data["database"] = v
-    if v := env.get("DB_POOL_SIZE"):
-        db_data["pool_size"] = int(v)
-
     grpc_data = config.grpc_server.model_dump()
     if v := env.get("GRPC_PORT"):
         grpc_data["port"] = int(v)
     if v := env.get("GRPC_MAX_WORKERS"):
         grpc_data["max_workers"] = int(v)
+
+    client_data = config.mapped_request_client.model_dump()
+    if v := env.get("MAPPED_REQUEST_HOST"):
+        client_data["host"] = v
+    if v := env.get("MAPPED_REQUEST_PORT"):
+        client_data["port"] = int(v)
+    if v := env.get("MAPPED_REQUEST_TIMEOUT"):
+        client_data["timeout_seconds"] = float(v)
 
     log_data = config.logging.model_dump()
     if v := env.get("LOG_LEVEL"):
@@ -193,8 +219,8 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
 
     return VoRConfig(
         rulesets=RulesetConfig.model_validate(ruleset_data),
-        mariadb=MariaDBConfig.model_validate(db_data),
         grpc_server=GrpcServerConfig.model_validate(grpc_data),
+        mapped_request_client=MappedRequestClientConfig.model_validate(client_data),
         logging=LoggingConfig.model_validate(log_data),
     )
 
@@ -228,8 +254,8 @@ def load_config(
 
     raw = _read_raw(cfg_path) if cfg_path.exists() else {}
     raw.setdefault("rulesets", {})
-    raw.setdefault("mariadb", {})
     raw.setdefault("grpc_server", {})
+    raw.setdefault("mapped_request_client", {})
     raw.setdefault("logging", {})
 
     raw = _resolve_paths(raw, base_dir)

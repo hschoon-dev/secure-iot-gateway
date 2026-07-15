@@ -59,9 +59,6 @@ services:
       - type: bind
         source: ./intermediate-vor-partition/logs
         target: /app/logs
-    environment:
-      MARIADB_USER: "vor-1"
-      MARIADB_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
     depends_on:
       interface-partition:
         condition: service_started
@@ -80,9 +77,6 @@ services:
       - type: bind
         source: ./intermediate-vor-partition-cpc/logs
         target: /app/logs
-    environment:
-      MARIADB_USER: "vor-2"
-      MARIADB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
     depends_on:
       intermediate-vor-partition:
         condition: service_started
