@@ -59,24 +59,30 @@ class ModbusTCPClient:
         """
         Read coil status from the ModbusTCP server.
         name: The name of the endpoint to read.
-        return: The value of the coil.
+        return: The value of the coil, or None on failure.
         """
         endpoint = self.endpoints[name]
         address = endpoint['address']
         quantity = endpoint['quantity']
         request = self.client.read_coils(address, quantity)
+        if request is None:
+            _logger.error("fc01_read_coil_status: no response from server for endpoint '%s' (addr %s)", name, address)
+            return None
         return request[0]
 
     def fc02_read_discrete_inputs(self, name: str) -> bool | None:
         """
         Read discrete inputs from the ModbusTCP server.
         name: The name of the endpoint to read.
-        return: The value of the discrete input.
+        return: The value of the discrete input, or None on failure.
         """
         endpoint = self.endpoints[name]
         address = endpoint['address']
         quantity = endpoint['quantity']
         request = self.client.read_discrete_inputs(address, quantity)
+        if request is None:
+            _logger.error("fc02_read_discrete_inputs: no response from server for endpoint '%s' (addr %s)", name, address)
+            return None
         return request[0]
 
     def fc03_read_holding_registers(self, name: str) -> tuple[int | bool | None, str | None]:
@@ -104,16 +110,59 @@ class ModbusTCPClient:
     """
     Implementierung der Schreibefunktionen für das Verification-of-Request
     """
-    def write_coils(self, name, value):
-        endpoint = self.endpoints[name]
+    def fc05_write_single_coil(self, name: str, value: bool) -> bool:
+        """
+        Write a single coil via FC05.
+        name: The name of the endpoint to write.
+        value: Boolean coil value.
+        return: True on success, False on failure.
+        """
+        endpoint = self.endpoints.get(name)
+        if endpoint is None:
+            _logger.error("fc05_write_single_coil: unknown endpoint '%s'", name)
+            return False
         address = endpoint['address']
-        # Create a write coils request
         response = self.client.write_single_coil(address, value)
-        return response
+        if not response:
+            _logger.error(
+                "fc05_write_single_coil: write failed for endpoint '%s' (addr %s, value %s)",
+                name, address, value,
+            )
+            return False
+        return True
 
-    def write_registers(self, name, value):
-        endpoint = self.endpoints[name]
+    # backwards-compat alias
+    def write_coils(self, name: str, value: bool) -> bool:
+        return self.fc05_write_single_coil(name, value)
+
+    def write_single_register(self, name: str, value: int) -> bool:
+        """Write a single holding register via FC06."""
+        endpoint = self.endpoints.get(name)
+        if endpoint is None:
+            _logger.error("write_single_register: unknown endpoint '%s'", name)
+            return False
         address = endpoint['address']
-        # Create a write registers request
+        response = self.client.write_single_register(address, value)
+        if not response:
+            _logger.error(
+                "write_single_register: write failed for endpoint '%s' (addr %s, value %s)",
+                name, address, value,
+            )
+            return False
+        return True
+
+    def write_registers(self, name: str, value: list[int]) -> bool:
+        """Write multiple holding registers via FC16."""
+        endpoint = self.endpoints.get(name)
+        if endpoint is None:
+            _logger.error("write_registers: unknown endpoint '%s'", name)
+            return False
+        address = endpoint['address']
         response = self.client.write_multiple_registers(address, value)
-        return response
+        if not response:
+            _logger.error(
+                "write_registers: write failed for endpoint '%s' (addr %s, value %s)",
+                name, address, value,
+            )
+            return False
+        return True

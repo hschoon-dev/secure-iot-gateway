@@ -1,5 +1,5 @@
 <MappingRuleSets> 
-    <MappingRuleSet name="Motor Speed Configuration">
+    <MappingRuleSet name="motor speed configuration">
         <Rule id="Rule_101">
             <TriggerCondition>Set Motor Speed</TriggerCondition>
             <ChangeDescription>Configure Motor Speed</ChangeDescription>
@@ -8,6 +8,37 @@
             <MappingVerificationConstraint>&lt;= 900</MappingVerificationConstraint>
         </Rule>
     </MappingRuleSet>
+
+    <MappingRuleSet name="start/stop compressor1">
+        <Rule id="Rule_301">
+            <TriggerCondition>Start Compressor 1</TriggerCondition>
+            <ChangeDescription>Start Compressor 1</ChangeDescription>
+            <EndpointIdentifier>Modbus Write M2</EndpointIdentifier>
+            <UnitOfChange>none</UnitOfChange>
+            <MappingVerificationConstraint>none</MappingVerificationConstraint>
+        </Rule>
+    </MappingRuleSet>
+
+    <MappingRuleSet name="set network start pressure">
+        <Rule id="Rule_401">
+            <TriggerCondition>Set Start Pressure</TriggerCondition>
+            <ChangeDescription>Set Start Pressure</ChangeDescription>
+            <EndpointIdentifier>Switch-On Pressure Slider</EndpointIdentifier>
+            <UnitOfChange>10 mbar</UnitOfChange>
+            <MappingVerificationConstraint>&gt;= 600 and &lt;= 1100</MappingVerificationConstraint>
+        </Rule>
+    </MappingRuleSet>
+
+    <MappingRuleSet name="set network stop pressure">
+        <Rule id="Rule_501">
+            <TriggerCondition>Set Stop Pressure</TriggerCondition>
+            <ChangeDescription>Set Stop Pressure</ChangeDescription>
+            <EndpointIdentifier>Switch-Off Pressure Slider</EndpointIdentifier>
+            <UnitOfChange>10 mbar</UnitOfChange>
+            <MappingVerificationConstraint>&gt;= 600 and &lt;= 1100</MappingVerificationConstraint>
+        </Rule>
+    </MappingRuleSet>
+
 
     <MappingRuleSet name="flow rate adjustment">
         <Rule id="Rule_201">
@@ -23,7 +54,7 @@
             <ChangeDescription>Change the pump's power</ChangeDescription>
             <EndpointIdentifier>Pump_A_Power</EndpointIdentifier>
             <UnitOfChange>kw</UnitOfChange>
-            <MappingVerificationConstraint>&lt; 12</MappingVerificationConstraint>
+            <MappingVerificationConstraint>&lt; 20</MappingVerificationConstraint>
         </Rule>
         
         <Rule id="Rule_203">
@@ -31,7 +62,7 @@
             <ChangeDescription>Change the pump's power</ChangeDescription>
             <EndpointIdentifier>Pump_B_Power</EndpointIdentifier>
             <UnitOfChange>kw</UnitOfChange>
-            <MappingVerificationConstraint>&lt; 16</MappingVerificationConstraint>
+            <MappingVerificationConstraint>&lt; 20</MappingVerificationConstraint>
         </Rule>
         
         <Rule id="Rule_204">
@@ -39,7 +70,7 @@
             <ChangeDescription>Increase heating power by 8%</ChangeDescription>
             <EndpointIdentifier>Heater_Power</EndpointIdentifier>
             <UnitOfChange>kw</UnitOfChange>
-            <MappingVerificationConstraint>&lt; 18</MappingVerificationConstraint>
+            <MappingVerificationConstraint>&lt; 30</MappingVerificationConstraint>
         </Rule>
     </MappingRuleSet>
 </MappingRuleSets>
@@ -60,6 +91,9 @@
 <!-- 
     &lt; 表示 <
     &gt; 表示 >
+    &ge; 表示 >=
+    &le; 表示 <=
+    !=   表示 !=
     &amp; 表示 &（和符号）
     &quot; 表示 "（双引号）
     &apos; 表示 '（单引号）

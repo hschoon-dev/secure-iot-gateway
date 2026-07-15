@@ -22,7 +22,7 @@ grpc_server:
     server_key: certificates/grpc/server/server.key
 
 grpc_client:
-  target_host: "192.168.178.115"   # replace with the real IP of intermediate-vor-partition
+  target_host: "10.200.1.177"   # replace with the real IP of intermediate-vor-partition
   port: 50051
   timeout_seconds: 5.0
 

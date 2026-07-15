@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="modbus-servers">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="server" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="ipaddr" type="xs:string"/>
+                            <xs:element name="port" type="xs:int"/>
+                            <xs:element name="serveralias" type="xs:string"/>
+                            <xs:element name="endpoints">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="endpoint" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="name" type="xs:string"/>
+                                                    <xs:element name="function" type="xs:string"/>
+                                                    <xs:element name="address" type="xs:int"/>
+                                                    <xs:element name="quantity" type="xs:int"/>
+                                                    <xs:element name="offset" type="xs:int"/>
+                                                    <xs:element name="type" type="xs:string"/>
+                                                    <xs:element name="description" type="xs:string"/>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
