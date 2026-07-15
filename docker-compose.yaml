@@ -5,48 +5,6 @@
 services:
 
 # ---------------------------------------------------------------
-# Database — mirrors the RPi MariaDB setup exactly:
-#   - utf8mb4 / utf8mb4_unicode_ci throughout
-#   - users vor-1 (write) and vor-2 (read+delete)
-#   - get_next_request stored procedure with explicit COLLATE
-#   - init SQL sourced from ./maria-db/
-# ---------------------------------------------------------------
-
-  mariadb:
-    container_name: siot-mariadb
-    image: mariadb:10.11
-    restart: unless-stopped
-    environment:
-      MARIADB_ROOT_PASSWORD: "${MARIADB_ROOT_PASSWORD}"
-      MARIADB_DATABASE: "secure_iot_gateway"
-      # Passed into 01_init.sql via envsubst so CREATE USER uses the
-      # same passwords the partition containers receive — no hardcoding.
-      MARIADB_VOR1_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
-      MARIADB_VOR2_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
-      # Force the same charset/collation as the RPi server config
-      # (equivalent to setting character-set-server and collation-server
-      # in /etc/mysql/mariadb.conf.d/50-server.cnf on the RPi).
-      MARIADB_CHARACTER_SET_SERVER: "utf8mb4"
-      MARIADB_COLLATION_SERVER: "utf8mb4_unicode_ci"
-    volumes:
-      - mariadb_data:/var/lib/mysql
-      - type: bind
-        source: ./maria-db
-        target: /docker-entrypoint-initdb.d
-        read_only: true
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    attach: false
-    networks:
-      static-network:
-        ipv4_address: 192.168.178.117
-
-
-# ---------------------------------------------------------------
 # Emulated CPC applications
 # ---------------------------------------------------------------
 
@@ -105,8 +63,6 @@ services:
       MARIADB_USER: "vor-1"
       MARIADB_PASSWORD: "${MARIADB_VOR1_PASSWORD}"
     depends_on:
-      mariadb:
-        condition: service_healthy
       interface-partition:
         condition: service_started
     attach: false
@@ -128,8 +84,6 @@ services:
       MARIADB_USER: "vor-2"
       MARIADB_PASSWORD: "${MARIADB_VOR2_PASSWORD}"
     depends_on:
-      mariadb:
-        condition: service_healthy
       intermediate-vor-partition:
         condition: service_started
       cpc-partition:
@@ -214,10 +168,6 @@ services:
 # ---------------------------------------------------------------
 # Volumes and networks
 # ---------------------------------------------------------------
-
-volumes:
-  mariadb_data:
-  #nodered_data:
 
 networks:
   static-network:
