@@ -12,16 +12,16 @@ mapped_request_server:
   max_workers: 10
   grace_period_seconds: 5
   certs:
-    ca_cert: certificates/grpc/mapped_request_ca/ca.crt
-    server_cert: certificates/grpc/mapped_request_server/server.crt
-    server_key: certificates/grpc/mapped_request_server/server.key
+    ca_cert: certificates/grpc/ca/ca.crt
+    server_cert: certificates/grpc/server/server.crt
+    server_key: certificates/grpc/server/server.key
 
 sqlite:
   # Local-only: private to this partition, no Docker volume. Plain file on
   # disk, relative to this app directory — same layout when running
   # directly on a Linux VM. Requests arrive via mapped_request_server
   # above and are stored here.
-  database: "data/mapped_requests.db"
+  database: "db_manager/mapped_requests.db"
   busy_timeout_ms: 10000
 
 flask_bridge:

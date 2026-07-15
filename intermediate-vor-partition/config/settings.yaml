@@ -18,13 +18,13 @@ grpc_server:
 # write (MariaDB, then a shared SQLite file) — this partition no longer
 # stores anything itself.
 mapped_request_client:
-  host: "192.168.178.116"
+  host: "10.200.1.178"
   port: 50052
   timeout_seconds: 5.0
   certs:
-    ca_cert: certificates/grpc/mapped_request_ca/ca.crt
-    client_cert: certificates/grpc/mapped_request_client/client.crt
-    client_key: certificates/grpc/mapped_request_client/client.key
+    ca_cert: certificates/grpc/ca/ca.crt
+    client_cert: certificates/grpc/client/client.crt
+    client_key: certificates/grpc/client/client.key
 
 logging:
   log_file: logs/app.log

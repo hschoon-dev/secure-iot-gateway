@@ -18,7 +18,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.118
+        ipv4_address: 10.200.1.122
 
   ecotec-modbus-server:
     container_name: ecotec-modbus-server
@@ -29,7 +29,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.181
+        ipv4_address: 10.200.1.142
 
 
 # ---------------------------------------------------------------
@@ -50,7 +50,7 @@ services:
     attach: true
     networks:
       static-network:
-        ipv4_address: 192.168.178.112
+        ipv4_address: 10.200.1.174
 
   intermediate-vor-partition:
     container_name: intermediate-vor-partition
@@ -65,7 +65,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.115
+        ipv4_address: 10.200.1.177
 
   intermediate-vor-partition-cpc:
     container_name: intermediate-vor-partition-cpc
@@ -85,7 +85,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.116
+        ipv4_address: 10.200.1.178
 
   psmo-partition:
     container_name: psmo-partition
@@ -97,7 +97,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.113
+        ipv4_address: 10.200.1.175
 
   cpc-partition:
     container_name: cpc-partition
@@ -119,7 +119,7 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.114
+        ipv4_address: 10.200.1.176
 
   central-mo-client:
     container_name: central-mo-client
@@ -136,28 +136,8 @@ services:
     attach: false
     networks:
       static-network:
-        ipv4_address: 192.168.178.31
+        ipv4_address: 10.200.1.180
 
-
-
-# ---------------------------------------------------------------
-# Node-RED OPC UA client
-# ---------------------------------------------------------------
-
-  #nodered:
-  #  image: nodered/node-red:latest
-  #  container_name: nodered
-  #  restart: unless-stopped
-  #  ports:
-  #    - "1880:1880"
-  #  environment:
-  #    - TZ=Europe/Berlin
-  #  volumes:
-  #    # Persistent Node-RED data
-  #    - ./node-red:/data
-  #  networks:
-  #    static-network:
-  #      ipv4_address: 192.168.178.30
 
 # ---------------------------------------------------------------
 # Volumes and networks
@@ -167,5 +147,5 @@ networks:
   static-network:
     ipam:
       config:
-        - subnet: 192.168.178.0/24
-          gateway: 192.168.178.1
+        - subnet: 10.200.1.174/24
+          gateway: 10.200.1.1
