@@ -170,8 +170,12 @@ generate_client_cert "${ROOT_DIR}/cpc-certs" "client"
 generate_client_cert "${ROOT_DIR}/interface-certs" "client"
 generate_server_cert "${ROOT_DIR}/interface-certs" "server"
 
-# intermediate-vor-certs: nur Server
+# intermediate-vor-certs: Client + Server
 generate_server_cert "${ROOT_DIR}/intermediate-vor-certs" "server"
+generate_client_cert "${ROOT_DIR}/intermediate-vor-certs" "client"
+
+# intermediate-vor-cpc-certs: nur Server
+generate_server_cert "${ROOT_DIR}/intermediate-vor-cpc-certs" "server"
 
 # psmo-certs: nur Server
 generate_server_cert "${ROOT_DIR}/psmo-certs" "server"
