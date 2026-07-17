@@ -1,8 +1,9 @@
-# intermediate-vor-partition/config/settings.yaml
+# Mounted read-only from the config volume at /mnt/config/intermediate-vor-partition
+# (see docker-compose.yaml). All paths below are relative to this directory.
 
 rulesets:
-  verification_ruleset: config/Request_Verification_Ruleset.xml
-  mapping_ruleset: config/Mapping_Rulesets.xml
+  verification_ruleset: Request_Verification_Ruleset.xml
+  mapping_ruleset: Mapping_Rulesets.xml
 
 grpc_server:
   port: 50051

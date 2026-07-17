@@ -174,10 +174,14 @@ async def main():
     # but after the import block so module-level symbols are resolved.
     # Pydantic validation errors here will go to stderr (acceptable: the
     # process cannot continue without a valid config anyway).
-    CONFIG = load_config(
-        path=Path(__file__).parent / "config/settings.yaml",
-        base_dir=Path(__file__).parent,
-    )
+    CONFIG = load_config()
+    # settings.yaml, endpoint XML/XSD files, gRPC sender certs, and the
+    # OPC UA client's own certs/trust store (resolved relative to the XML
+    # config's own directory — see opcua_client_manager.py) all live on
+    # the read-only config volume (CONFIG_ROOT), not in this partition's
+    # own app directory — see config_loader.py's _DEFAULT_CONFIG_ROOT /
+    # CONFIG_ROOT env var, and docker-compose.yaml for how it's mounted
+    # in Docker.
     init_ssl_credentials(CONFIG.grpc_certs)
 
     # Configure the root logger exactly once, as early as possible in the

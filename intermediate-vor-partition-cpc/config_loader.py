@@ -41,11 +41,11 @@ from pydantic import BaseModel, Field, PositiveInt
 class AcceptanceRulesetConfig(BaseModel):
     """XML acceptance rulesets consumed during acceptance and mapping verification."""
     ruleset: Path = Field(
-        Path("config/Acceptance_Ruleset.xml"),
+        Path("Acceptance_Ruleset.xml"),
         description="Path to the primary acceptance ruleset XML",
     )
-    ruleset_modified: Path = Field(
-        Path("config/Acceptance_Ruleset_modified.xml"),
+    ruleset_modified: Path = Field( #BUG: remove!
+        Path("Acceptance_Ruleset_modified.xml"),
         description="Path where the modified ruleset (with injected endpoints) is written",
     )
 
@@ -57,15 +57,15 @@ class AcceptanceRulesetConfig(BaseModel):
 class MappedRequestServerCerts(BaseModel):
     """mTLS certificate paths for the inbound mapped-request gRPC server."""
     ca_cert: Path = Field(
-        Path("certificates/grpc/mapped_request_ca/ca.crt"),
+        Path("certificates/grpc/ca/ca.crt"),
         description="CA certificate used to verify intermediate-vor-partition's client cert",
     )
     server_cert: Path = Field(
-        Path("certificates/grpc/mapped_request_server/server.crt"),
+        Path("certificates/grpc/server/server.crt"),
         description="Server certificate for mTLS",
     )
     server_key: Path = Field(
-        Path("certificates/grpc/mapped_request_server/server.key"),
+        Path("certificates/grpc/server/server.key"),
         description="Server private key for mTLS",
     )
 
@@ -97,10 +97,11 @@ class SQLiteConfig(BaseModel):
     MappedRequestServerConfig above) and are stored here as a plain file
     on disk, relative to the application directory (the same "python code
     + data file side by side" layout this runs with directly on a Linux
-    VM). The existing pull/process loop in main.py reads and deletes them.
+    VM) — NOT relative to the read-only config volume. The existing
+    pull/process loop in main.py reads and deletes them.
     """
     database: str = Field(
-        "data/mapped_requests.db",
+        "db_manager/mapped_requests.db",
         description="Path to the local-only SQLite database file, relative to the app directory",
     )
     busy_timeout_ms: int = Field(
@@ -191,24 +192,32 @@ def _read_raw(path: Path) -> Dict[str, Any]:
     raise ValueError(f"Unsupported config file extension: {ext!r}")
 
 
-def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
-    """Resolve relative ruleset, mapped_request_server.certs, and sqlite.database paths against base_dir."""
+def _resolve_paths(raw: Dict[str, Any], config_dir: Path, data_dir: Path) -> Dict[str, Any]:
+    """
+    Resolve relative paths against the correct base directory:
+      - acceptance_rulesets.* and mapped_request_server.certs.* are static,
+        read-only files and are resolved against config_dir (the mounted,
+        read-only config volume, e.g. /mnt/config/intermediate-vor-partition-cpc).
+      - sqlite.database is writable application data and must NOT live on
+        the read-only config volume; it is resolved against data_dir (the
+        app's own directory) instead.
+    """
     rulesets = raw.get("acceptance_rulesets", {})
     for field in ("ruleset", "ruleset_modified"):
         if field in rulesets:
             p = Path(rulesets[field])
-            rulesets[field] = str(p if p.is_absolute() else base_dir / p)
+            rulesets[field] = str(p if p.is_absolute() else config_dir / p)
 
     server_certs = raw.get("mapped_request_server", {}).get("certs", {})
     for field in ("ca_cert", "server_cert", "server_key"):
         if field in server_certs:
             p = Path(server_certs[field])
-            server_certs[field] = str(p if p.is_absolute() else base_dir / p)
+            server_certs[field] = str(p if p.is_absolute() else config_dir / p)
 
     sqlite_data = raw.get("sqlite", {})
     if "database" in sqlite_data:
         p = Path(sqlite_data["database"])
-        sqlite_data["database"] = str(p if p.is_absolute() else base_dir / p)
+        sqlite_data["database"] = str(p if p.is_absolute() else data_dir / p)
 
     return raw
 
@@ -271,21 +280,41 @@ def _apply_env_overrides(config: VoRCPCConfig) -> VoRCPCConfig:
 # Public loader
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SETTINGS = Path(__file__).parent / "config/settings.yaml"
+# CONFIG_ROOT is where the read-only static config volume is mounted. On the
+# Linux VMs this is the actual mount point (e.g. /mnt/config/intermediate-vor-partition-cpc,
+# with the "intermediate-vor-partition-cpc" subfolder distinguishing this
+# partition's files from siblings like /mnt/config/interface-partition
+# under the same volume). In Docker (local testing) it's the same path,
+# bind-mounted read-only from ./config-volume/intermediate-vor-partition-cpc
+# (see docker-compose.yaml). Overridable via the CONFIG_ROOT env var for
+# ad-hoc/non-standard layouts.
+_DEFAULT_CONFIG_ROOT = Path(
+    os.environ.get("CONFIG_ROOT", "/mnt/config/intermediate-vor-partition-cpc")
+)
+_DEFAULT_SETTINGS = _DEFAULT_CONFIG_ROOT / "settings.yaml"
 
 
 def load_config(
     path: str | Path = _DEFAULT_SETTINGS,
     base_dir: Path | None = None,
+    data_dir: Path | None = None,
     allow_env: bool = True,
 ) -> VoRCPCConfig:
     """
     Load, validate, and return the Intermediate VoR-CPC partition configuration.
 
     Args:
-        path:      Path to a YAML or JSON settings file.
-        base_dir:  Base directory for resolving relative paths.
-                   Defaults to the directory containing *path*.
+        path:      Path to a YAML or JSON settings file. Defaults to
+                   settings.yaml under the read-only config volume
+                   (CONFIG_ROOT / "settings.yaml").
+        base_dir:  Base directory for resolving relative *static* paths
+                   (rulesets, certs). Defaults to the directory containing
+                   *path* — i.e. the read-only config volume.
+        data_dir:  Base directory for resolving relative *writable*
+                   application data (currently: sqlite.database). Defaults
+                   to the current working directory. main.py passes the
+                   app's own directory explicitly so this doesn't depend
+                   on the process's cwd at the time load_config() is called.
         allow_env: If True, environment variables override file values.
 
     Returns:
@@ -293,6 +322,7 @@ def load_config(
     """
     cfg_path = Path(path)
     base_dir = base_dir or cfg_path.parent
+    data_dir = data_dir or Path.cwd()
 
     raw = _read_raw(cfg_path) if cfg_path.exists() else {}
     raw.setdefault("acceptance_rulesets", {})
@@ -302,7 +332,7 @@ def load_config(
     raw.setdefault("processing", {})
     raw.setdefault("logging", {})
 
-    raw = _resolve_paths(raw, base_dir)
+    raw = _resolve_paths(raw, config_dir=base_dir, data_dir=data_dir)
     config = VoRCPCConfig.model_validate(raw)
 
     return _apply_env_overrides(config) if allow_env else config

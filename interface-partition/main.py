@@ -111,10 +111,12 @@ async def main():
     # but after the import block so module-level symbols are resolved.
     # Pydantic validation errors here will go to stderr (acceptable: the
     # process cannot continue without a valid config anyway).
-    CONFIG = load_config(
-        path=Path(__file__).parent / "config/settings.yaml",
-        base_dir=Path(__file__).parent,
-    )
+    #
+    # settings.yaml and certificates live on the read-only config volume
+    # (CONFIG_ROOT), not in this partition's own app directory — see
+    # config_loader.py's _DEFAULT_CONFIG_ROOT / CONFIG_ROOT env var, and
+    # docker-compose.yaml for how it's mounted in Docker.
+    CONFIG = load_config()
     
     # Configure the root logger exactly once, as early as possible in the
     # process lifetime. All other modules obtain child loggers via

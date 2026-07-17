@@ -48,7 +48,8 @@ SECURITY_POLICY_MAP = {
 class OpcUaClient:
     def __init__(self, server_app_uri: str, client_app_uri: str, alias: str, 
                  security_settings: dict[str, str | None],
-                   nodes: list[dict[str, ua.NodeId | str]]):
+                   nodes: list[dict[str, ua.NodeId | str]],
+                   cert_base: "Path | str | None" = None):
         self.server_app_uri = server_app_uri
         self.security_settings = security_settings
         self.alias = alias
@@ -61,9 +62,17 @@ class OpcUaClient:
         self._max_retries = 6
         self._stopped_reconnection_attempts = False
         self._last_connection_attempt_time = 0
+        # Directory that the client_certificate/client_private_key/
+        # server_certificate paths in security_settings are relative to.
+        # Defaults to this module's own directory for backward
+        # compatibility, but OpcUaClientManager passes the endpoint XML
+        # config's own directory instead, so relative cert paths in that
+        # XML resolve next to it (e.g. on the read-only config volume)
+        # rather than next to this .py file.
+        self.cert_base = Path(cert_base) if cert_base is not None else Path(__file__).parent
 
     async def connect(self) -> None:
-        cert_base = Path(__file__).parent
+        cert_base = self.cert_base
 
         policy = self.security_settings['policy']
         # BUG: User authentication via username and password is not implemented for FreeOpcUa Server. This is supported by other OSS or commercial OPC UA servers.

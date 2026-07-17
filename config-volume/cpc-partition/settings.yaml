@@ -1,10 +1,11 @@
-# cpc-partition/config/settings.yaml
+# Mounted read-only from the config volume at /mnt/config/cpc-partition
+# (see docker-compose.yaml). All paths below are relative to this directory.
 
 opcua:
   interval: 1
   files:
-    xml_config: config/opcua-endpoints_demonstrator.xml
-    xsd_schema: config/opcua-endpoints.xsd
+    xml_config: opcua-endpoints_demonstrator.xml
+    xsd_schema: opcua-endpoints.xsd
   shared_memory:
     name: opcua_shm
     size: 10240        # 1024 * 10 bytes
@@ -18,8 +19,8 @@ opcua:
 modbustcp:
   interval: 1
   files:
-    xml_config: config/modbustcp-endpoints_demonstrator.xml
-    xsd_schema: config/modbustcp-endpoints.xsd
+    xml_config: modbustcp-endpoints_demonstrator.xml
+    xsd_schema: modbustcp-endpoints.xsd
   shared_memory:
     name: modbus_shm
     size: 12288        # 1024 * 12 bytes

@@ -169,18 +169,29 @@ def _read_raw(path: Path) -> Dict[str, Any]:
 
 
 def _resolve_cert_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
-    """Resolve all relative Path fields under opcua_server.certs, grpc_server.certs and grpc_client.certs."""
+    """
+    Resolve all relative Path fields under opcua_server.certs,
+    grpc_server.certs and grpc_client.certs against base_dir.
+
+    Importantly, this resolves a field even when it's absent from
+    settings.yaml and would otherwise fall back to its Pydantic default:
+    a bare relative default (e.g. "certificates/grpc/client/client.crt")
+    must still end up anchored to the config volume, not silently left
+    relative to whatever the process's cwd happens to be at the time the
+    cert file is actually opened.
+    """
     cert_sections = [
-        ("opcua_server", "certs", ("server_cert", "server_key", "trusted_certs_dir")),
-        ("grpc_server",  "certs", ("ca_cert", "server_cert", "server_key")),
-        ("grpc_client",  "certs", ("ca_cert", "client_cert", "client_key")),
+        ("opcua_server", "certs", OpcUaServerCerts),
+        ("grpc_server",  "certs", GrpcServerCerts),
+        ("grpc_client",  "certs", GrpcClientCerts),
     ]
-    for top_key, sub_key, fields in cert_sections:
-        section = raw.get(top_key, {}).get(sub_key, {})
-        for field in fields:
-            if field in section:
-                p = Path(section[field])
-                section[field] = str(p if p.is_absolute() else base_dir / p)
+    for top_key, sub_key, cert_model in cert_sections:
+        raw.setdefault(top_key, {})
+        section = raw[top_key].setdefault(sub_key, {})
+        for field, field_info in cert_model.model_fields.items():
+            value = section.get(field, field_info.default)
+            p = Path(value)
+            section[field] = str(p if p.is_absolute() else base_dir / p)
     return raw
 
 
@@ -233,7 +244,15 @@ def _apply_env_overrides(config: InterfaceConfig) -> InterfaceConfig:
 # Public loader
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SETTINGS = Path(__file__).parent / "config/settings.yaml"
+# CONFIG_ROOT is where the read-only static config volume is mounted. On the
+# Linux VMs this is the actual mount point (e.g. /mnt/config/interface-partition,
+# with the "interface-partition" subfolder distinguishing this partition's
+# files from siblings like /mnt/config/psmo-partition under the same
+# volume). In Docker (local testing) it's the same path, bind-mounted
+# read-only from ./config-volume/interface-partition (see docker-compose.yaml).
+# Overridable via the CONFIG_ROOT env var for ad-hoc/non-standard layouts.
+_DEFAULT_CONFIG_ROOT = Path(os.environ.get("CONFIG_ROOT", "/mnt/config/interface-partition"))
+_DEFAULT_SETTINGS = _DEFAULT_CONFIG_ROOT / "settings.yaml"
 
 
 def load_config(
@@ -245,9 +264,12 @@ def load_config(
     Load, validate, and return the Interface partition configuration.
 
     Args:
-        path:      Path to a YAML or JSON settings file.
+        path:      Path to a YAML or JSON settings file. Defaults to
+                   settings.yaml under the read-only config volume
+                   (CONFIG_ROOT / "settings.yaml").
         base_dir:  Base directory for resolving relative certificate paths.
-                   Defaults to the directory containing *path*.
+                   Defaults to the directory containing *path* — i.e. the
+                   read-only config volume.
         allow_env: If True, environment variables override file values.
 
     Returns:

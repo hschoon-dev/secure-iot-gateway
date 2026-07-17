@@ -171,7 +171,15 @@ def _apply_env_overrides(config: PSMOConfig) -> PSMOConfig:
 # Public loader
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SETTINGS = Path(__file__).parent / "config/settings.yaml"
+# CONFIG_ROOT is where the read-only static config volume is mounted. On the
+# Linux VMs this is the actual mount point (e.g. /mnt/config/psmo-partition,
+# with the "psmo-partition" subfolder distinguishing this partition's files
+# from siblings like /mnt/config/interface-partition under the same
+# volume). In Docker (local testing) it's the same path, bind-mounted
+# read-only from ./config-volume/psmo-partition (see docker-compose.yaml).
+# Overridable via the CONFIG_ROOT env var for ad-hoc/non-standard layouts.
+_DEFAULT_CONFIG_ROOT = Path(os.environ.get("CONFIG_ROOT", "/mnt/config/psmo-partition"))
+_DEFAULT_SETTINGS = _DEFAULT_CONFIG_ROOT / "settings.yaml"
 
 
 def load_config(
@@ -183,9 +191,12 @@ def load_config(
     Load, validate, and return the psM+O partition configuration.
 
     Args:
-        path:      Path to a YAML or JSON settings file.
+        path:      Path to a YAML or JSON settings file. Defaults to
+                   settings.yaml under the read-only config volume
+                   (CONFIG_ROOT / "settings.yaml").
         base_dir:  Base directory for resolving relative certificate paths.
-                   Defaults to the directory containing *path*.
+                   Defaults to the directory containing *path* — i.e. the
+                   read-only config volume.
         allow_env: If True, environment variables override file values.
 
     Returns:

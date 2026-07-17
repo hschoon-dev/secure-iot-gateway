@@ -2,6 +2,26 @@
 # Organization: Hochschule Emden/Leer
 # Date: 23. September 2025
 
+# ---------------------------------------------------------------
+# Static config (settings.yaml, XML rulesets/endpoint files, mTLS
+# certificates) for interface-partition, intermediate-vor-partition,
+# intermediate-vor-partition-cpc, psmo-partition, and cpc-partition now
+# lives under ./config-volume/<partition-name>/ on the host and is
+# bind-mounted read-only into each container at
+# /mnt/config/<partition-name>. This mirrors the target Linux VM layout,
+# where the same /mnt/config path is expected to be a single dedicated
+# volume with one subfolder per partition — only the mount mechanism
+# (bind mount here vs. whatever the VM's storage setup provides) differs.
+#
+# Writable application data (currently: intermediate-vor-partition-cpc's
+# SQLite database) deliberately stays out of this volume and lives inside
+# each partition's own app directory instead.
+#
+# brownfield-opcua-server, ecotec-modbus-server, and central-mo-client are
+# not covered here (no source was provided for them), so their config, if
+# any, is unchanged.
+# ---------------------------------------------------------------
+
 services:
 
 # ---------------------------------------------------------------
@@ -43,8 +63,18 @@ services:
       - type: bind
         source: ./interface-partition/logs
         target: /app/logs
+      # Static config (settings.yaml, mTLS certificates), read-only.
+      # Mirrors the target Linux VM layout, where this same path is a
+      # dedicated read-only volume shared across all partitions, each in
+      # its own subfolder (/mnt/config/interface-partition,
+      # /mnt/config/psmo-partition, etc.).
+      - type: bind
+        source: ./config-volume/interface-partition
+        target: /mnt/config/interface-partition
+        read_only: true
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - CONFIG_ROOT=/mnt/config/interface-partition
     ports:
       - 4840:4840
     attach: true
@@ -59,6 +89,17 @@ services:
       - type: bind
         source: ./intermediate-vor-partition/logs
         target: /app/logs
+      # Static config (settings.yaml, rulesets, mTLS certificates), read-only.
+      # Mirrors the target Linux VM layout, where this same path is a
+      # dedicated read-only volume shared across all partitions, each in
+      # its own subfolder (/mnt/config/intermediate-vor-partition,
+      # /mnt/config/interface-partition, etc.).
+      - type: bind
+        source: ./config-volume/intermediate-vor-partition
+        target: /mnt/config/intermediate-vor-partition
+        read_only: true
+    environment:
+      CONFIG_ROOT: /mnt/config/intermediate-vor-partition
     depends_on:
       interface-partition:
         condition: service_started
@@ -72,11 +113,20 @@ services:
     build: intermediate-vor-partition-cpc/
     volumes:
       - type: bind
-        source: ./intermediate-vor-partition-cpc/config/Acceptance_Ruleset_modified.xml
-        target: /app/config/Acceptance_Ruleset_modified.xml
-      - type: bind
         source: ./intermediate-vor-partition-cpc/logs
         target: /app/logs
+      # Static config (settings.yaml, acceptance rulesets, mTLS
+      # certificates), read-only — see the comment on
+      # intermediate-vor-partition's mount above. Note: intermediate-vor-
+      # partition-cpc's SQLite database (db_manager/mapped_requests.db)
+      # is deliberately NOT here; it's writable application data and
+      # lives in the app's own directory inside the container instead.
+      - type: bind
+        source: ./config-volume/intermediate-vor-partition-cpc
+        target: /mnt/config/intermediate-vor-partition-cpc
+        read_only: true
+    environment:
+      CONFIG_ROOT: /mnt/config/intermediate-vor-partition-cpc
     depends_on:
       intermediate-vor-partition:
         condition: service_started
@@ -94,6 +144,14 @@ services:
       - type: bind
         source: ./psmo-partition/logs
         target: /app/logs
+      # Static config (settings.yaml, mTLS certificates), read-only — see
+      # the comment on intermediate-vor-partition's mount above.
+      - type: bind
+        source: ./config-volume/psmo-partition
+        target: /mnt/config/psmo-partition
+        read_only: true
+    environment:
+      CONFIG_ROOT: /mnt/config/psmo-partition
     attach: false
     networks:
       static-network:
@@ -106,6 +164,15 @@ services:
       - type: bind
         source: ./cpc-partition/logs
         target: /app/logs
+      # Static config (settings.yaml, endpoint XML/XSD files, mTLS
+      # certificates), read-only — see the comment on
+      # intermediate-vor-partition's mount above.
+      - type: bind
+        source: ./config-volume/cpc-partition
+        target: /mnt/config/cpc-partition
+        read_only: true
+    environment:
+      CONFIG_ROOT: /mnt/config/cpc-partition
     ipc: "shareable"
     depends_on:
       brownfield-opcua-server:

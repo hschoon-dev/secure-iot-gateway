@@ -147,8 +147,8 @@ class CPCConfig(BaseModel):
 _OPCUA_DEFAULTS: Dict[str, Any] = {
     "interval": 1,
     "files": {
-        "xml_config": "config/opcua-endpoints_demonstrator.xml",
-        "xsd_schema": "config/opcua-endpoints.xsd",
+        "xml_config": "opcua-endpoints_demonstrator.xml",
+        "xsd_schema": "opcua-endpoints.xsd",
     },
     "shared_memory": {"name": "opcua_shm", "size": 1024 * 10},
     "semaphore": {"name": "opcua_semaphore"},
@@ -157,8 +157,8 @@ _OPCUA_DEFAULTS: Dict[str, Any] = {
 _MODBUSTCP_DEFAULTS: Dict[str, Any] = {
     "interval": 1,
     "files": {
-        "xml_config": "config/modbustcp-endpoints_demonstrator.xml",
-        "xsd_schema": "config/modbustcp-endpoints.xsd",
+        "xml_config": "modbustcp-endpoints_demonstrator.xml",
+        "xsd_schema": "modbustcp-endpoints.xsd",
     },
     "shared_memory": {"name": "modbus_shm", "size": 1024 * 12},
     "semaphore": {"name": "modbus_semaphore"},
@@ -182,7 +182,7 @@ def _read_raw(path: Path) -> Dict[str, Any]:
 
 
 def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
-    """Resolve relative file paths inside service configs against base_dir."""
+    """Resolve relative file paths (endpoint files and gRPC certs) against base_dir."""
     raw = dict(raw)
     for svc_key in ("opcua", "modbustcp"):
         svc = raw.get(svc_key)
@@ -193,6 +193,13 @@ def _resolve_paths(raw: Dict[str, Any], base_dir: Path) -> Dict[str, Any]:
             if key in files:
                 p = Path(files[key])
                 files[key] = str(p if p.is_absolute() else base_dir / p)
+
+    certs = raw.get("grpc_certs", {})
+    for key in ("ca_cert", "client_cert", "client_key"):
+        if key in certs:
+            p = Path(certs[key])
+            certs[key] = str(p if p.is_absolute() else base_dir / p)
+
     return raw
 
 
@@ -246,8 +253,19 @@ def _apply_env_overrides(config: CPCConfig) -> CPCConfig:
 # Public loader
 # ---------------------------------------------------------------------------
 
+# CONFIG_ROOT is where the read-only static config volume is mounted. On the
+# Linux VMs this is the actual mount point (e.g. /mnt/config/cpc-partition,
+# with the "cpc-partition" subfolder distinguishing this partition's files
+# from siblings like /mnt/config/interface-partition under the same
+# volume). In Docker (local testing) it's the same path, bind-mounted
+# read-only from ./config-volume/cpc-partition (see docker-compose.yaml).
+# Overridable via the CONFIG_ROOT env var for ad-hoc/non-standard layouts.
+_DEFAULT_CONFIG_ROOT = Path(os.environ.get("CONFIG_ROOT", "/mnt/config/cpc-partition"))
+_DEFAULT_SETTINGS = _DEFAULT_CONFIG_ROOT / "settings.yaml"
+
+
 def load_config(
-    path: str | Path = Path(__file__).parent / "config/settings.yaml",
+    path: str | Path = _DEFAULT_SETTINGS,
     base_dir: Path | None = None,
     allow_env: bool = True,
 ) -> CPCConfig:
@@ -255,9 +273,13 @@ def load_config(
     Load, validate, and return the CPC partition configuration.
 
     Args:
-        path:      Path to a YAML or JSON settings file.
-        base_dir:  Base directory for resolving relative file paths.
-                   Defaults to the directory containing *path*.
+        path:      Path to a YAML or JSON settings file. Defaults to
+                   settings.yaml under the read-only config volume
+                   (CONFIG_ROOT / "settings.yaml").
+        base_dir:  Base directory for resolving relative file paths
+                   (endpoint XML/XSD files, gRPC certs). Defaults to the
+                   directory containing *path* — i.e. the read-only
+                   config volume.
         allow_env: If True, environment variables override file values.
 
     Returns:

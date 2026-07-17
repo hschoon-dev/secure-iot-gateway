@@ -1,8 +1,11 @@
-# intermediate-vor-partition-cpc/config/settings.yaml
+# Mounted read-only from the config volume at /mnt/config/intermediate-vor-partition-cpc
+# (see docker-compose.yaml). All paths below are relative to this directory,
+# except sqlite.database, which is resolved against the app's own
+# (writable) directory instead — see config_loader.py.
 
 acceptance_rulesets:
-  ruleset: config/Acceptance_Ruleset.xml
-  ruleset_modified: config/Acceptance_Ruleset_modified.xml
+  ruleset: Acceptance_Ruleset.xml
+  ruleset_modified: Acceptance_Ruleset_modified.xml
 
 # Inbound mTLS gRPC server that receives mapped requests forwarded directly
 # by intermediate-vor-partition. Replaces the previous shared-database read
@@ -18,9 +21,9 @@ mapped_request_server:
 
 sqlite:
   # Local-only: private to this partition, no Docker volume. Plain file on
-  # disk, relative to this app directory — same layout when running
-  # directly on a Linux VM. Requests arrive via mapped_request_server
-  # above and are stored here.
+  # disk, relative to this app directory (NOT the read-only config
+  # volume) — same layout when running directly on a Linux VM. Requests
+  # arrive via mapped_request_server above and are stored here.
   database: "db_manager/mapped_requests.db"
   busy_timeout_ms: 10000
 

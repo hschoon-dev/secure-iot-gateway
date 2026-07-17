@@ -137,10 +137,12 @@ def main() -> None:
     # but after the import block so module-level symbols are resolved.
     # Pydantic validation errors here will go to stderr (acceptable: the
     # process cannot continue without a valid config anyway).
-    CONFIG = load_config(
-        path=Path(__file__).parent / "config/settings.yaml",
-        base_dir=Path(__file__).parent,
-    )
+    #
+    # settings.yaml, rulesets, and certificates all live on the read-only
+    # config volume (CONFIG_ROOT), not in this partition's own app
+    # directory — see config_loader.py's _DEFAULT_CONFIG_ROOT / CONFIG_ROOT
+    # env var, and docker-compose.yaml for how it's mounted in Docker.
+    CONFIG = load_config()
     global verfication_ruleset_path, mapping_ruleset_path
     verfication_ruleset_path = CONFIG.rulesets.verification_ruleset
     mapping_ruleset_path     = CONFIG.rulesets.mapping_ruleset

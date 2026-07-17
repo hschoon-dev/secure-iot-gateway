@@ -41,11 +41,11 @@ from pydantic import BaseModel, Field, PositiveInt
 class RulesetConfig(BaseModel):
     """XML rulesets consumed by the verification and mapping steps."""
     verification_ruleset: Path = Field(
-        Path("config/Request_Verification_Ruleset.xml"),
+        Path("Request_Verification_Ruleset.xml"),
         description="Path to the request verification ruleset XML",
     )
     mapping_ruleset: Path = Field(
-        Path("config/Mapping_Rulesets.xml"),
+        Path("Mapping_Rulesets.xml"),
         description="Path to the mapping ruleset XML",
     )
 
@@ -85,15 +85,15 @@ class GrpcServerConfig(BaseModel):
 class GrpcClientCerts(BaseModel):
     """mTLS certificate paths for the outbound mapped-request gRPC client."""
     ca_cert: Path = Field(
-        Path("certificates/grpc/mapped_request_ca/ca.crt"),
+        Path("certificates/grpc/ca/ca.crt"),
         description="CA certificate used to verify the CPC partition's server cert",
     )
     client_cert: Path = Field(
-        Path("certificates/grpc/mapped_request_client/client.crt"),
+        Path("certificates/grpc/client/client.crt"),
         description="Client certificate for mTLS",
     )
     client_key: Path = Field(
-        Path("certificates/grpc/mapped_request_client/client.key"),
+        Path("certificates/grpc/client/client.key"),
         description="Client private key for mTLS",
     )
 
@@ -107,7 +107,7 @@ class MappedRequestClientConfig(BaseModel):
     (its own local-only SQLite database) and is reached only via this stub.
     """
     host: str = Field(
-        "192.168.178.116",
+        "10.200.1.178",
         description="Hostname/IP of intermediate-vor-partition-cpc's mapped-request gRPC server",
     )
     port: int = Field(50052, description="Port of the mapped-request gRPC server")
@@ -229,7 +229,18 @@ def _apply_env_overrides(config: VoRConfig) -> VoRConfig:
 # Public loader
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SETTINGS = Path(__file__).parent / "config/settings.yaml"
+# CONFIG_ROOT is where the read-only static config volume is mounted. On the
+# Linux VMs this is the actual mount point (e.g. /mnt/config/intermediate-vor-partition,
+# with the "intermediate-vor-partition" subfolder distinguishing this
+# partition's files from siblings like /mnt/config/interface-partition
+# under the same volume). In Docker (local testing) it's the same path,
+# bind-mounted read-only from ./config-volume/intermediate-vor-partition
+# (see docker-compose.yaml). Overridable via the CONFIG_ROOT env var for
+# ad-hoc/non-standard layouts.
+_DEFAULT_CONFIG_ROOT = Path(
+    os.environ.get("CONFIG_ROOT", "/mnt/config/intermediate-vor-partition")
+)
+_DEFAULT_SETTINGS = _DEFAULT_CONFIG_ROOT / "settings.yaml"
 
 
 def load_config(
@@ -240,10 +251,18 @@ def load_config(
     """
     Load, validate, and return the Intermediate VoR partition configuration.
 
+    This partition has no writable application data of its own (it no
+    longer touches a database — see mapped_request_client), so every
+    relative path in settings.yaml (rulesets, certs) is resolved against
+    the same base_dir: the read-only config volume.
+
     Args:
-        path:      Path to a YAML or JSON settings file.
+        path:      Path to a YAML or JSON settings file. Defaults to
+                   settings.yaml under the read-only config volume
+                   (CONFIG_ROOT / "settings.yaml").
         base_dir:  Base directory for resolving relative paths.
-                   Defaults to the directory containing *path*.
+                   Defaults to the directory containing *path* — i.e. the
+                   read-only config volume.
         allow_env: If True, environment variables override file values.
 
     Returns:

@@ -131,7 +131,10 @@ class OpcUaClientManager:
                     raise NotImplementedError("GUID or Opaque identifier types are not supported.")
                 nodes.append(node_info)
 
-            client = OpcUaClient(server_app_uri, client_app_uri, alias, security_settings, nodes)
+            client = OpcUaClient(
+                server_app_uri, client_app_uri, alias, security_settings, nodes,
+                cert_base=Path(self.xml_config_path).parent,
+            )
             clients.append(client)
         return clients
 
